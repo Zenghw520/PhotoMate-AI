@@ -3,6 +3,7 @@ import {
   isOutsideChina,
   reverseGeocode,
   searchLocations,
+  searchPhotoSpots,
   wgs84ToGcj02,
 } from "./amap.ts";
 import {
@@ -254,5 +255,45 @@ Deno.test("amap: search reports unavailable on malformed JSON and empty result h
         assertEquals(result.message, "未找到中国境内匹配的区县。");
       },
     );
+  });
+});
+
+Deno.test("amap: recommends nearby photo spots and filters service POIs", async () => {
+  await withEnv({ AMAP_API_KEY: "test-amap-key" }, async () => {
+    await withFetchStub((call) => {
+      const url = new URL(call.url);
+      assertEquals(url.pathname, "/v3/place/around");
+      assertEquals(url.searchParams.get("radius"), "20000");
+      assertEquals(url.searchParams.get("sortrule"), "distance");
+      return jsonResponse({
+        status: "1",
+        pois: [
+          {
+            id: "B001",
+            name: "湖边观景台",
+            address: "环湖路",
+            type: "风景名胜;观景台",
+            location: "114.38278,23.08375",
+            distance: "1200",
+          },
+          {
+            id: "B002",
+            name: "景区停车场",
+            address: [],
+            type: "交通设施",
+            location: "114.38278,23.08375",
+            distance: "800",
+          },
+        ],
+      });
+    }, async (calls) => {
+      const result = await searchPhotoSpots(23.08375, 114.38278, "LANDSCAPE");
+      assertEquals(result.status, "OK");
+      assertEquals(result.spots.length, 1);
+      assertEquals(result.spots[0].name, "湖边观景台");
+      assertEquals(result.spots[0].distanceMeters, 1200);
+      assert(result.spots[0].gcj.latitude > 23);
+      assertEquals(calls.length, 1);
+    });
   });
 });

@@ -317,6 +317,32 @@ export interface CustomPlansResponse {
   warnings: string[];
 }
 
+export interface SpotRecommendation {
+  id: string;
+  name: string;
+  address: string;
+  type: string;
+  latitude: number;
+  longitude: number;
+  distanceMeters: number;
+  direction: string;
+  mapUrl: string;
+  sunNote: string;
+}
+
+export interface SpotRecommendationsResponse {
+  generatedAt: string;
+  date: string;
+  location: LocationResult;
+  theme: ThemeId;
+  weatherSummary: string;
+  recommendedWindow: TimeWindow | null;
+  sunriseAzimuth: number | null;
+  sunsetAzimuth: number | null;
+  spots: SpotRecommendation[];
+  warnings: string[];
+}
+
 export interface SearchResponse {
   locations: LocationResult[];
   message?: string;

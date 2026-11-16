@@ -9,7 +9,9 @@ import type {
   PhotoAnalysisResponse,
   PhotoScene,
   SearchResponse,
+  SpotRecommendationsResponse,
   ThemeId,
+  TodayRequest,
   TodayResponse,
 } from "@/functions/shared/contracts";
 
@@ -132,6 +134,30 @@ function isCustomPlansResponse(value: unknown): value is CustomPlansResponse {
     !!item.location && typeof item.weatherSummary === "string" &&
     typeof item.summary === "string" && Array.isArray(item.plans) &&
     typeof item.aiStatus === "string" && Array.isArray(item.warnings);
+}
+
+function isSpotRecommendations(
+  value: unknown,
+): value is SpotRecommendationsResponse {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<SpotRecommendationsResponse>;
+  return typeof item.generatedAt === "string" && Array.isArray(item.spots) &&
+    item.spots.every((spot) =>
+      !!spot && typeof spot.name === "string" &&
+      typeof spot.mapUrl === "string" && typeof spot.distanceMeters === "number"
+    ) &&
+    Array.isArray(item.warnings);
+}
+
+export function recommendPhotoSpots(
+  input: TodayRequest,
+  signal?: AbortSignal,
+) {
+  return request("/locations/spots", {
+    method: "POST",
+    body: JSON.stringify(input),
+    signal,
+  }, isSpotRecommendations);
 }
 
 export function generateCustomPlans(

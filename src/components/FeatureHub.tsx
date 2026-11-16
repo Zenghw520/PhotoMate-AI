@@ -18,6 +18,7 @@ import type {
 import { formatDate, formatObservedAt, formatRange } from "@/src/lib/format";
 import { WeatherOverview } from "@/src/components/WeatherOverview";
 import { PhotoIndices } from "@/src/components/PhotoIndices";
+import { SpotRecommendations } from "@/src/components/SpotRecommendations";
 import { PotentialCard } from "@/src/components/PotentialCard";
 import { FireCloudCard } from "@/src/components/FireCloudCard";
 import { SolarTimeline } from "@/src/components/SolarTimeline";
@@ -25,7 +26,7 @@ import { SolarPath } from "@/src/components/SolarPath";
 import { PhotoAnalysis, PhotoMethod } from "@/src/components/PhotoAnalysis";
 import { CustomPlanPanel } from "@/src/components/CustomPlanPanel";
 
-export type SectionId = "WEATHER" | "LIGHT" | "PLANS" | "PHOTO";
+export type SectionId = "WEATHER" | "LIGHT" | "PLANS" | "SPOTS" | "PHOTO";
 
 const SECTION_META: Record<
   SectionId,
@@ -46,6 +47,12 @@ const SECTION_META: Record<
     intro: "自定义题材，结合当天真实天气与太阳窗口，生成时间、方向、构图和参数建议。",
     icon: Sparkles,
   },
+  SPOTS: {
+    title: "地点推荐",
+    intro:
+      "按题材检索周边高德摄影点，结合日出日落方位给出建议窗口与方向；地形遮挡仍需现场确认。",
+    icon: MapPin,
+  },
   PHOTO: {
     title: "照片分析",
     intro: "上传照片，先根据画面特征推断题材，再结合 EXIF 与画质统计给出针对性建议；原始照片不上传。",
@@ -53,7 +60,13 @@ const SECTION_META: Record<
   },
 };
 
-const SECTION_ORDER: SectionId[] = ["WEATHER", "LIGHT", "PLANS", "PHOTO"];
+const SECTION_ORDER: SectionId[] = [
+  "WEATHER",
+  "LIGHT",
+  "PLANS",
+  "SPOTS",
+  "PHOTO",
+];
 
 const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = {
   WEATHER: [
@@ -98,6 +111,14 @@ const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = 
       id: "custom",
       label: "自定义题材",
       intro: "每个方案都标注太阳方位、高度和对应时段的真实天气，便于现场核对。",
+    },
+  ],
+  SPOTS: [
+    {
+      id: "spots",
+      label: "摄影点推荐",
+      intro:
+        "按题材检索高德 POI，并结合当天日出日落方位给出建议窗口；不包含地形遮挡与开放状态。",
     },
   ],
   PHOTO: [
@@ -235,6 +256,9 @@ function FeatureMenu({
       ? "正在获取环境数据"
       : "进入选择拍摄位置",
     PLANS: data ? `${dayLabel} · 按题材生成` : "先选择拍摄位置",
+    SPOTS: location
+      ? `${dayLabel} · 周边摄影点`
+      : "先选择拍摄位置",
     PHOTO: "题材推断 + EXIF + 画质统计",
   };
 
@@ -254,7 +278,7 @@ function FeatureMenu({
           </p>
         </div>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:mt-4 2xl:gap-4">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:mt-4 2xl:grid-cols-5 2xl:gap-4">
         {SECTION_ORDER.map((id) => {
           const meta = SECTION_META[id];
           const Icon = meta.icon;
@@ -483,7 +507,23 @@ function SectionDetail({
         </div>
       )}
 
-      {!data && section !== "LIGHT" && section !== "PHOTO" && (
+      {section === "SPOTS" && (
+        location
+          ? (
+            <div className="mt-4">
+              <SpotRecommendations
+                location={location}
+                date={targetDate}
+                dayOffset={dayOffset}
+                onDayChange={onDayChange}
+              />
+            </div>
+          )
+          : <LocationPrompt />
+      )}
+
+      {!data && section !== "LIGHT" && section !== "PHOTO" &&
+        section !== "SPOTS" && (
         <LocationPrompt />
       )}
 
@@ -507,7 +547,7 @@ function SectionDetail({
         </>
       )}
 
-      {section !== "PHOTO" && data && (
+      {section !== "PHOTO" && section !== "SPOTS" && data && (
         <>
           {tabs.length > 1 && tabBar}
           <p className="mt-4 text-xs leading-5 text-muted-foreground">

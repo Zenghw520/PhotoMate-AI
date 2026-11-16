@@ -21,7 +21,10 @@ function readSavedLocation(): LocationResult | null {
 
 function sectionFromHash(hash: string): SectionId | null {
   const key = hash.replace(/^#/, "").toLowerCase();
-  if (key === "weather" || key === "light" || key === "plans" || key === "photo") {
+  if (
+    key === "weather" || key === "light" || key === "plans" ||
+    key === "spots" || key === "photo"
+  ) {
     return key.toUpperCase() as SectionId;
   }
   return null;

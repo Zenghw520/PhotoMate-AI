@@ -1,4 +1,8 @@
-import type { LocationPrecision, LocationResult } from "../shared/contracts.ts";
+import type {
+  LocationPrecision,
+  LocationResult,
+  ThemeId,
+} from "../shared/contracts.ts";
 import { secretValue } from "../shared/env.ts";
 import { fetchTrustedJson } from "./http.ts";
 
@@ -429,6 +433,128 @@ export async function reverseGeocode(
       status: "UNAVAILABLE",
       location: null,
       message: "高德逆地理编码暂不可用。",
+    };
+  }
+}
+
+const SPOT_KEYWORDS: Record<ThemeId, string> = {
+  LANDSCAPE: "观景台|风景名胜|公园|湿地|湖|山顶",
+  PORTRAIT: "公园|花园|咖啡馆|创意园|街区",
+  ARCHITECTURE: "地标|古建筑|寺庙|塔|广场|美术馆",
+  STREET: "步行街|老街|广场|商圈|夜市",
+  FOOD: "美食街|特色街区|茶楼|咖啡馆",
+  NIGHT: "观景台|天桥|滨江|广场|夜景",
+  TRAVEL: "风景名胜|景区|古镇|公园",
+};
+
+export interface AmapSpot {
+  id: string;
+  name: string;
+  address: string;
+  type: string;
+  gcj: Coordinate;
+  distanceMeters: number;
+}
+
+export interface AmapSpotResult {
+  status: "OK" | "UNCONFIGURED" | "UNAVAILABLE";
+  spots: AmapSpot[];
+  message: string | null;
+}
+
+function poiText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string")
+      .join("; ").trim();
+  }
+  return "";
+}
+
+export async function searchPhotoSpots(
+  latitude: number,
+  longitude: number,
+  theme: ThemeId,
+): Promise<AmapSpotResult> {
+  const apiKey = secretValue("AMAP_API_KEY");
+  if (!apiKey) {
+    return {
+      status: "UNCONFIGURED",
+      spots: [],
+      message: "地点推荐服务尚未配置。",
+    };
+  }
+  const gcjCenter = wgs84ToGcj02(latitude, longitude);
+  try {
+    const payload = await fetchTrustedJson<unknown>({
+      baseUrl: AMAP_BASE_URL,
+      path: "/v3/place/around",
+      allowedHosts: AMAP_HOSTS,
+      query: {
+        key: apiKey,
+        location: `${gcjCenter.longitude.toFixed(6)},${
+          gcjCenter.latitude.toFixed(6)
+        }`,
+        keywords: SPOT_KEYWORDS[theme],
+        radius: "20000",
+        sortrule: "distance",
+        offset: "20",
+        page: "1",
+        extensions: "base",
+      },
+      timeoutMs: 5_000,
+      maxResponseBytes: 256 * 1024,
+      retries: 1,
+    });
+    const root = record(payload);
+    if (!root || root.status !== "1") {
+      console.error(
+        "amap_spots_status",
+        root?.status ?? "invalid",
+        root?.info ?? "",
+      );
+      return {
+        status: "UNAVAILABLE",
+        spots: [],
+        message: "高德地点推荐暂不可用。",
+      };
+    }
+    const seen = new Set<string>();
+    const spots: AmapSpot[] = [];
+    for (const value of Array.isArray(root.pois) ? root.pois : []) {
+      const poi = record(value);
+      if (!poi) continue;
+      const id = text(poi.id);
+      const name = text(poi.name);
+      const gcj = parseGcjLocation(poi.location);
+      if (!id || !name || !gcj || seen.has(id)) continue;
+      if (/停车场|售票|厕所|游客中心|入口/.test(name)) continue;
+      seen.add(id);
+      const distance = Number(poi.distance);
+      spots.push({
+        id,
+        name,
+        address: poiText(poi.address),
+        type: poiText(poi.type),
+        gcj,
+        distanceMeters: Number.isFinite(distance) ? distance : 0,
+      });
+      if (spots.length >= 8) break;
+    }
+    return {
+      status: "OK",
+      spots,
+      message: spots.length ? null : "周边暂未找到匹配的摄影点。",
+    };
+  } catch (error) {
+    console.error(
+      "amap_spots_error",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return {
+      status: "UNAVAILABLE",
+      spots: [],
+      message: "高德地点推荐暂不可用。",
     };
   }
 }

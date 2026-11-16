@@ -3,6 +3,7 @@ import { reverseGeocode, searchLocations } from "./providers/amap.ts";
 import { getTodayPhotography } from "./services/today.ts";
 import { analyzePhoto } from "./services/photo.ts";
 import { generateCustomPlanResponse } from "./services/custom_plan.ts";
+import { recommendSpots } from "./services/spots.ts";
 import type { DatabaseClient } from "./services/cache.ts";
 import { secretValue } from "./shared/env.ts";
 import {
@@ -62,6 +63,7 @@ export function createHandler(db?: DatabaseClient) {
             weather: true,
             openWeather: Boolean(secretValue("OPENWEATHER_API_KEY")),
             openMeteo: true,
+            spotRecommendation: Boolean(secretValue("AMAP_API_KEY")),
             aiEnhancement: Boolean(secretValue("DEEPSEEK_API_KEY")),
             deepSeek: Boolean(secretValue("DEEPSEEK_API_KEY")),
             photoAnalysis: true,
@@ -108,6 +110,15 @@ export function createHandler(db?: DatabaseClient) {
           );
         }
         return Response.json(result.location, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+
+      if (path === "/locations/spots") {
+        requireMethod(request, "POST");
+        const input = todayRequest(await readJson(request));
+        const result = await recommendSpots(input, db);
+        return Response.json(result, {
           headers: { "Cache-Control": "no-store" },
         });
       }
