@@ -1,5 +1,6 @@
 import { errorResponse, HttpError } from "./errors.ts";
 import { reverseGeocode, searchLocations } from "./providers/amap.ts";
+import { getTerrainTile } from "./providers/geovis.ts";
 import { getTodayPhotography } from "./services/today.ts";
 import { analyzePhoto } from "./services/photo.ts";
 import { generateCustomPlanResponse } from "./services/custom_plan.ts";
@@ -64,6 +65,7 @@ export function createHandler(db?: DatabaseClient) {
             openWeather: Boolean(secretValue("OPENWEATHER_API_KEY")),
             openMeteo: true,
             spotRecommendation: Boolean(secretValue("AMAP_API_KEY")),
+            terrain: Boolean(secretValue("GEOVIS_EARTH_TOKEN")),
             aiEnhancement: Boolean(secretValue("DEEPSEEK_API_KEY")),
             deepSeek: Boolean(secretValue("DEEPSEEK_API_KEY")),
             photoAnalysis: true,
@@ -111,6 +113,33 @@ export function createHandler(db?: DatabaseClient) {
         }
         return Response.json(result.location, {
           headers: { "Cache-Control": "no-store" },
+        });
+      }
+
+      if (path === "/terrain/tile") {
+        requireMethod(request, "GET");
+        const z = Number(url.searchParams.get("z"));
+        const x = Number(url.searchParams.get("x"));
+        const y = Number(url.searchParams.get("y"));
+        const tile = await getTerrainTile(z, x, y);
+        if (tile.status === "UNCONFIGURED") {
+          throw new HttpError(503, "TERRAIN_UNCONFIGURED", tile.message!);
+        }
+        if (tile.status === "UNAVAILABLE") {
+          throw new HttpError(502, "TERRAIN_UNAVAILABLE", tile.message!, true);
+        }
+        if (tile.status === "INVALID" || !tile.data) {
+          throw new HttpError(
+            400,
+            "INVALID_TERRAIN_TILE",
+            "地形瓦片坐标无效。",
+          );
+        }
+        return new Response(tile.data.buffer as ArrayBuffer, {
+          headers: {
+            "Content-Type": tile.contentType,
+            "Cache-Control": "public, max-age=604800, immutable",
+          },
         });
       }
 

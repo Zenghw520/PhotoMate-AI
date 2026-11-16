@@ -1,14 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Compass,
   Info,
+  LoaderCircle,
   MoonStar,
   Sun,
   Sunrise,
   Sunset,
 } from "lucide-react";
-import type { SolarData, TimeWindow } from "@/functions/shared/contracts";
+import type {
+  LocationResult,
+  SolarData,
+  TimeWindow,
+} from "@/functions/shared/contracts";
 import { compass, formatRange, formatTime } from "@/src/lib/format";
+import {
+  horizonAt,
+  loadTerrainHorizon,
+  TerrainError,
+  type TerrainHorizon,
+} from "@/src/lib/terrain";
 
 const WIDTH = 760;
 const HEIGHT = 300;
@@ -62,10 +73,47 @@ function durationMinutes(windows: TimeWindow[]) {
 export function SolarPath({
   solar,
   date,
+  location,
 }: {
   solar: SolarData;
   date: string;
+  location: LocationResult | null;
 }) {
+  const [terrain, setTerrain] = useState<TerrainHorizon | null>(null);
+  const [terrainLoading, setTerrainLoading] = useState(false);
+  const [terrainError, setTerrainError] = useState("");
+
+  useEffect(() => {
+    if (!location) {
+      setTerrain(null);
+      setTerrainError("");
+      return;
+    }
+    const controller = new AbortController();
+    setTerrainLoading(true);
+    setTerrainError("");
+    loadTerrainHorizon(
+      location.latitude,
+      location.longitude,
+      controller.signal,
+    )
+      .then((value) => {
+        if (!controller.signal.aborted) setTerrain(value);
+      })
+      .catch((reason) => {
+        if (controller.signal.aborted) return;
+        setTerrain(null);
+        setTerrainError(
+          reason instanceof TerrainError
+            ? reason.message
+            : "地形遮挡暂不可用。",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTerrainLoading(false);
+      });
+    return () => controller.abort();
+  }, [location?.latitude, location?.longitude]);
   const nowMinutes = useMemo(() => {
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Shanghai",
@@ -106,6 +154,33 @@ export function SolarPath({
   const sunset = solar.sunset ? isoMinutes(solar.sunset) : null;
   const elevationTicks = [0, 30, 60, 90];
   const timeTicks = [0, 360, 720, 1080, 1440];
+
+  const horizonLine = terrain
+    ? solar.path
+      .map((point) => {
+        const horizon = horizonAt(terrain.profile, point.azimuth);
+        return horizon === null
+          ? null
+          : `${x(isoMinutes(point.time)).toFixed(1)},${
+            y(horizon).toFixed(1)
+          }`;
+      })
+      .filter((point): point is string => point !== null)
+      .join(" ")
+    : "";
+  const selectedHorizon = selected && terrain
+    ? horizonAt(terrain.profile, selected.azimuth)
+    : null;
+  const selectedBlocked = selected !== null && selectedHorizon !== null &&
+    selected.elevation < selectedHorizon;
+  const sunriseHorizon = terrain && solar.sunriseAzimuth !== null
+    ? horizonAt(terrain.profile, solar.sunriseAzimuth)
+    : null;
+  const sunsetHorizon = terrain && solar.sunsetAzimuth !== null
+    ? horizonAt(terrain.profile, solar.sunsetAzimuth)
+    : null;
+  const sunriseBlocked = sunriseHorizon !== null && sunriseHorizon > -0.833;
+  const sunsetBlocked = sunsetHorizon !== null && sunsetHorizon > -0.833;
 
   const twilightRows = [
     {
@@ -221,6 +296,16 @@ export function SolarPath({
                 strokeDasharray="3 5"
               />
             )}
+            {horizonLine && (
+              <polyline
+                points={horizonLine}
+                fill="none"
+                stroke="#a16207"
+                strokeWidth="1.6"
+                strokeDasharray="5 4"
+                opacity="0.9"
+              />
+            )}
             <polyline
               points={points}
               fill="none"
@@ -235,7 +320,7 @@ export function SolarPath({
                   cx={x(minutes)}
                   cy={y(selected.elevation)}
                   r="7"
-                  fill="var(--primary)"
+                  fill={selectedBlocked ? "#dc2626" : "var(--primary)"}
                   stroke="var(--card)"
                   strokeWidth="2"
                 />
@@ -272,7 +357,7 @@ export function SolarPath({
           </span>
         </label>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl bg-muted/45 p-3">
             <p className="text-[11px] text-muted-foreground">所选时刻太阳高度</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
@@ -295,7 +380,48 @@ export function SolarPath({
                 : `${solar.noonElevation.toFixed(1)}°`}
             </p>
           </div>
+          <div className="rounded-xl bg-muted/45 p-3">
+            <p className="text-[11px] text-muted-foreground">所选时刻地形遮挡</p>
+            {terrain && selectedHorizon !== null ? (
+              <>
+                <p
+                  className={`mt-1 text-lg font-semibold ${
+                    selectedBlocked ? "text-red-600 dark:text-red-400" : ""
+                  }`}
+                >
+                  {selectedBlocked ? "被遮挡" : "可见"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  地平线约 {selectedHorizon.toFixed(1)}°
+                </p>
+              </>
+            ) : (
+              <p className="mt-1 text-lg font-semibold text-muted-foreground">
+                {terrainLoading ? "读取中…" : "未计算"}
+              </p>
+            )}
+          </div>
         </div>
+
+        {terrainLoading && (
+          <p className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+            <LoaderCircle className="size-3.5 animate-spin text-primary" />
+            正在读取星图地球地形瓦片…
+          </p>
+        )}
+        {!terrainLoading && terrainError && (
+          <p className="mt-3 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+            地形遮挡未计算：{terrainError}太阳轨迹仍按本地天文算法显示，未叠加地形地平线。
+          </p>
+        )}
+        {!terrainLoading && terrain && (
+          <p className="mt-3 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+            地形地平线来自星图地球 Terrain-RGB（{terrain.loadedTiles}/
+            {terrain.totalTiles} 瓦片，采样半径 12km）。日出方位：
+            {sunriseBlocked ? "被地形遮挡" : "可见"}；日落方位：
+            {sunsetBlocked ? "被地形遮挡" : "可见"}。未计入建筑与植被遮挡。
+          </p>
+        )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
@@ -388,7 +514,7 @@ export function SolarPath({
 
       <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        太阳位置由 NOAA 算法在本地计算。地图联动需要高德 JS API Key，当前以方位罗盘呈现方向；地形遮挡仍需现场确认。
+        太阳位置由 NOAA 算法在本地计算；地形地平线取自星图地球 Terrain-RGB（约 12km 半径），不含建筑与植被。地图联动需要高德 JS API Key，当前以方位罗盘呈现方向。
       </p>
     </div>
   );

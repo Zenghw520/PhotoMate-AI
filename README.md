@@ -51,6 +51,7 @@ PhotoMate AI 是一个面向摄影爱好者的智能拍摄规划平台：把**�
 - 本地 NOAA 算法计算日出日落、民用/航海/天文晨昏蒙影、黄金时刻、蓝调时刻、正午太阳高度。
 - 展示日出/日落方位、黄金与蓝调时刻总时长。
 - 可拖动的太阳全天轨迹图：实时更新太阳高度与方位，标注金蓝时段与日出日落位置，并配套方向罗盘。
+- 基于星图地球 Terrain-RGB 计算地形地平线，标注日出、日落与所选时刻是否被地形遮挡。
 
 ### 4. AI 摄影规划
 
@@ -134,6 +135,7 @@ flowchart LR
 | 实时与逐小时天气 | OpenWeather | 多源数值合并 |
 | 预报、云层分层、气溶胶 | Open-Meteo（Forecast + Air Quality） | 高/中/低云、AOD、能见度与 96 小时覆盖 |
 | 区县、逆地理、摄影点 | 高德地图 Web 服务 | 行政区检索、坐标解析、周边 POI |
+| 地形高程 | 星图地球数据云 Terrain-RGB | 3×3 高程瓦片、地平线剖面与地形遮挡 |
 | AI 文本 | DeepSeek | 题材复核、方案文案、参数与摘要 |
 | 太阳位置与晨昏 | 本地 NOAA 算法 | 日出日落、黄金/蓝调时刻、太阳轨迹 |
 | RAW 解码 | LibRaw / libraw-wasm | 浏览器内 RAW 预览与统计 |
@@ -178,6 +180,7 @@ export QWEATHER_API_BASE_URL="https://your-api-host.qweatherapi.com"
 export OPENWEATHER_API_KEY="..."
 export AMAP_API_KEY="..."
 export DEEPSEEK_API_KEY="..."
+export GEOVIS_EARTH_TOKEN="..."
 npm run dev:function
 ```
 
@@ -194,6 +197,7 @@ npm run dev:function
 | `OPENWEATHER_API_KEY` | 可选 | OpenWeather API Key |
 | `AMAP_API_KEY` | 可选 | 高德 Web 服务 Key（区县、逆地理、POI） |
 | `DEEPSEEK_API_KEY` | 可选 | DeepSeek API Key |
+| `GEOVIS_EARTH_TOKEN` | 可选 | 星图地球数据云 Token（地形遮挡） |
 | `DEEPSEEK_MODEL` | 可选 | 默认 `deepseek-chat` |
 | `AI_DAILY_LIMIT` | 可选 | 每日 AI 调用上限，默认 `120` |
 
@@ -231,6 +235,12 @@ npm run dev:function
 
 - 总云量不是唯一变量：同时考虑高/中/低云结构、气溶胶光学厚度、湿度、能见度、降水概率与风速。
 - 低云过多、气溶胶偏高、中高云不足会触发硬性降分；缺少分层数据时按剩余权重归一化并降低置信度。
+
+### 地形遮挡
+
+- 通过 Edge Function 代理星图地球 Terrain-RGB 瓦片，Token 不进入前端。
+- 将瓦片 RGB 解码为高程，沿每个方位以 150m–12km 多距离采样，计算包含地球曲率修正的地平线仰角。
+- 太阳高度低于对应方位地平线时标记为“被地形遮挡”；未配置 Token 或瓦片无效时明确显示未计算。
 
 ### 摄影指数
 
@@ -271,7 +281,7 @@ npx deno lint functions
 npx deno test --allow-env functions/
 ```
 
-当前结果：**80 项函数测试全部通过**，覆盖天文计算、天气合并、霞光/火烧云评分、摄影指数、AI 响应校验、地点推荐映射与照片分析。
+当前结果：**82 项函数测试全部通过**，覆盖天文计算、天气合并、霞光/火烧云评分、摄影指数、AI 响应校验、地点推荐映射与照片分析。
 
 线上还会对真实天气、指数、太阳轨迹、AI 方案、地点推荐、移动端布局与控制台错误进行验收。
 
@@ -285,7 +295,7 @@ npx deno test --allow-env functions/
 │  ├─ lib/               API、格式化、天文/像素/RAW/本地记录
 │  └─ globals.css        主题与动效
 ├─ functions/            Deno Edge Function
-│  ├─ providers/         和风、OpenWeather、Open-Meteo、高德、DeepSeek
+│  ├─ providers/         和风、OpenWeather、Open-Meteo、高德、星图、DeepSeek
 │  ├─ services/          聚合、评分、指数、方案、照片分析、缓存
 │  ├─ astronomy/         NOAA 太阳计算
 │  └─ shared/            共享契约与环境工具
@@ -322,7 +332,8 @@ npx deno test --allow-env functions/
 ## 已知限制
 
 - **不内嵌地图**：完整地图交互需要高德 JS API Key；当前使用方向罗盘、POI 列表与高德 URI 跳转。
-- **无地形遮挡数据**：推荐机位未计入山体、建筑与植被遮挡，需现场确认。
+- **地形遮挡范围有限**：星图地球 Terrain-RGB 仅计算约 12km 半径的地形地平线，不含建筑与植被；地点推荐列表未逐点计算地形遮挡。
+- **星图 Token 必需**：未配置 `GEOVIS_EARTH_TOKEN` 时地形遮挡会明确显示“未计算”，不会使用推测地形。
 - **摄影作品原图与计划/实拍对比**：当前仅保存文字参数与分析记录，未提供原图上传。
 - **极端纬度/极昼极夜**：无日出或晨昏事件时返回“暂不可用”，不会编造时间。
 - **AI 额度**：公共演示使用每日额度限制，额度用尽时自动回退规则方案。

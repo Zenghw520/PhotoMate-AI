@@ -601,7 +601,11 @@ function SectionDetail({
               </div>
             )}
             {section === "LIGHT" && tab === "solar" && (
-              <SolarPath solar={data.solar} date={targetDate} />
+              <SolarPath
+                solar={data.solar}
+                date={targetDate}
+                location={location}
+              />
             )}
             {section === "LIGHT" && tab === "timeline" && (
               <>
