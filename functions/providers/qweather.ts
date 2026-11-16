@@ -240,6 +240,7 @@ export async function getQWeather(
     }
 
     const missingFields: string[] = [];
+    const currentVisibility = numberValue(now.vis);
     const current: CurrentWeather = {
       observedAt,
       temperature: numberValue(now.temp),
@@ -251,7 +252,7 @@ export async function getQWeather(
       windSpeed: numberValue(now.windSpeed),
       windDirection: text(now.windDir) ?? "",
       windDegree: numberValue(now.wind360),
-      visibility: numberValue(now.vis),
+      visibility: currentVisibility === null ? null : currentVisibility * 1000,
       pressure: numberValue(now.pressure),
       airQuality,
     };

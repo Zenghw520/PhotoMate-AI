@@ -146,6 +146,42 @@ Deno.test("amap: deduplicates districts, keeps direct matches and drops overseas
   });
 });
 
+Deno.test("amap: enriches keyword district results with province and city", async () => {
+  await withEnv({ AMAP_API_KEY: "test-amap-key" }, async () => {
+    await withFetchStub((call) => {
+      const url = new URL(call.url);
+      if (url.pathname === "/v3/geocode/regeo") {
+        return jsonResponse({
+          status: "1",
+          regeocode: {
+            addressComponent: {
+              province: "北京市",
+              city: "北京市",
+              district: "朝阳区",
+            },
+          },
+        });
+      }
+      return jsonResponse({
+        status: "1",
+        districts: [{
+          name: "朝阳区",
+          adcode: "110105",
+          center: "116.486409,39.921489",
+          level: "district",
+          districts: [],
+        }],
+      });
+    }, async (calls) => {
+      const result = await searchLocations("朝阳区");
+      assertEquals(result.status, "OK");
+      assertEquals(result.locations.length, 1);
+      assertEquals(result.locations[0].region, "北京市");
+      assertEquals(calls.length, 2);
+    });
+  });
+});
+
 Deno.test("amap: reverse geocodes converted coordinates and retains GPS precision", async () => {
   const original = { latitude: 31.2304, longitude: 121.4737 };
   await withEnv({ AMAP_API_KEY: "test-amap-key" }, async () => {

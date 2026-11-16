@@ -13,7 +13,20 @@ const WEIGHTS = {
   visibility: 15,
   humidity: 5,
   windSpeed: 10,
+  cloudHigh: 8,
+  cloudMid: 8,
+  cloudLow: 10,
+  aerosolOpticalDepth: 5,
 } as const;
+
+const CORE_FIELDS = [
+  "cloud",
+  "precipitationProbability",
+  "precipitation",
+  "visibility",
+  "humidity",
+  "windSpeed",
+] as const;
 
 type WeatherField = keyof typeof WEIGHTS;
 
@@ -41,6 +54,34 @@ const METRICS: Record<WeatherField, Metric> = {
     if (value <= 3) return 100;
     if (value <= 8) return 100 - (value - 3) * 12;
     return Math.max(0, 40 - (value - 8) * 10);
+  },
+  cloudHigh: (value) => {
+    if (value < 5) return 55;
+    if (value < 20) return 80;
+    if (value <= 65) return 100;
+    if (value <= 85) return 75;
+    return 45;
+  },
+  cloudMid: (value) => {
+    if (value < 5) return 50;
+    if (value < 20) return 78;
+    if (value <= 60) return 100;
+    if (value <= 85) return 72;
+    return 40;
+  },
+  cloudLow: (value) => {
+    if (value <= 20) return 100;
+    if (value <= 40) return 85;
+    if (value <= 60) return 60;
+    if (value <= 80) return 35;
+    return 15;
+  },
+  aerosolOpticalDepth: (value) => {
+    if (value <= 0.15) return 100;
+    if (value <= 0.3) return 85;
+    if (value <= 0.5) return 65;
+    if (value <= 0.8) return 40;
+    return 20;
   },
 };
 
@@ -77,6 +118,26 @@ const LABELS: Record<
     label: "风速",
     unit: "m/s",
     explanation: "较低风速有利于稳定机位，强风会增加抖动和安全风险",
+  },
+  cloudHigh: {
+    label: "高云量",
+    unit: "%",
+    explanation: "高云是霞光色彩的主要载体，适量时形成幕布，过厚会压暗色彩",
+  },
+  cloudMid: {
+    label: "中云量",
+    unit: "%",
+    explanation: "中云同样承接低角度光，过多会削弱透光与层次",
+  },
+  cloudLow: {
+    label: "低云量",
+    unit: "%",
+    explanation: "低云过多会遮挡地平线附近的太阳，减少直射染色",
+  },
+  aerosolOpticalDepth: {
+    label: "气溶胶光学厚度",
+    unit: "",
+    explanation: "气溶胶越高，色彩越容易被消光，空气通透度下降",
   },
 };
 
@@ -125,9 +186,9 @@ export function scoreTwilight(
     );
   }
 
-  const missingFields: string[] = (Object.keys(WEIGHTS) as WeatherField[])
-    .filter((field) => values[field] === null);
-  missingFields.push("cloudLayers");
+  const missingFields: string[] = CORE_FIELDS.filter((field) =>
+    values[field] === null
+  );
   const basis: ScoreBasis[] = (Object.keys(WEIGHTS) as WeatherField[]).map((
     field,
   ) => ({
@@ -140,14 +201,6 @@ export function scoreTwilight(
       ? "窗口附近没有该字段的真实逐小时数据"
       : LABELS[field].explanation,
   }));
-  basis.push({
-    code: "cloudLayers",
-    label: "高中低云分层",
-    value: null,
-    unit: "%",
-    contribution: null,
-    explanation: "当前逐小时契约没有高中低云分层，因此限制置信度",
-  });
 
   if (!validWindow || records.length === 0 || values.cloud === null) {
     const reason = !validWindow
@@ -160,8 +213,12 @@ export function scoreTwilight(
       score: null,
       confidence: 0,
       confidenceLevel: "LOW",
-      basis,
-      missingFields,
+      basis: validWindow && records.length > 0 ? basis : [],
+      missingFields: !validWindow
+        ? ["sunEvent"]
+        : records.length === 0
+        ? []
+        : missingFields,
       forecastWindow: validWindow ? forecastWindow : null,
       scoreMode: "UNAVAILABLE",
       summary: `${reason}，无法评估${eventName}潜力。`,
@@ -211,13 +268,55 @@ export function scoreTwilight(
     ),
     2,
   );
-  const score = round(weightedScore);
-  const partial = missingFields.some((field) => field !== "cloudLayers");
+  const lowCloud = values.cloudLow;
+  const screenCloud = (values.cloudHigh ?? 0) + (values.cloudMid ?? 0);
+  let layerGate = 1;
+  if (lowCloud !== null) {
+    if (lowCloud >= 90) layerGate *= 0.4;
+    else if (lowCloud >= 75) layerGate *= 0.55;
+    else if (lowCloud >= 55) layerGate *= 0.75;
+    else if (lowCloud >= 35) layerGate *= 0.9;
+  }
+  if (
+    (values.cloudHigh !== null || values.cloudMid !== null) &&
+    screenCloud < 8
+  ) layerGate *= 0.8;
+  const aerosol = values.aerosolOpticalDepth;
+  if (aerosol !== null) {
+    if (aerosol > 0.8) layerGate *= 0.8;
+    else if (aerosol > 0.5) layerGate *= 0.9;
+  }
+  const score = round(weightedScore * layerGate);
+  const partial = missingFields.length > 0;
+  const hasLayers = values.cloudHigh !== null || values.cloudMid !== null ||
+    values.cloudLow !== null;
+  const hasAerosol = aerosol !== null;
+  const layerNote = hasLayers && hasAerosol
+    ? "已纳入高中低云分层与气溶胶数据"
+    : hasLayers
+    ? "已纳入高中低云分层，但缺少气溶胶数据"
+    : hasAerosol
+    ? "含气溶胶数据，但缺少高中低云分层"
+    : "缺少高中低云分层与气溶胶数据";
+  const notes = [layerNote];
+  if (lowCloud !== null && lowCloud >= 55) {
+    notes.push("低云遮挡明显，评分已下调");
+  } else if (
+    (values.cloudHigh !== null || values.cloudMid !== null) &&
+    screenCloud < 8
+  ) {
+    notes.push("中高云偏少，评分已下调");
+  }
+  if (aerosol !== null && aerosol > 0.5) {
+    notes.push("气溶胶偏高，评分已下调");
+  }
   const summary =
     `${eventName}潜力评分为${score}分，基于窗口前后90分钟内的${records.length}条逐小时数据；` +
     `${
-      partial ? "部分字段缺失，已按剩余权重归一化；" : "基础天气字段完整；"
-    }缺少高中低云分层，置信度仅表示数据完整性、窗口覆盖与时效性，不是${eventName}出现概率。`;
+      partial ? "部分基础字段缺失，已按剩余权重归一化；" : "基础天气字段完整；"
+    }${
+      notes.join("；")
+    }，置信度仅表示数据完整性、窗口覆盖与时效性，不是${eventName}出现概率。`;
 
   return {
     status: "OK",

@@ -6,14 +6,21 @@ import type {
 
 const ALIGNMENT_MS = 90 * 60 * 1000;
 
-function average(
-  left: number | null,
-  right: number | null,
-): number | null {
-  if (left === null && right === null) return null;
-  if (left === null) return right;
-  if (right === null) return left;
-  return (left + right) / 2;
+function average(values: Array<number | null>): number | null {
+  const available = values.filter((value): value is number =>
+    value !== null && Number.isFinite(value)
+  );
+  return available.length
+    ? available.reduce((sum, value) => sum + value, 0) / available.length
+    : null;
+}
+
+function firstText(values: string[]): string {
+  return values.find((value) => value.trim() !== "") ?? "";
+}
+
+function firstNumber(values: Array<number | null>): number | null {
+  return values.find((value) => value !== null) ?? null;
 }
 
 function active(status: WeatherData["status"]) {
@@ -31,26 +38,25 @@ function laterTime(
   return leftTime >= rightTime ? left : right;
 }
 
-function mergeCurrent(
-  left: CurrentWeather | null,
-  right: CurrentWeather | null,
-): CurrentWeather | null {
-  if (!left) return right;
-  if (!right) return left;
+function mergeCurrent(items: CurrentWeather[]): CurrentWeather | null {
+  if (items.length === 0) return null;
+  if (items.length === 1) return items[0];
   return {
-    observedAt: laterTime(left.observedAt, right.observedAt),
-    temperature: average(left.temperature, right.temperature),
-    feelsLike: average(left.feelsLike, right.feelsLike),
-    condition: left.condition || right.condition,
-    humidity: average(left.humidity, right.humidity),
-    cloud: average(left.cloud, right.cloud),
-    precipitation: average(left.precipitation, right.precipitation),
-    windSpeed: average(left.windSpeed, right.windSpeed),
-    windDirection: left.windDirection || right.windDirection,
-    windDegree: left.windDegree ?? right.windDegree,
-    visibility: average(left.visibility, right.visibility),
-    pressure: average(left.pressure, right.pressure),
-    airQuality: left.airQuality ?? right.airQuality,
+    observedAt: items.map((item) => item.observedAt).reduce(laterTime),
+    temperature: average(items.map((item) => item.temperature)),
+    feelsLike: average(items.map((item) => item.feelsLike)),
+    condition: firstText(items.map((item) => item.condition)),
+    humidity: average(items.map((item) => item.humidity)),
+    cloud: average(items.map((item) => item.cloud)),
+    precipitation: average(items.map((item) => item.precipitation)),
+    windSpeed: average(items.map((item) => item.windSpeed)),
+    windDirection: firstText(items.map((item) => item.windDirection)),
+    windDegree: firstNumber(items.map((item) => item.windDegree)),
+    visibility: average(items.map((item) => item.visibility)),
+    pressure: average(items.map((item) => item.pressure)),
+    airQuality:
+      items.map((item) => item.airQuality).find((value) => value !== null) ??
+        null,
   };
 }
 
@@ -74,38 +80,33 @@ function nearestEntry(
 
 function mergeHourlyEntry(
   primary: HourlyWeather,
-  secondary: HourlyWeather | null,
+  secondaries: Array<HourlyWeather | null>,
 ): HourlyWeather {
-  if (!secondary) return primary;
+  const items = [
+    primary,
+    ...secondaries.filter((entry): entry is HourlyWeather => entry !== null),
+  ];
+  if (items.length === 1) return primary;
   return {
     time: primary.time,
-    temperature: average(primary.temperature, secondary.temperature),
-    condition: primary.condition || secondary.condition,
-    humidity: average(primary.humidity, secondary.humidity),
-    cloud: average(primary.cloud, secondary.cloud),
+    temperature: average(items.map((item) => item.temperature)),
+    condition: firstText(items.map((item) => item.condition)),
+    humidity: average(items.map((item) => item.humidity)),
+    cloud: average(items.map((item) => item.cloud)),
     precipitationProbability: average(
-      primary.precipitationProbability,
-      secondary.precipitationProbability,
+      items.map((item) => item.precipitationProbability),
     ),
-    precipitation: average(
-      primary.precipitation,
-      secondary.precipitation,
+    precipitation: average(items.map((item) => item.precipitation)),
+    windSpeed: average(items.map((item) => item.windSpeed)),
+    windDirection: firstText(items.map((item) => item.windDirection)),
+    visibility: average(items.map((item) => item.visibility)),
+    cloudHigh: average(items.map((item) => item.cloudHigh ?? null)),
+    cloudMid: average(items.map((item) => item.cloudMid ?? null)),
+    cloudLow: average(items.map((item) => item.cloudLow ?? null)),
+    aerosolOpticalDepth: average(
+      items.map((item) => item.aerosolOpticalDepth ?? null),
     ),
-    windSpeed: average(primary.windSpeed, secondary.windSpeed),
-    windDirection: primary.windDirection || secondary.windDirection,
-    visibility: average(primary.visibility, secondary.visibility),
   };
-}
-
-function mergeHourly(
-  left: HourlyWeather[],
-  right: HourlyWeather[],
-): HourlyWeather[] {
-  if (left.length === 0) return right;
-  if (right.length === 0) return left;
-  return left.map((entry) =>
-    mergeHourlyEntry(entry, nearestEntry(right, entry.time))
-  );
 }
 
 function missingFields(
@@ -151,14 +152,15 @@ function missingFields(
   return missing;
 }
 
-/** Numeric fields use an equal-weight average when both sources provide them. */
-export function mergeWeather(
-  left: WeatherData,
-  right: WeatherData,
-): WeatherData {
-  if (!active(left.status) && !active(right.status)) {
-    const status = left.status === "UNCONFIGURED" &&
-        right.status === "UNCONFIGURED"
+/**
+ * Merges any number of weather sources. Numeric fields use an equal-weight
+ * average over the sources that provide them; text fields keep source order
+ * priority (和风天气 first). The longest hourly series provides the timeline.
+ */
+export function mergeWeather(...sources: WeatherData[]): WeatherData {
+  const available = sources.filter((source) => active(source.status));
+  if (available.length === 0) {
+    const status = sources.every((source) => source.status === "UNCONFIGURED")
       ? "UNCONFIGURED"
       : "UNAVAILABLE";
     return {
@@ -167,32 +169,34 @@ export function mergeWeather(
       hourly: [],
       sources: [],
       missingFields: [],
-      message: left.message ?? right.message ?? "天气服务暂不可用。",
-    };
-  }
-  if (!active(right.status)) {
-    return {
-      ...left,
-      sources: left.sources.length ? left.sources : ["和风天气"],
-    };
-  }
-  if (!active(left.status)) {
-    return {
-      ...right,
-      sources: right.sources.length ? right.sources : ["OpenWeather"],
+      message: sources.find((source) => source.message)?.message ??
+        "天气服务暂不可用。",
     };
   }
 
-  const current = mergeCurrent(left.current, right.current);
-  const hourly = mergeHourly(left.hourly, right.hourly);
-  const status = left.status === "STALE" && right.status === "STALE"
+  const current = mergeCurrent(
+    available.map((source) => source.current).filter((
+      item,
+    ): item is CurrentWeather => item !== null),
+  );
+  const base = available.reduce((longest, source) =>
+    source.hourly.length > longest.hourly.length ? source : longest
+  );
+  const others = available.filter((source) => source !== base);
+  const hourly = base.hourly.map((entry) =>
+    mergeHourlyEntry(
+      entry,
+      others.map((source) => nearestEntry(source.hourly, entry.time)),
+    )
+  );
+  const status = available.every((source) => source.status === "STALE")
     ? "STALE"
     : "OK";
   return {
     status,
     current,
     hourly,
-    sources: [...new Set([...left.sources, ...right.sources])],
+    sources: [...new Set(available.flatMap((source) => source.sources))],
     missingFields: missingFields(current, hourly),
     message: status === "STALE" ? "多源天气使用短时缓存。" : null,
   };

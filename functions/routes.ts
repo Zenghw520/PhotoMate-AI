@@ -1,10 +1,14 @@
 import { errorResponse, HttpError } from "./errors.ts";
 import { reverseGeocode, searchLocations } from "./providers/amap.ts";
 import { getTodayPhotography } from "./services/today.ts";
+import { analyzePhoto } from "./services/photo.ts";
+import { generateCustomPlanResponse } from "./services/custom_plan.ts";
 import type { DatabaseClient } from "./services/cache.ts";
 import { secretValue } from "./shared/env.ts";
 import {
   coordinates,
+  customPlanRequest,
+  photoAnalysisRequest,
   readJson,
   searchQuery,
   todayRequest,
@@ -55,14 +59,13 @@ export function createHandler(db?: DatabaseClient) {
           status: "OK",
           capabilities: {
             locationSearch: Boolean(secretValue("AMAP_API_KEY")),
-            weather: Boolean(
-              (secretValue("QWEATHER_API_KEY") &&
-                secretValue("QWEATHER_API_BASE_URL")) ||
-                secretValue("OPENWEATHER_API_KEY"),
-            ),
+            weather: true,
             openWeather: Boolean(secretValue("OPENWEATHER_API_KEY")),
+            openMeteo: true,
             aiEnhancement: Boolean(secretValue("DEEPSEEK_API_KEY")),
             deepSeek: Boolean(secretValue("DEEPSEEK_API_KEY")),
+            photoAnalysis: true,
+            customPlans: true,
             database: Boolean(db),
           },
         }, { headers: { "Cache-Control": "no-store" } });
@@ -105,6 +108,24 @@ export function createHandler(db?: DatabaseClient) {
           );
         }
         return Response.json(result.location, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+
+      if (path === "/plans/custom") {
+        requireMethod(request, "POST");
+        const input = customPlanRequest(await readJson(request));
+        const result = await generateCustomPlanResponse(input, db);
+        return Response.json(result, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+
+      if (path === "/photo/analyze") {
+        requireMethod(request, "POST");
+        const input = photoAnalysisRequest(await readJson(request));
+        const result = await analyzePhoto(input, db);
+        return Response.json(result, {
           headers: { "Cache-Control": "no-store" },
         });
       }

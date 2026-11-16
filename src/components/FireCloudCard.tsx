@@ -1,8 +1,16 @@
-import { ChevronDown, Flame, Sunrise, Sunset } from "lucide-react";
+import { ChevronDown, Cloud, Flame, Sunrise, Sunset } from "lucide-react";
 import type { FireCloudPrediction } from "@/functions/shared/contracts";
-import { fireCloudLabel, formatRange } from "@/src/lib/format";
+import {
+  fireCloudLabel,
+  formatRange,
+  missingFieldLabel,
+} from "@/src/lib/format";
 
 const confidenceLabels = { LOW: "较低", MEDIUM: "中等", HIGH: "较高" };
+
+function percent(value: number | null) {
+  return value === null ? "—" : `${Math.round(value)}%`;
+}
 
 export function FireCloudCard({
   type,
@@ -61,6 +69,51 @@ export function FireCloudCard({
       <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">
         {data.summary}
       </p>
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-xl bg-muted/45 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">可能性</p>
+          <p className="mt-0.5 font-semibold">{data.outlook.possibilityLabel}</p>
+        </div>
+        <div className="rounded-xl bg-muted/45 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">鲜艳度</p>
+          <p className="mt-0.5 font-semibold">
+            {data.outlook.vividnessLabel}
+            {data.outlook.vividness !== null && (
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                {data.outlook.vividness}/100
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+      <div className="mt-2 rounded-xl border border-border/60 p-3">
+        <p className="flex items-center gap-1.5 text-[11px] font-medium">
+          <Cloud className="size-3.5 text-primary" />云量判断
+        </p>
+        <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+          {data.outlook.cloudCover !== null &&
+            `总云量约 ${Math.round(data.outlook.cloudCover)}%。`}
+          {data.outlook.cloudNote}
+        </p>
+        {(data.outlook.cloudHigh !== null ||
+          data.outlook.cloudMid !== null ||
+          data.outlook.cloudLow !== null) && (
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            分层：高云 {percent(data.outlook.cloudHigh)} · 中云{" "}
+            {percent(data.outlook.cloudMid)} · 低云{" "}
+            {percent(data.outlook.cloudLow)}
+          </p>
+        )}
+        {data.outlook.aerosolOpticalDepth !== null && (
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            气溶胶光学厚度{" "}
+            {data.outlook.aerosolOpticalDepth.toFixed(2)}（越低越通透）
+          </p>
+        )}
+        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+          可能性为环境条件分级，不是出现概率。
+        </p>
+      </div>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
         <span className="text-muted-foreground">
           {data.forecastWindow
@@ -82,30 +135,26 @@ export function FireCloudCard({
         </summary>
         <div className="mt-2 space-y-3 rounded-xl bg-muted/45 p-3">
           {data.basis.map((item) => (
-            <div key={item.code}>
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="font-medium">{item.label}</span>
-                <span className="text-muted-foreground">
-                  {item.value === null
-                    ? "缺失"
-                    : `${item.value}${item.unit}`}
-                  {item.contribution !== null &&
-                    ` · ${Math.round(item.contribution)}分`}
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                {item.explanation}
-              </p>
+            <div
+              key={item.code}
+              className="flex items-center justify-between gap-3 text-xs"
+            >
+              <span className="font-medium">{item.label}</span>
+              <span className="text-muted-foreground">
+                {item.value === null ? "缺失" : `${item.value}${item.unit}`}
+                {item.contribution !== null &&
+                  ` · ${Math.round(item.contribution)}分`}
+              </span>
             </div>
           ))}
-          {data.missingFields.length > 0 && (
+          {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && (
             <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
               <Flame className="mt-0.5 size-3.5 shrink-0" />
-              缺少：{data.missingFields.join("、")}。评分已按可用数据降级。
+              缺少：{data.missingFields.map(missingFieldLabel).join("、")}。评分已按可用数据降级。
             </p>
           )}
           <p className="text-[11px] leading-4 text-muted-foreground">
-            火烧云需要中高云适量、低云不挡光且空气通透。本站缺少云层分层与气溶胶数据，分数是环境潜力，不是出现概率。
+            火烧云需要中高云适量、低云不挡光且空气通透。分数是环境潜力，不是出现概率；缺少分层或气溶胶数据时评分会自动降级。
           </p>
         </div>
       </details>

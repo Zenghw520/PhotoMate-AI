@@ -3,7 +3,7 @@ import type { DatabaseClient } from "./cache.ts";
 export async function claimAiUsage(
   db: DatabaseClient | undefined,
   date: string,
-  dailyLimit = 40,
+  dailyLimit = 120,
 ): Promise<boolean> {
   if (!db || dailyLimit < 1) return false;
   const scope = `deepseek:${date}`;

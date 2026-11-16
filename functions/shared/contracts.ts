@@ -63,6 +63,14 @@ export interface HourlyWeather {
   windSpeed: number | null;
   windDirection: string;
   visibility: number | null;
+  /** 高云量（%），仅 Open-Meteo 提供。 */
+  cloudHigh?: number | null;
+  /** 中云量（%），仅 Open-Meteo 提供。 */
+  cloudMid?: number | null;
+  /** 低云量（%），仅 Open-Meteo 提供。 */
+  cloudLow?: number | null;
+  /** 气溶胶光学厚度（无量纲），仅 Open-Meteo 空气质量接口提供。 */
+  aerosolOpticalDepth?: number | null;
 }
 
 export interface WeatherData {
@@ -109,6 +117,19 @@ export interface PotentialScore {
   summary: string;
 }
 
+export interface FireCloudOutlook {
+  possibility: "LOW" | "MEDIUM" | "HIGH" | null;
+  possibilityLabel: string;
+  vividness: number | null;
+  vividnessLabel: string;
+  cloudCover: number | null;
+  cloudNote: string;
+  cloudHigh: number | null;
+  cloudMid: number | null;
+  cloudLow: number | null;
+  aerosolOpticalDepth: number | null;
+}
+
 export interface FireCloudPrediction {
   status: "OK" | "INSUFFICIENT_DATA" | "UNAVAILABLE";
   score: number | null;
@@ -120,6 +141,7 @@ export interface FireCloudPrediction {
   scoreMode: "FULL" | "PARTIAL" | "UNAVAILABLE";
   summary: string;
   direction: "EAST" | "WEST";
+  outlook: FireCloudOutlook;
 }
 
 export interface TimelineWeather {
@@ -207,6 +229,34 @@ export interface TodayRequest {
   date?: string;
 }
 
+export interface CustomPlanRequest extends TodayRequest {
+  subject: string;
+}
+
+export interface CustomPlan {
+  slotId: string;
+  title: string;
+  timeWindow: TimeWindow;
+  subjectApproach: string;
+  composition: string;
+  cameraSettings: string;
+  lightAnalysis: string;
+  risks: string[];
+  solar: SolarPosition;
+  weather: TimelineWeather | null;
+}
+
+export interface CustomPlansResponse {
+  generatedAt: string;
+  date: string;
+  location: LocationResult;
+  weatherSummary: string;
+  summary: string;
+  plans: CustomPlan[];
+  aiStatus: TodayResponse["plans"]["aiStatus"];
+  warnings: string[];
+}
+
 export interface SearchResponse {
   locations: LocationResult[];
   message?: string;
@@ -218,4 +268,102 @@ export interface ApiErrorBody {
     message: string;
     retryable: boolean;
   };
+}
+
+export interface PhotoExif {
+  make: string | null;
+  model: string | null;
+  lens: string | null;
+  dateTimeOriginal: string | null;
+  exposureTime: number | null;
+  fNumber: number | null;
+  iso: number | null;
+  focalLength: number | null;
+  focalLength35: number | null;
+  exposureBias: number | null;
+  flash: boolean | null;
+  whiteBalance: string | null;
+  orientation: number | null;
+  hasGps: boolean;
+}
+
+export interface PhotoStats {
+  width: number;
+  height: number;
+  aspectRatio: number;
+  brightness: number;
+  contrast: number;
+  shadowsClipped: number;
+  highlightsClipped: number;
+  saturation: number;
+  sharpness: number;
+}
+
+export const PHOTO_SUBJECTS = [
+  "PORTRAIT",
+  "LANDSCAPE",
+  "NIGHT",
+  "URBAN",
+  "MACRO",
+  "GENERAL",
+] as const;
+
+export type PhotoSubject = (typeof PHOTO_SUBJECTS)[number];
+
+export const PHOTO_SUBJECT_LABELS: Record<PhotoSubject, string> = {
+  PORTRAIT: "人像",
+  LANDSCAPE: "风光",
+  NIGHT: "夜景 / 弱光",
+  URBAN: "城市 / 建筑",
+  MACRO: "静物 / 特写",
+  GENERAL: "通用",
+};
+
+/** Measurable pixel statistics used for scene inference and AI review. */
+export interface PhotoSignals {
+  skin: number;
+  sky: number;
+  green: number;
+  warm: number;
+  dark: number;
+  bright: number;
+  edgeDensity: number;
+  centerSharpness: number;
+  borderSharpness: number;
+}
+
+export interface PhotoScene {
+  subject: PhotoSubject;
+  label: string;
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  basis: string[];
+  source?: "HEURISTIC" | "DEEPSEEK";
+}
+
+export interface PhotoAnalysisRequest {
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  exif: PhotoExif | null;
+  stats: PhotoStats;
+  scene?: PhotoScene;
+  signals?: PhotoSignals;
+}
+
+export interface PhotoAnalysisResponse {
+  generatedAt: string;
+  summary: string;
+  strengths: string[];
+  issues: string[];
+  suggestions: string[];
+  exifSummary: string[];
+  scene: PhotoScene;
+  confidenceLevel: "LOW" | "MEDIUM" | "HIGH";
+  aiStatus:
+    | "SUCCESS"
+    | "DISABLED"
+    | "LIMIT_REACHED"
+    | "UNAVAILABLE"
+    | "INVALID_RESPONSE";
+  disclaimer: string;
 }

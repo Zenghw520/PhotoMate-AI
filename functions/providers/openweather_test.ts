@@ -58,6 +58,7 @@ Deno.test("openweather: maps one call current and hourly data", async () => {
       assertEquals(result.current?.temperature, 12);
       assertEquals(result.current?.condition, "多云");
       assertEquals(result.current?.cloud, 40);
+      assertEquals(result.current?.windSpeed, 10.8);
       assertEquals(result.current?.precipitation, 0.2);
       assertEquals(result.current?.windDirection, "东南风");
       assertEquals(result.current?.visibility, 20_000);

@@ -1,7 +1,13 @@
+import { PHOTO_SUBJECTS } from "@/functions/shared/contracts";
 import type {
   ApiErrorBody,
+  CustomPlanRequest,
+  CustomPlansResponse,
   LocationInput,
   LocationResult,
+  PhotoAnalysisRequest,
+  PhotoAnalysisResponse,
+  PhotoScene,
   SearchResponse,
   ThemeId,
   TodayResponse,
@@ -85,4 +91,54 @@ export function getToday(location: LocationInput, theme: ThemeId, date?: string,
     body: JSON.stringify({ location, theme, ...(date ? { date } : {}) }),
     signal,
   }, isTodayResponse);
+}
+
+function isPhotoScene(value: unknown): value is PhotoScene {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<PhotoScene>;
+  return PHOTO_SUBJECTS.includes(item.subject as PhotoScene["subject"]) &&
+    typeof item.label === "string" &&
+    (item.confidence === "LOW" || item.confidence === "MEDIUM" ||
+      item.confidence === "HIGH") &&
+    Array.isArray(item.basis);
+}
+
+function isPhotoAnalysis(value: unknown): value is PhotoAnalysisResponse {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<PhotoAnalysisResponse>;
+  return typeof item.generatedAt === "string" &&
+    typeof item.summary === "string" && Array.isArray(item.strengths) &&
+    Array.isArray(item.issues) && Array.isArray(item.suggestions) &&
+    Array.isArray(item.exifSummary) && isPhotoScene(item.scene) &&
+    (item.confidenceLevel === "LOW" || item.confidenceLevel === "MEDIUM" ||
+      item.confidenceLevel === "HIGH") &&
+    typeof item.aiStatus === "string" && typeof item.disclaimer === "string";
+}
+
+export function analyzePhoto(input: PhotoAnalysisRequest, signal?: AbortSignal) {
+  return request("/photo/analyze", {
+    method: "POST",
+    body: JSON.stringify(input),
+    signal,
+  }, isPhotoAnalysis);
+}
+
+function isCustomPlansResponse(value: unknown): value is CustomPlansResponse {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<CustomPlansResponse>;
+  return typeof item.generatedAt === "string" && typeof item.date === "string" &&
+    !!item.location && typeof item.weatherSummary === "string" &&
+    typeof item.summary === "string" && Array.isArray(item.plans) &&
+    typeof item.aiStatus === "string" && Array.isArray(item.warnings);
+}
+
+export function generateCustomPlans(
+  input: CustomPlanRequest,
+  signal?: AbortSignal,
+) {
+  return request("/plans/custom", {
+    method: "POST",
+    body: JSON.stringify(input),
+    signal,
+  }, isCustomPlansResponse);
 }

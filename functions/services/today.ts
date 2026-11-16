@@ -9,6 +9,7 @@ import type {
   WeatherData,
 } from "../shared/contracts.ts";
 import { computeSolar } from "../astronomy/solar.ts";
+import { getOpenMeteo } from "../providers/openmeteo.ts";
 import { getOpenWeather } from "../providers/openweather.ts";
 import { mergeWeather } from "../providers/merge.ts";
 import { getQWeather } from "../providers/qweather.ts";
@@ -58,7 +59,7 @@ async function loadWeather(
   now: Date,
 ) {
   const cache = createCacheStore(db);
-  const key = await makeCacheKey("weather", "merged", {
+  const key = await makeCacheKey("weather", "merged:v4", {
     latitude: coordinateGrid(location.latitude).toFixed(3),
     longitude: coordinateGrid(location.longitude).toFixed(3),
   });
@@ -73,11 +74,12 @@ async function loadWeather(
     };
   }
 
-  const [qweather, openWeather] = await Promise.all([
+  const [qweather, openWeather, openMeteo] = await Promise.all([
     getQWeather(location.latitude, location.longitude),
     getOpenWeather(location.latitude, location.longitude),
+    getOpenMeteo(location.latitude, location.longitude),
   ]);
-  const fresh = mergeWeather(qweather, openWeather);
+  const fresh = mergeWeather(qweather, openWeather, openMeteo);
   if (fresh.status === "OK") {
     await cache.set(
       key,
@@ -129,7 +131,7 @@ function unavailablePotential(summary: string): PotentialScore {
 }
 
 function dailyLimit() {
-  const configured = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "40");
+  const configured = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "120");
   return Number.isInteger(configured) && configured >= 1 && configured <= 200
     ? configured
     : 40;
@@ -142,7 +144,15 @@ async function plansWithEnhancement(
   rulePlans: PhotographyPlan[],
   usageDate: string,
   db: DatabaseClient | undefined,
+  skipAi = false,
 ) {
+  if (skipAi) {
+    return {
+      mode: "RULE_BASED" as const,
+      aiStatus: "DISABLED" as const,
+      items: rulePlans,
+    };
+  }
   if (!rulePlans.length) {
     return {
       mode: "RULE_BASED" as const,
@@ -186,6 +196,7 @@ export async function getTodayPhotography(
   db?: DatabaseClient,
   now = new Date(),
   dateOverride?: string,
+  skipAi = false,
 ): Promise<TodayResponse> {
   const today = shanghaiDate(now);
   const date = dateOverride ?? today;
@@ -266,6 +277,7 @@ export async function getTodayPhotography(
     rulePlans,
     today,
     db,
+    skipAi,
   );
   const warnings: string[] = [];
   if (weather.status === "UNCONFIGURED") {

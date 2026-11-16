@@ -7,3 +7,5 @@ The UI catalog, hooks, utilities, Tailwind stylesheet and vendored Shadcn CSS or
 Qoder adaptations replace Vinext/Next server rendering and Cloudflare configuration with a Vite static build; remove D1/Drizzle, R2 and ChatGPT authentication scaffolding; set Shadcn to client rendering; and make the toast component use its system theme without a Next theme provider. The Function example reuses Qoder Sites' credential-free handler. No upstream hosting, auth or resource configuration is copied into generated projects.
 
 Qoder adds the Sites design contract and maps the starter theme, spacing, typography and transition scales to Nudge variables. Original light/dark colors are preserved as named project variables.
+
+In-browser RAW decoding uses `libraw-wasm` (ISC) and its bundled LibRaw library (LGPL-2.1 / CDDL); their license terms apply to those components.

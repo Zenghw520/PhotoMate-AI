@@ -129,7 +129,11 @@ Deno.test("day journal: preserves first captured hours and adds later ones", asy
   assert(scoring.some((entry) => entry.time.includes("T16:00")));
   assertEquals(
     scoring.find((entry) => entry.time.includes("T06:00"))?.cloud,
-    90,
+    50,
+  );
+  assertEquals(
+    scoring.find((entry) => entry.time.includes("T15:00"))?.cloud,
+    30,
   );
   assert(journalHasPastHours(second, secondNow));
   assert(!journalHasPastHours(second, firstNow));
@@ -198,6 +202,12 @@ Deno.test("day journal: past dawn score is recomputed from retained morning fore
         return jsonResponse(
           phase === 0 ? forecastPayload(4, 20) : forecastPayload(15, 9),
         );
+      }
+      if (url.pathname === "/v1/forecast") {
+        return jsonResponse({ hourly: { time: [] } });
+      }
+      if (url.pathname === "/v1/air-quality") {
+        return jsonResponse({ hourly: { time: [] } });
       }
       if (url.pathname.startsWith("/airquality/v1/current/")) {
         return jsonResponse({

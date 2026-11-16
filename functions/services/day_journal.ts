@@ -73,18 +73,27 @@ export async function mergeDayJournal(
   return journal;
 }
 
-/** Past hours come from the day journal; future hours always use the latest forecast. */
+/** Past hours prefer the day journal; future hours always use the latest forecast. */
 export function mergeHourlyForScoring(
   fresh: HourlyWeather[],
   journal: DayJournal | null,
   now: Date,
 ): HourlyWeather[] {
-  const hours = new Map(fresh.map((entry) => [entry.time, entry]));
   const nowMs = now.getTime();
-  for (const entry of journal?.hours ?? []) {
+  const journalHours = new Map((journal?.hours ?? []).map((entry) => [
+    entry.time,
+    entry,
+  ]));
+  const hours = new Map<string, HourlyWeather>();
+  for (const entry of fresh) {
     const time = Date.parse(entry.time);
-    if (Number.isFinite(time) && time <= nowMs && !hours.has(entry.time)) {
-      hours.set(entry.time, entry);
+    if (time <= nowMs && journalHours.has(entry.time)) continue;
+    hours.set(entry.time, entry);
+  }
+  for (const [time, entry] of journalHours) {
+    const parsed = Date.parse(time);
+    if (Number.isFinite(parsed) && parsed <= nowMs) {
+      hours.set(time, entry);
     }
   }
   return [...hours.values()].sort((a, b) =>

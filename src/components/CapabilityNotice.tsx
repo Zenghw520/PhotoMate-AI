@@ -1,18 +1,4 @@
-import { AlertCircle, Info } from "lucide-react";
-
-export function CapabilityNotice({ warnings }: { warnings: string[] }) {
-  if (!warnings.length) return null;
-  return (
-    <section className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3 text-sm text-foreground" aria-label="数据状态提示">
-      <div className="flex items-start gap-3">
-        <Info className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div className="space-y-1.5">
-          {warnings.map((warning) => <p key={warning}>{warning}</p>)}
-        </div>
-      </div>
-    </section>
-  );
-}
+import { AlertCircle } from "lucide-react";
 
 export function ErrorNotice({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (

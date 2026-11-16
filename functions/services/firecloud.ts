@@ -1,4 +1,5 @@
 import type {
+  FireCloudOutlook,
   FireCloudPrediction,
   HourlyWeather,
   ScoreBasis,
@@ -13,6 +14,10 @@ const WEIGHTS = {
   visibility: 15,
   humidity: 10,
   windSpeed: 5,
+  cloudHigh: 8,
+  cloudMid: 8,
+  cloudLow: 10,
+  aerosolOpticalDepth: 6,
 } as const;
 
 type WeatherField = keyof typeof WEIGHTS;
@@ -46,6 +51,34 @@ const METRICS: Record<WeatherField, Metric> = {
     if (value <= 8) return 100 - (value - 3) * 8;
     return Math.max(20, 60 - (value - 8) * 5);
   },
+  cloudHigh: (value) => {
+    if (value < 5) return 55;
+    if (value < 20) return 80;
+    if (value <= 65) return 100;
+    if (value <= 85) return 75;
+    return 45;
+  },
+  cloudMid: (value) => {
+    if (value < 5) return 50;
+    if (value < 20) return 78;
+    if (value <= 60) return 100;
+    if (value <= 85) return 72;
+    return 40;
+  },
+  cloudLow: (value) => {
+    if (value <= 20) return 100;
+    if (value <= 40) return 85;
+    if (value <= 60) return 60;
+    if (value <= 80) return 35;
+    return 15;
+  },
+  aerosolOpticalDepth: (value) => {
+    if (value <= 0.15) return 100;
+    if (value <= 0.3) return 85;
+    if (value <= 0.5) return 65;
+    if (value <= 0.8) return 40;
+    return 20;
+  },
 };
 
 const LABELS: Record<
@@ -55,8 +88,27 @@ const LABELS: Record<
   cloud: {
     label: "总云量",
     unit: "%",
-    explanation:
-      "总云量适中时更可能有被低角度阳光染色的云层；缺少分层，无法区分高云与低云",
+    explanation: "总云量适中时更可能有被低角度阳光染色的云层",
+  },
+  cloudHigh: {
+    label: "高云量",
+    unit: "%",
+    explanation: "高云是主要色彩载体，适量时形成晚霞幕布，过厚会压暗色彩",
+  },
+  cloudMid: {
+    label: "中云量",
+    unit: "%",
+    explanation: "中云同样承接低角度光，过多会削弱透光与层次",
+  },
+  cloudLow: {
+    label: "低云量",
+    unit: "%",
+    explanation: "低云过多会遮挡太阳，直接削弱火烧云所需的低角度直射光",
+  },
+  aerosolOpticalDepth: {
+    label: "气溶胶光学厚度",
+    unit: "",
+    explanation: "气溶胶越高，色彩越容易被消光，空气通透度下降",
   },
   precipitationProbability: {
     label: "降水概率",
@@ -102,6 +154,180 @@ function confidenceLevel(confidence: number): "LOW" | "MEDIUM" | "HIGH" {
   return "LOW";
 }
 
+function possibility(
+  score: number | null,
+  cloud: number | null,
+): {
+  value: FireCloudOutlook["possibility"];
+  label: string;
+} {
+  if (score === null || cloud === null) return { value: null, label: "未知" };
+  const levels: Array<FireCloudOutlook["possibility"]> = [
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+  ];
+  let level = score >= 70 ? 2 : score >= 45 ? 1 : 0;
+  if (cloud > 92) level = Math.min(level, 0);
+  else if (cloud > 75) level = Math.min(level, 1);
+  else if (cloud < 8) level = Math.min(level, 0);
+  else if (cloud < 15) level = Math.min(level, 1);
+  const value = levels[level];
+  return {
+    value,
+    label: value === "HIGH" ? "较高" : value === "MEDIUM" ? "中等" : "较低",
+  };
+}
+
+function cloudNote(
+  cloud: number | null,
+  layers: { high: number | null; mid: number | null; low: number | null },
+): string {
+  if (cloud === null) return "窗口附近缺少云量数据，无法判断火烧云条件。";
+  if (layers.low !== null && layers.low > 75) {
+    return `低云约 ${
+      Math.round(layers.low)
+    }%，云层可能遮挡低角度阳光，火烧云条件较差。`;
+  }
+  const hasLayers = layers.high !== null || layers.mid !== null;
+  if (hasLayers) {
+    const screen = (layers.high ?? 0) + (layers.mid ?? 0);
+    if (screen < 8) return "中高云很少，缺少可被低角度阳光染色的云层。";
+    if (screen > 80) return "中高云偏厚，天空容易发灰，色彩层次可能受限。";
+    if (
+      screen >= 20 && screen <= 70 &&
+      (layers.low === null || layers.low <= 40)
+    ) {
+      return "中高云适量、低云较少，具备较好的火烧云云层结构。";
+    }
+  }
+  if (cloud < 5) return "总云量过低，缺少可被低角度阳光染色的云层。";
+  if (cloud < 20) return "总云量偏少，色彩载体有限，画面可能以纯色天空为主。";
+  if (cloud <= 70) return "总云量适中，具备形成火烧云的云层条件。";
+  if (cloud <= 85) return "总云量偏多，低层云可能遮挡低角度阳光。";
+  return "总云量很高，天空容易灰暗，火烧云色彩可能被遮挡。";
+}
+
+function vividnessScore(
+  cloud: number | null,
+  visibility: number | null,
+  humidity: number | null,
+  precipitationProbability: number | null,
+  layers: { high: number | null; mid: number | null; low: number | null },
+  aerosolOpticalDepth: number | null,
+): number | null {
+  if (cloud === null) return null;
+  let score: number;
+  if (layers.high !== null || layers.mid !== null) {
+    const screen = Math.min(100, (layers.high ?? 0) + (layers.mid ?? 0));
+    score = screen < 5
+      ? 15
+      : screen < 15
+      ? 45
+      : screen <= 60
+      ? 90
+      : screen <= 80
+      ? 65
+      : 30;
+    if (layers.low !== null) {
+      if (layers.low > 90) score -= 45;
+      else if (layers.low > 75) score -= 30;
+      else if (layers.low > 55) score -= 18;
+      else if (layers.low > 35) score -= 8;
+    }
+  } else {
+    score = cloud < 5
+      ? 15
+      : cloud < 20
+      ? 40
+      : cloud < 45
+      ? 75
+      : cloud <= 65
+      ? 90
+      : cloud <= 80
+      ? 72
+      : cloud <= 88
+      ? 45
+      : cloud <= 92
+      ? 30
+      : 18;
+  }
+  if (visibility !== null) {
+    if (visibility >= 20_000) score += 5;
+    else if (visibility < 5_000) score -= 15;
+    else if (visibility < 10_000) score -= 8;
+  }
+  if (humidity !== null) {
+    if (humidity > 88) score -= 10;
+    else if (humidity > 75) score -= 5;
+  }
+  if (precipitationProbability !== null && precipitationProbability > 60) {
+    score -= 10;
+  }
+  if (aerosolOpticalDepth !== null) {
+    if (aerosolOpticalDepth > 0.8) score -= 20;
+    else if (aerosolOpticalDepth > 0.6) score -= 15;
+    else if (aerosolOpticalDepth > 0.4) score -= 8;
+    else if (aerosolOpticalDepth <= 0.2) score += 3;
+  }
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function vividnessLabel(score: number | null): string {
+  if (score === null) return "未知";
+  if (score >= 75) return "很鲜艳";
+  if (score >= 55) return "较鲜艳";
+  if (score >= 35) return "一般";
+  return "偏淡";
+}
+
+function outlook(
+  score: number | null,
+  cloud: number | null,
+  visibility: number | null,
+  humidity: number | null,
+  precipitationProbability: number | null,
+  layers: { high: number | null; mid: number | null; low: number | null },
+  aerosolOpticalDepth: number | null,
+): FireCloudOutlook {
+  const chance = possibility(score, cloud);
+  const vividness = vividnessScore(
+    cloud,
+    visibility,
+    humidity,
+    precipitationProbability,
+    layers,
+    aerosolOpticalDepth,
+  );
+  return {
+    possibility: chance.value,
+    possibilityLabel: chance.label,
+    vividness,
+    vividnessLabel: vividnessLabel(vividness),
+    cloudCover: cloud,
+    cloudNote: cloudNote(cloud, layers),
+    cloudHigh: layers.high,
+    cloudMid: layers.mid,
+    cloudLow: layers.low,
+    aerosolOpticalDepth,
+  };
+}
+
+function emptyOutlook(note: string): FireCloudOutlook {
+  return {
+    possibility: null,
+    possibilityLabel: "未知",
+    vividness: null,
+    vividnessLabel: "未知",
+    cloudCover: null,
+    cloudNote: note,
+    cloudHigh: null,
+    cloudMid: null,
+    cloudLow: null,
+    aerosolOpticalDepth: null,
+  };
+}
+
 export function scoreFireCloud(
   kind: "dawn" | "dusk",
   forecastWindow: TimeWindow,
@@ -134,7 +360,6 @@ export function scoreFireCloud(
 
   const missingFields: string[] = (Object.keys(WEIGHTS) as WeatherField[])
     .filter((field) => values[field] === null);
-  missingFields.push("cloudLayers", "aerosolOpticalDepth");
   const basis: ScoreBasis[] = (Object.keys(WEIGHTS) as WeatherField[]).map((
     field,
   ) => ({
@@ -147,25 +372,6 @@ export function scoreFireCloud(
       ? "窗口附近没有该字段的真实逐小时数据"
       : LABELS[field].explanation,
   }));
-  basis.push(
-    {
-      code: "cloudLayers",
-      label: "高中低云分层",
-      value: null,
-      unit: "%",
-      contribution: null,
-      explanation:
-        "当前逐小时契约没有云层高度分层，无法判断高云幕布和低云遮挡，因此限制置信度",
-    },
-    {
-      code: "aerosolOpticalDepth",
-      label: "气溶胶光学厚度",
-      value: null,
-      unit: "",
-      contribution: null,
-      explanation: "缺少气溶胶数据，无法评估大气消光对色彩的影响",
-    },
-  );
 
   if (!validWindow || records.length === 0 || values.cloud === null) {
     const reason = !validWindow
@@ -178,12 +384,17 @@ export function scoreFireCloud(
       score: null,
       confidence: 0,
       confidenceLevel: "LOW",
-      basis,
-      missingFields,
+      basis: validWindow && records.length > 0 ? basis : [],
+      missingFields: !validWindow
+        ? ["sunEvent"]
+        : records.length === 0
+        ? []
+        : missingFields,
       forecastWindow: validWindow ? forecastWindow : null,
       scoreMode: "UNAVAILABLE",
       summary: `${reason}，无法评估${eventName}火烧云环境潜力。`,
       direction,
+      outlook: emptyOutlook("窗口前后缺少云量数据，无法判断可能性与鲜艳度。"),
     };
   }
 
@@ -216,6 +427,19 @@ export function scoreFireCloud(
     : cloudValue >= 85
     ? 0.75
     : 1;
+  const lowCloud = values.cloudLow;
+  const screenCloud = (values.cloudHigh ?? 0) + (values.cloudMid ?? 0);
+  let layerGate = 1;
+  if (lowCloud !== null) {
+    if (lowCloud >= 90) layerGate *= 0.4;
+    else if (lowCloud >= 75) layerGate *= 0.55;
+    else if (lowCloud >= 55) layerGate *= 0.75;
+    else if (lowCloud >= 35) layerGate *= 0.9;
+  }
+  if (
+    (values.cloudHigh !== null || values.cloudMid !== null) &&
+    screenCloud < 8
+  ) layerGate *= 0.7;
   const insideWindow = records.filter((entry) => {
     const time = Date.parse(entry.time);
     return time >= start && time <= end;
@@ -234,13 +458,39 @@ export function scoreFireCloud(
     : 0.4;
   const completeness = availableWeight / 100;
   const confidence = round(
-    0.44 * completeness * freshness * (0.8 + 0.2 * windowCoverage),
+    Math.min(
+      0.66,
+      0.44 * completeness * freshness * (0.8 + 0.2 * windowCoverage),
+    ),
     2,
   );
-  const score = round(weightedScore * cloudGate);
+  const score = round(weightedScore * cloudGate * layerGate);
+  const hasLayers = values.cloudHigh !== null || values.cloudMid !== null ||
+    values.cloudLow !== null;
+  const hasAerosol = values.aerosolOpticalDepth !== null;
+  const dataNote = hasLayers && hasAerosol
+    ? "已纳入高中低云分层与气溶胶数据"
+    : hasLayers
+    ? "已纳入高中低云分层，但缺少气溶胶数据"
+    : hasAerosol
+    ? "含气溶胶数据，但缺少高中低云分层"
+    : "缺少高中低云分层与气溶胶数据";
+  const notes = [dataNote];
+  if (lowCloud !== null && lowCloud >= 55) {
+    notes.push("低云遮挡明显，评分已下调");
+  }
+  if (
+    (values.cloudHigh !== null || values.cloudMid !== null) &&
+    screenCloud < 8
+  ) {
+    notes.push("中高云偏少，评分已下调");
+  }
+  if (values.aerosolOpticalDepth !== null && values.aerosolOpticalDepth > 0.5) {
+    notes.push("气溶胶偏高，评分已下调");
+  }
   const summary =
     `${eventName}火烧云环境潜力为${score}分，基于窗口前后约1小时的${records.length}条逐小时数据；` +
-    "缺少高中低云分层与气溶胶数据，分数只表示环境条件，不代表火烧云出现概率。";
+    `${notes.join("；")}，分数只表示环境条件，不代表火烧云出现概率。`;
 
   return {
     status: "OK",
@@ -250,9 +500,22 @@ export function scoreFireCloud(
     basis,
     missingFields,
     forecastWindow,
-    scoreMode: "PARTIAL",
+    scoreMode: missingFields.length ? "PARTIAL" : "FULL",
     summary,
     direction,
+    outlook: outlook(
+      score,
+      cloudValue,
+      values.visibility,
+      values.humidity,
+      values.precipitationProbability,
+      {
+        high: values.cloudHigh,
+        mid: values.cloudMid,
+        low: values.cloudLow,
+      },
+      values.aerosolOpticalDepth,
+    ),
   };
 }
 
@@ -266,10 +529,11 @@ export function unavailableFireCloud(
     confidence: 0,
     confidenceLevel: "LOW",
     basis: [],
-    missingFields: ["sunEvent", "cloudLayers", "aerosolOpticalDepth"],
+    missingFields: ["sunEvent"],
     forecastWindow: null,
     scoreMode: "UNAVAILABLE",
     summary,
     direction: kind === "dawn" ? "EAST" : "WEST",
+    outlook: emptyOutlook("当日太阳事件不可用，无法判断可能性与鲜艳度。"),
   };
 }

@@ -59,7 +59,11 @@ Deno.test("暮光评分只使用窗口前后90分钟内的真实逐小时数据"
   assert.equal(result.scoreMode, "FULL");
   assert.equal(result.basis.find((item) => item.code === "cloud")?.value, 40);
   assert.ok(result.score !== null && result.score > 75);
-  assert.ok(result.missingFields.includes("cloudLayers"));
+  assert.equal(
+    result.basis.find((item) => item.code === "cloudHigh")?.value,
+    null,
+  );
+  assert.match(result.summary, /缺少高中低云分层/);
   assert.ok(result.confidence <= 0.74);
   assert.equal(result.confidenceLevel, "MEDIUM");
   assert.match(result.summary, /不是朝霞出现概率/);
@@ -338,11 +342,124 @@ Deno.test("火烧云评分偏好适中云量并诚实标注云层与气溶胶缺
   assert.ok(result.score !== null && result.score > 70);
   assert.equal(result.scoreMode, "PARTIAL");
   assert.equal(result.direction, "WEST");
-  assert.ok(result.missingFields.includes("cloudLayers"));
+  assert.ok(result.missingFields.includes("cloudHigh"));
+  assert.ok(result.missingFields.includes("cloudLow"));
   assert.ok(result.missingFields.includes("aerosolOpticalDepth"));
   assert.ok(result.confidence <= 0.44);
   assert.equal(result.confidenceLevel, "LOW");
   assert.match(result.summary, /不代表火烧云出现概率/);
+  assert.equal(result.outlook.possibility, "HIGH");
+  assert.equal(result.outlook.possibilityLabel, "较高");
+  assert.equal(result.outlook.cloudCover, 50);
+  assert.ok(
+    result.outlook.vividness !== null && result.outlook.vividness >= 75,
+  );
+  assert.equal(result.outlook.vividnessLabel, "很鲜艳");
+  assert.match(result.outlook.cloudNote, /总云量适中/);
+});
+
+Deno.test("霞光与火烧云评分纳入分层云量与气溶胶", () => {
+  const time = "2025-03-20T05:00:00+08:00";
+  const layered = hourly(time, {
+    cloud: 50,
+    cloudHigh: 55,
+    cloudMid: 40,
+    cloudLow: 15,
+    aerosolOpticalDepth: 0.12,
+  });
+  const fire = scoreFireCloud(
+    "dusk",
+    WINDOW,
+    [layered],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  assert.equal(fire.scoreMode, "FULL");
+  assert.equal(fire.missingFields.length, 0);
+  assert.equal(fire.outlook.cloudHigh, 55);
+  assert.equal(fire.outlook.cloudMid, 40);
+  assert.equal(fire.outlook.cloudLow, 15);
+  assert.equal(fire.outlook.aerosolOpticalDepth, 0.12);
+  assert.ok(fire.confidence > 0.44);
+  assert.match(fire.summary, /已纳入高中低云分层与气溶胶数据/);
+  assert.ok(
+    fire.basis.find((item) => item.code === "cloudLow")?.contribution !==
+      null,
+  );
+
+  const twilight = scoreTwilight(
+    "dusk",
+    WINDOW,
+    [layered],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  assert.equal(twilight.missingFields.length, 0);
+  assert.equal(twilight.scoreMode, "FULL");
+  assert.match(twilight.summary, /已纳入高中低云分层与气溶胶数据/);
+  assert.equal(
+    twilight.basis.find((item) => item.code === "cloudHigh")?.value,
+    55,
+  );
+});
+
+Deno.test("低云遮挡与高气溶胶会显著降低火烧云判断", () => {
+  const blocked = scoreFireCloud(
+    "dusk",
+    WINDOW,
+    [hourly("2025-03-20T05:00:00+08:00", {
+      cloud: 72,
+      cloudHigh: 1,
+      cloudMid: 23,
+      cloudLow: 99,
+      aerosolOpticalDepth: 0.95,
+    })],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  assert.ok(blocked.score !== null && blocked.score < 45);
+  assert.equal(blocked.outlook.possibility, "LOW");
+  assert.ok(
+    blocked.outlook.vividness !== null && blocked.outlook.vividness < 55,
+  );
+  assert.match(blocked.outlook.cloudNote, /低云约 99%/);
+
+  const twilight = scoreTwilight(
+    "dusk",
+    WINDOW,
+    [hourly("2025-03-20T05:00:00+08:00", {
+      cloud: 72,
+      cloudHigh: 1,
+      cloudMid: 23,
+      cloudLow: 99,
+      aerosolOpticalDepth: 0.95,
+    })],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  assert.ok(twilight.score !== null && twilight.score < 60);
+  assert.match(twilight.summary, /低云遮挡明显/);
+  assert.match(twilight.summary, /气溶胶偏高/);
+});
+
+Deno.test("火烧云可能性受总云量上限约束", () => {
+  const heavy = scoreFireCloud(
+    "dusk",
+    WINDOW,
+    [hourly("2025-03-20T05:00:00+08:00", {
+      cloud: 78,
+      humidity: 60,
+      visibility: 20_000,
+      precipitationProbability: 0,
+      precipitation: 0,
+      windSpeed: 2,
+    })],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  assert.ok(heavy.score !== null && heavy.score >= 70);
+  assert.equal(heavy.outlook.possibility, "MEDIUM");
+  assert.equal(heavy.outlook.possibilityLabel, "中等");
 });
 
 Deno.test("火烧云评分在无云、缺能见度或无窗口数据时降级", () => {
@@ -361,6 +478,11 @@ Deno.test("火烧云评分在无云、缺能见度或无窗口数据时降级", 
     FETCHED_AT,
   );
   assert.ok(clear.score !== null && clear.score < 45);
+  assert.equal(clear.outlook.possibility, "LOW");
+  assert.ok(
+    clear.outlook.vividness !== null && clear.outlook.vividness < 35,
+  );
+  assert.match(clear.outlook.cloudNote, /缺少可被低角度阳光染色/);
 
   const complete = scoreFireCloud(
     "dusk",
@@ -394,4 +516,6 @@ Deno.test("火烧云评分在无云、缺能见度或无窗口数据时降级", 
   );
   assert.equal(noData.score, null);
   assert.equal(noData.scoreMode, "UNAVAILABLE");
+  assert.equal(noData.outlook.possibility, null);
+  assert.equal(noData.outlook.vividness, null);
 });

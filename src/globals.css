@@ -20,6 +20,59 @@
   scrollbar-gutter: stable;
 }
 
+@keyframes pm-view-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pm-view-forward {
+  from {
+    opacity: 0;
+    transform: translate3d(16px, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pm-view-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-16px, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pm-view {
+  animation: pm-view-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pm-view-forward {
+  animation: pm-view-forward 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pm-view-back {
+  animation: pm-view-back 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-view,
+  .pm-view-forward,
+  .pm-view-back {
+    animation: none;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -271,6 +324,7 @@ body {
 }
 
 .app-shell {
+  overflow-x: clip;
   background:
     radial-gradient(ellipse 65% 28% at 85% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 70%),
     var(--background);

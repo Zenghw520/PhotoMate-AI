@@ -1,6 +1,10 @@
 import { ChevronDown, CloudSun, Sunrise, Sunset } from "lucide-react";
 import type { PotentialScore } from "@/functions/shared/contracts";
-import { formatRange, scoreLabel } from "@/src/lib/format";
+import {
+  formatRange,
+  missingFieldLabel,
+  scoreLabel,
+} from "@/src/lib/format";
 
 const confidenceLabels = { LOW: "较低", MEDIUM: "中等", HIGH: "较高" };
 
@@ -35,12 +39,12 @@ export function PotentialCard({ type, data }: { type: "dawn" | "dusk"; data: Pot
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">查看预测依据<ChevronDown className="size-3.5 transition group-open/detail:rotate-180" /></summary>
         <div className="mt-2 space-y-3 rounded-xl bg-muted/45 p-3">
           {data.basis.map((item) => (
-            <div key={item.code}>
-              <div className="flex items-center justify-between gap-3 text-xs"><span className="font-medium">{item.label}</span><span className="text-muted-foreground">{item.value === null ? "缺失" : `${item.value}${item.unit}`}{item.contribution !== null && ` · ${Math.round(item.contribution)}分`}</span></div>
-              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{item.explanation}</p>
+            <div key={item.code} className="flex items-center justify-between gap-3 text-xs">
+              <span className="font-medium">{item.label}</span>
+              <span className="text-muted-foreground">{item.value === null ? "缺失" : `${item.value}${item.unit}`}{item.contribution !== null && ` · ${Math.round(item.contribution)}分`}</span>
             </div>
           ))}
-          {data.missingFields.length > 0 && <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400"><CloudSun className="mt-0.5 size-3.5 shrink-0" />缺少：{data.missingFields.join("、")}。评分已按可用数据降级。</p>}
+          {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400"><CloudSun className="mt-0.5 size-3.5 shrink-0" />缺少：{data.missingFields.map(missingFieldLabel).join("、")}。评分已按可用数据降级。</p>}
           <p className="text-[11px] leading-4 text-muted-foreground">这是摄影环境评估，不是气象部门官方预报；置信度不代表霞光出现概率。</p>
         </div>
       </details>

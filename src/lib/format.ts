@@ -88,12 +88,30 @@ export function precisionLabel(precision: LocationPrecision) {
   return "区县中心";
 }
 
-export const themeLabels = {
-  PORTRAIT: "人像",
-  LANDSCAPE: "风景",
-  ARCHITECTURE: "建筑",
-  STREET: "街头",
-  FOOD: "美食",
-  NIGHT: "夜景",
-  TRAVEL: "旅行",
-} as const;
+const WEATHER_FIELD_LABELS: Record<string, string> = {
+  cloud: "云量",
+  cloudHigh: "高云量",
+  cloudMid: "中云量",
+  cloudLow: "低云量",
+  cloudLayers: "云层分层",
+  aerosolOpticalDepth: "气溶胶光学厚度",
+  precipitationProbability: "降水概率",
+  precipitation: "降水量",
+  visibility: "能见度",
+  humidity: "相对湿度",
+  windSpeed: "风速",
+  windDirection: "风向",
+  windDegree: "风向角",
+  temperature: "气温",
+  feelsLike: "体感温度",
+  condition: "天气现象",
+  pressure: "气压",
+  airQuality: "空气质量",
+  sunEvent: "太阳事件",
+};
+
+export function missingFieldLabel(code: string) {
+  const suffix = code.split(".").pop() ?? code;
+  return WEATHER_FIELD_LABELS[code] ?? WEATHER_FIELD_LABELS[suffix] ?? code;
+}
+

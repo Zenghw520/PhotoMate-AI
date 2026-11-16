@@ -4,7 +4,7 @@ import { reverseLocation, searchLocations } from "@/src/lib/api";
 import { precisionLabel } from "@/src/lib/format";
 import type { LocationResult } from "@/functions/shared/contracts";
 
-export function LocationSearch({ location, onSelect }: { location: LocationResult | null; onSelect: (location: LocationResult) => void }) {
+export function LocationSearch({ location, onSelect, autoLocate = false }: { location: LocationResult | null; onSelect: (location: LocationResult) => void; autoLocate?: boolean }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<LocationResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -15,6 +15,7 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const requestId = useRef(0);
+  const autoAttempted = useRef(false);
 
   useEffect(() => {
     const value = query.trim();
@@ -56,10 +57,10 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
     setError("");
   }
 
-  function locate() {
+  function locate(silent = false) {
     setError("");
     if (!navigator.geolocation) {
-      setError("当前浏览器不支持定位，请搜索区县或手动输入坐标。");
+      if (!silent) setError("当前浏览器不支持定位，请搜索区县或手动输入坐标。");
       return;
     }
     setLocating(true);
@@ -67,7 +68,7 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
       async ({ coords }) => {
         try {
           if (!isInChina(coords.latitude, coords.longitude)) {
-            setError("当前版本仅支持中国境内拍摄位置。");
+            if (!silent) setError("当前版本仅支持中国境内拍摄位置。");
             return;
           }
           try {
@@ -86,11 +87,32 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
       },
       (geoError) => {
         setLocating(false);
+        if (silent) return;
         setError(geoError.code === geoError.PERMISSION_DENIED ? "定位权限未开启，可搜索区县或手动输入坐标。" : "暂时无法获取位置，请稍后重试或搜索区县。");
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   }
+
+  useEffect(() => {
+    if (!autoLocate || location) return;
+    if (!navigator.geolocation || !navigator.permissions?.query) return;
+    let disposed = false;
+    navigator.permissions.query({ name: "geolocation" as PermissionName })
+      .then((permission) => {
+        if (
+          !disposed && permission.state === "granted" &&
+          !autoAttempted.current
+        ) {
+          autoAttempted.current = true;
+          locate(true);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      disposed = true;
+    };
+  }, [autoLocate, location]);
 
   function submitManual(event: React.FormEvent) {
     event.preventDefault();
@@ -101,7 +123,7 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
       return;
     }
     if (!isInChina(lat, lng)) {
-      setError("当前版本仅支持中国境内坐标：纬度 18～54，经度 73～135。");
+      setError("当前版本仅支持中国境内坐标：纬度 3～54，经度 73～135。");
       return;
     }
     onSelect({ name: "手动位置", latitude: lat, longitude: lng, precision: "MANUAL", timezone: "Asia/Shanghai" });
@@ -111,11 +133,12 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
 
   return (
     <div className="relative">
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex items-center gap-2">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">搜索城市或区县</span>
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
+            id="main-location-search"
             value={query}
             onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
             onFocus={() => results.length && setOpen(true)}
@@ -129,18 +152,25 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
             </button>
           ) : null}
         </label>
-        <button type="button" onClick={locate} disabled={locating} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60">
-          {locating ? <LoaderCircle className="size-4 animate-spin" /> : <Crosshair className="size-4" />}
-          {locating ? "定位中" : "使用当前位置"}
+        <button
+          type="button"
+          onClick={() => locate(false)}
+          disabled={locating}
+          aria-label="使用当前位置"
+          title="使用当前位置"
+          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-border bg-card text-muted-foreground shadow-sm transition hover:text-foreground disabled:opacity-60"
+        >
+          {locating ? <LoaderCircle className="size-4 animate-spin text-primary" /> : <Crosshair className="size-4" />}
         </button>
       </div>
 
       <div className="mt-3 flex min-h-6 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {location && <span className="inline-flex flex-wrap items-center gap-1.5"><MapPin className="size-3.5 text-primary" />{location.name}<span className="text-border">·</span>{precisionLabel(location.precision)}</span>}
+        {location
+          ? <span className="inline-flex flex-wrap items-center gap-1.5"><MapPin className="size-3.5 text-primary" />{location.name}<span className="text-border">·</span>{precisionLabel(location.precision)}</span>
+          : <span>{locating ? "正在使用当前位置…" : "搜索城市或区县，或点击右侧定位。"}</span>}
         <button type="button" onClick={() => setManualOpen((value) => !value)} className="inline-flex min-h-11 items-center gap-1 font-medium hover:text-foreground">
-          <SlidersHorizontal className="size-3.5" />输入经纬度
+          <SlidersHorizontal className="size-3.5" />手动坐标
         </button>
-        {!location && <span>搜索结果精确到区县。</span>}
       </div>
 
       {error && <p className="mt-2 text-sm text-destructive" role="alert">{error}</p>}
@@ -168,5 +198,5 @@ export function LocationSearch({ location, onSelect }: { location: LocationResul
 }
 
 function isInChina(latitude: number, longitude: number) {
-  return latitude >= 18 && latitude <= 54 && longitude >= 73 && longitude <= 135;
+  return latitude >= 3 && latitude <= 54 && longitude >= 73 && longitude <= 135;
 }

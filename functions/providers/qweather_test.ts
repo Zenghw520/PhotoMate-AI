@@ -85,6 +85,7 @@ Deno.test("qweather: maps current, 72h forecast, v1 air quality and sources", as
       assertEquals(result.current?.temperature, 12.5);
       assertEquals(result.current?.cloud, null);
       assert(result.missingFields.includes("current.cloud"));
+      assertEquals(result.current?.visibility, 20_000);
       assertEquals(result.current?.airQuality, {
         aqi: 52,
         category: "良",

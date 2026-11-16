@@ -24,7 +24,7 @@ export function WeatherOverview({ weather }: { weather: WeatherData }) {
               <Metric icon={Cloud} label="云量" value={metric(current.cloud, "%")} />
               <Metric icon={Umbrella} label="降水" value={metric(current.precipitation, "mm", 1)} />
               <Metric icon={Wind} label="风" value={current.windSpeed === null ? "—" : `${current.windDirection} ${metric(current.windSpeed, "km/h")}`} />
-              <Metric icon={Eye} label="能见度" value={metric(current.visibility, "km")} />
+              <Metric icon={Eye} label="能见度" value={metric(current.visibility === null ? null : current.visibility / 1000, "km")} />
               <Metric icon={Gauge} label="气压" value={metric(current.pressure, "hPa")} />
             </div>
           </div>

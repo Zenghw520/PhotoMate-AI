@@ -99,6 +99,33 @@ Deno.test("merge: both sources contribute equal-weight numeric fields", () => {
   assert(merged.sources.includes("OpenWeather"));
 });
 
+Deno.test("merge: three sources average numeric fields equally", () => {
+  const time = "2026-01-02T06:00:00+08:00";
+  const qweather = weather();
+  const openWeather = weather({
+    current: current({ temperature: 20, cloud: 50 }),
+    hourly: [hourly(time, { temperature: 20, cloud: 50 })],
+    sources: ["OpenWeather"],
+  });
+  const openMeteo = weather({
+    current: current({ temperature: 30, cloud: 80 }),
+    hourly: [hourly(time, { temperature: 30, cloud: 80 })],
+    sources: ["Open-Meteo"],
+  });
+
+  const merged = mergeWeather(qweather, openWeather, openMeteo);
+  assertEquals(merged.current?.temperature, 20);
+  assertEquals(merged.current?.cloud, 50);
+  assertEquals(merged.hourly[0].temperature, 20);
+  assertEquals(merged.hourly[0].cloud, 50);
+  assertEquals(merged.sources, [
+    "和风天气",
+    "QWeather",
+    "OpenWeather",
+    "Open-Meteo",
+  ]);
+});
+
 Deno.test("merge: one configured source is used without invented values", () => {
   const left = weather();
   const unavailable = weather({

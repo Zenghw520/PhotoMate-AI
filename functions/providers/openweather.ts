@@ -83,7 +83,8 @@ function mapCurrent(value: unknown): CurrentWeather | null {
     humidity: numberValue(main.humidity),
     cloud: cloudCover(item.clouds),
     precipitation: precipitation(item, "1h"),
-    windSpeed,
+    // Current wind is km/h in the shared contract; OpenWeather returns m/s.
+    windSpeed: windSpeed === null ? null : windSpeed * 3.6,
     windDirection: windDirection(windDegree),
     windDegree,
     visibility: numberValue(item.visibility),
@@ -185,6 +186,13 @@ function buildWeather(
   };
 }
 
+function providerDetail(error: unknown): string {
+  if (error instanceof ProviderHttpError) {
+    return `${error.code}:${error.status ?? "-"}`;
+  }
+  return error instanceof Error ? error.name : "unknown";
+}
+
 async function request(
   apiKey: string,
   path: string,
@@ -195,9 +203,9 @@ async function request(
     path,
     allowedHosts: HOSTS,
     query: { ...query, appid: apiKey, units: "metric", lang: "zh_cn" },
-    timeoutMs: 5_000,
+    timeoutMs: 4_000,
     maxResponseBytes: 512 * 1024,
-    retries: 1,
+    retries: 0,
   });
 }
 
@@ -232,10 +240,7 @@ export async function getOpenWeather(
       const result = buildWeather(current, hourly);
       if (result.status === "OK") return result;
     } catch (error) {
-      console.error(
-        "openweather_onecall_fallback",
-        error instanceof ProviderHttpError ? error.code : "unknown",
-      );
+      console.error("openweather_onecall_fallback", providerDetail(error));
     }
     const [currentPayload, forecastPayload] = await Promise.all([
       request(apiKey, "/data/2.5/weather", location),
@@ -247,7 +252,8 @@ export async function getOpenWeather(
       .map((entry) => mapHourly(entry, "3h"))
       .filter((entry): entry is HourlyWeather => entry !== null);
     return buildWeather(current, hourly);
-  } catch {
+  } catch (error) {
+    console.error("openweather_request_failed", providerDetail(error));
     return emptyWeather("UNAVAILABLE", "OpenWeather 服务暂不可用。");
   }
 }

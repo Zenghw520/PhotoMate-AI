@@ -215,6 +215,50 @@ function collectDistricts(
   }
 }
 
+async function districtRegion(
+  apiKey: string,
+  location: LocationResult,
+): Promise<string | null> {
+  try {
+    const gcj = wgs84ToGcj02(location.latitude, location.longitude);
+    const payload = await fetchTrustedJson<unknown>({
+      baseUrl: AMAP_BASE_URL,
+      path: "/v3/geocode/regeo",
+      allowedHosts: AMAP_HOSTS,
+      query: {
+        key: apiKey,
+        location: `${gcj.longitude.toFixed(7)},${gcj.latitude.toFixed(7)}`,
+        extensions: "base",
+      },
+      timeoutMs: 4_000,
+      maxResponseBytes: 128 * 1024,
+      retries: 0,
+    });
+    const component = record(
+      record(record(payload)?.regeocode)?.addressComponent,
+    );
+    const province = text(component?.province);
+    const city = text(component?.city);
+    return region(province, city && city !== province ? city : null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Keyword district searches return roots without ancestors; fill province/city from the center. */
+async function enrichDistrictRegions(
+  locations: LocationResult[],
+  apiKey: string,
+): Promise<void> {
+  const targets = locations.filter((item) =>
+    item.precision === "DISTRICT" && !item.region
+  );
+  await Promise.all(targets.map(async (item) => {
+    const area = await districtRegion(apiKey, item);
+    if (area) item.region = area;
+  }));
+}
+
 export async function searchLocations(
   query: string,
 ): Promise<AmapSearchResult> {
@@ -268,6 +312,7 @@ export async function searchLocations(
       locations,
       new Set(),
     );
+    await enrichDistrictRegions(locations, apiKey);
     return {
       status: "OK",
       locations,

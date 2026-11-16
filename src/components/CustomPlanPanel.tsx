@@ -1,0 +1,262 @@
+import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  Camera,
+  CheckCircle2,
+  Compass,
+  Lightbulb,
+  LoaderCircle,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
+import type {
+  CustomPlan,
+  CustomPlansResponse,
+  ThemeId,
+  TodayResponse,
+} from "@/functions/shared/contracts";
+import { generateCustomPlans } from "@/src/lib/api";
+import { compass, formatRange, metric } from "@/src/lib/format";
+
+const IDEAS = [
+  "城市夜景与车轨",
+  "雨后街道倒影",
+  "日出日落风光",
+  "海边慢门与礁石",
+  "人像逆光与小景深",
+  "古建筑与飞檐",
+  "街头烟火气",
+  "咖啡馆静物",
+  "星空与银河",
+  "花卉微距",
+];
+
+function aiLabel(status: CustomPlansResponse["aiStatus"]) {
+  if (status === "SUCCESS") return "DeepSeek 生成";
+  if (status === "LIMIT_REACHED") return "规则建议 · AI 额度已用完";
+  if (status === "DISABLED") return "规则建议 · AI 未启用";
+  return "规则建议 · AI 暂不可用";
+}
+
+function PlanFacts({ plan }: { plan: CustomPlan }) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
+        <Compass className="size-3 text-primary" />
+        太阳 {compass(plan.solar.azimuth)} {Math.round(plan.solar.azimuth)}° ·
+        高度 {plan.solar.elevation.toFixed(1)}°
+      </span>
+      {plan.weather && (
+        <span className="rounded-full bg-muted px-2.5 py-1">
+          {plan.weather.condition} · 云量 {metric(plan.weather.cloud, "%")} ·
+          降水概率 {metric(plan.weather.precipitationProbability, "%")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function CustomPlanPanel({
+  data,
+  theme,
+  selectedSlotId,
+  onSelectSlot,
+}: {
+  data: TodayResponse;
+  theme: ThemeId;
+  selectedSlotId: string | null;
+  onSelectSlot: (slotId: string) => void;
+}) {
+  const [subject, setSubject] = useState("");
+  const [result, setResult] = useState<CustomPlansResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setResult(null);
+  }, [theme, data.date]);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    const value = subject.trim();
+    if (value.length < 2) {
+      setError("请输入至少 2 个字符的拍摄题材。");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const response = await generateCustomPlans({
+        location: data.location,
+        theme,
+        date: data.date,
+        subject: value,
+      });
+      setResult(response);
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "自定义方案暂不可用，请稍后重试。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={submit} className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <Sparkles className="size-5" />
+          </span>
+          <div>
+            <h3 className="font-semibold">按题材生成拍摄方案</h3>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              输入想拍的内容。AI 只使用所选日期的真实天气、太阳方位与光线窗口，不编造现场信息。
+            </p>
+          </div>
+        </div>
+        <label className="mt-4 block">
+          <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            拍摄题材
+          </span>
+          <textarea
+            value={subject}
+            onChange={(event) => setSubject(event.target.value.slice(0, 200))}
+            rows={2}
+            placeholder="例如：雨后的城市街头骑行、古建筑屋檐与晚霞…"
+            className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
+          />
+        </label>
+        <div className="mt-3">
+          <p className="text-[11px] font-medium text-muted-foreground">
+            常用题材
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {IDEAS.map((idea) => (
+              <button
+                key={idea}
+                type="button"
+                onClick={() => setSubject(idea)}
+                className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+              >
+                {idea}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-right text-[11px] text-muted-foreground">
+            {subject.length}/200
+          </p>
+        </div>
+        <button
+          type="submit"
+          disabled={loading || subject.trim().length < 2}
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+        >
+          {loading
+            ? <><LoaderCircle className="size-4 animate-spin" />生成中…</>
+            : <><Sparkles className="size-4" />生成拍摄方案</>}
+        </button>
+        <p className="mt-3 text-[11px] leading-4 text-muted-foreground">
+          当前将结合 {data.date} · {data.location.name} 的天气与太阳窗口；具体机位、遮挡与通行条件仍需现场确认。
+        </p>
+      </form>
+
+      {error && (
+        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {result && (
+        <div className="space-y-3">
+          <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                <Sparkles className="size-3" />{aiLabel(result.aiStatus)}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+                <MapPin className="size-3" />{result.date} · {result.location.name}
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6">{result.summary}</p>
+            <p className="mt-2 rounded-xl bg-background/60 p-3 text-xs leading-5 text-muted-foreground">
+              当天天气依据：{result.weatherSummary}
+            </p>
+            {result.warnings.length > 0 && (
+              <ul className="mt-2 space-y-1 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
+                {result.warnings.map((warning) => <li key={warning}>· {warning}</li>)}
+              </ul>
+            )}
+          </section>
+
+          {result.plans.length === 0 && (
+            <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+              所选日期没有适合生成方案的光线窗口。
+            </p>
+          )}
+
+          {result.plans.map((plan) => (
+            <article key={plan.slotId} className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium text-primary">
+                    {formatRange(plan.timeWindow.start, plan.timeWindow.end)}
+                  </p>
+                  <h4 className="mt-1 text-lg font-semibold tracking-tight">
+                    {plan.title}
+                  </h4>
+                  <PlanFacts plan={plan} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectSlot(plan.slotId)}
+                  className={`inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-medium transition ${
+                    selectedSlotId === plan.slotId
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  {selectedSlotId === plan.slotId ? "已选中" : "选中时段"}
+                </button>
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Sparkles className="size-3.5 text-primary" />题材切入
+                  </p>
+                  <p className="mt-1 text-sm leading-6">{plan.subjectApproach}</p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Camera className="size-3.5 text-primary" />构图建议
+                  </p>
+                  <p className="mt-1 text-sm leading-6">{plan.composition}</p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Camera className="size-3.5 text-primary" />相机参数
+                  </p>
+                  <p className="mt-1 text-sm leading-6">{plan.cameraSettings}</p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Lightbulb className="size-3.5 text-primary" />光线分析
+                  </p>
+                  <p className="mt-1 text-sm leading-6">{plan.lightAnalysis}</p>
+                </div>
+              </div>
+              {plan.risks.length > 0 && (
+                <p className="mt-4 rounded-xl bg-amber-500/[0.08] p-3 text-xs leading-5 text-amber-800 dark:text-amber-300">
+                  风险：{plan.risks.join("；")}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
