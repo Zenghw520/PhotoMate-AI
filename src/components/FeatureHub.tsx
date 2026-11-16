@@ -230,16 +230,16 @@ function FeatureMenu({
         <div>
           <h2
             id="feature-menu-title"
-            className="text-lg font-semibold tracking-tight"
+            className="text-lg font-semibold tracking-tight 2xl:text-xl"
           >
             功能导航
           </h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground 2xl:text-sm">
             天气、霞光与光线、拍摄方案、照片分析分开展示。点击卡片进入对应功能。
           </p>
         </div>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:mt-4 2xl:gap-4">
         {SECTION_ORDER.map((id) => {
           const meta = SECTION_META[id];
           const Icon = meta.icon;
@@ -250,19 +250,19 @@ function FeatureMenu({
               type="button"
               onClick={() =>
                 needsLocation ? onNeedLocation() : onSectionChange(id)}
-              className="group flex min-h-44 flex-col rounded-[var(--radius)] border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+              className="group flex min-h-44 flex-col rounded-[var(--radius)] border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 2xl:min-h-48 2xl:p-6"
             >
               <div className="flex items-start justify-between gap-3">
-                <span className="grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <Icon className="size-5" />
+                <span className="grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary 2xl:size-12">
+                  <Icon className="size-5 2xl:size-6" />
                 </span>
-                <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:text-primary" />
+                <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:text-primary 2xl:size-5" />
               </div>
-              <h3 className="mt-4 font-semibold">{meta.title}</h3>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              <h3 className="mt-4 font-semibold 2xl:text-lg">{meta.title}</h3>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground 2xl:text-sm 2xl:leading-6">
                 {meta.intro}
               </p>
-              <p className="mt-auto pt-4 text-xs font-medium text-primary">
+              <p className="mt-auto pt-4 text-xs font-medium text-primary 2xl:text-sm">
                 {summaries[id]}
               </p>
             </button>
@@ -341,18 +341,18 @@ function SectionDetail({
         <ArrowLeft className="size-4" />返回功能导航
       </button>
 
-      <div className="mt-2 flex items-start gap-4 rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-          <Icon className="size-5" />
+      <div className="mt-2 flex items-start gap-4 rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm 2xl:p-6">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary 2xl:size-12">
+          <Icon className="size-5 2xl:size-6" />
         </span>
         <div>
           <h2
             id="section-title"
-            className="text-lg font-semibold tracking-tight"
+            className="text-lg font-semibold tracking-tight 2xl:text-xl"
           >
             {meta.title}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">
             {meta.intro}
           </p>
         </div>

@@ -314,7 +314,7 @@ export function PhotoAnalysis() {
             <img
               src={preview}
               alt="待分析照片预览"
-              className="max-h-80 w-full rounded-xl bg-black/20 object-contain"
+              className="max-h-80 w-full rounded-xl bg-black/20 object-contain 2xl:max-h-[28rem]"
             />
           </div>
           <div className="space-y-3">

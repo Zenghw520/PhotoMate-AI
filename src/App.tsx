@@ -124,9 +124,9 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app-shell min-h-dvh">
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <div className="app-shell flex min-h-dvh flex-col">
+      <header className="sticky top-0 z-40 shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Aperture className="size-5" /></span>
             <div><p className="text-sm font-bold tracking-tight">PhotoMate <span className="text-primary">AI</span></p><p className="text-[10px] tracking-[0.16em] text-muted-foreground">智能摄影规划助手</p></div>
@@ -135,15 +135,14 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px] px-4 pb-12 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-12 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
         {section === null && (
-          <section className="relative overflow-hidden py-7 sm:py-10">
-            <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-primary/[0.08] blur-3xl" />
-            <div className="relative max-w-2xl">
+          <section className="relative py-7 sm:py-10 2xl:py-14">
+            <div className="relative max-w-2xl 2xl:max-w-3xl">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>
-              <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
-              <div className="mt-5 rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur">
+              <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
+              <div className="mt-5 rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur 2xl:p-5">
                 <LocationSearch location={location} onSelect={chooseLocation} autoLocate />
               </div>
             </div>
@@ -171,8 +170,8 @@ export default function App() {
         />
       </main>
 
-      <footer className="border-t border-border/60 py-6">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <footer className="shrink-0 border-t border-border/60 py-6">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10 2xl:text-xs">
           <p>PhotoMate AI · 摄影指数是辅助评估，并非官方气象预报。</p>
           <p className="flex items-center gap-1.5"><Compass className="size-3.5" />天气数据来自和风天气、OpenWeather、Open-Meteo 等已标注来源；地图来自高德，太阳位置由本地算法计算。</p>
         </div>
