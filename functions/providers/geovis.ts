@@ -59,8 +59,11 @@ export async function getTerrainTile(
       message: "星图地球地形 Token 尚未配置。",
     };
   }
-  let lastReason = "";
+  const attempts: string[] = [];
   for (const source of TILE_SOURCES) {
+    const sourceName = source.host.includes("api.open")
+      ? "open"
+      : source.host.match(/tiles(\d)/)?.[0] ?? "tiles";
     try {
       const url = `${source.host}${source.path}/${z}/${x}/${y}` +
         `?format=png&tmsIds=w&token=${encodeURIComponent(token)}`;
@@ -85,7 +88,9 @@ export async function getTerrainTile(
         } catch {
           // Non-JSON error body; keep only the status.
         }
-        lastReason = `HTTP ${response.status}${detail ? ` ${detail}` : ""}`;
+        attempts.push(
+          `${sourceName}:${response.status}${detail ? `(${detail})` : ""}`,
+        );
         console.error(
           "geovis_terrain_tile_http",
           source.host,
@@ -96,19 +101,39 @@ export async function getTerrainTile(
       }
       const length = Number(response.headers.get("content-length") ?? "0");
       if (length > 768 * 1024) {
-        lastReason = "响应过大";
+        attempts.push(`${sourceName}:响应过大`);
         continue;
       }
       const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.length < 1024) {
+        const text = new TextDecoder().decode(bytes).trim();
+        if (text.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(text) as {
+              msg?: unknown;
+              message?: unknown;
+            };
+            const message = parsed.msg ?? parsed.message;
+            attempts.push(
+              `${sourceName}:${
+                typeof message === "string" ? message.slice(0, 40) : "JSON 错误"
+              }`,
+            );
+            continue;
+          } catch {
+            // Fall through to the generic length check.
+          }
+        }
+      }
       if (bytes.length < 100 || bytes.length > 768 * 1024) {
-        lastReason = "响应为空";
+        attempts.push(`${sourceName}:响应为空`);
         continue;
       }
       const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 &&
         bytes[2] === 0x4e && bytes[3] === 0x47;
       const contentType = response.headers.get("content-type") ?? "";
       if (!isPng && !contentType.includes("image")) {
-        lastReason = "返回格式无效";
+        attempts.push(`${sourceName}:非图片响应`);
         continue;
       }
       return {
@@ -118,11 +143,12 @@ export async function getTerrainTile(
         message: null,
       };
     } catch (error) {
-      lastReason = error instanceof Error ? error.name : "unknown";
+      const reason = error instanceof Error ? error.name : "unknown";
+      attempts.push(`${sourceName}:${reason}`);
       console.error(
         "geovis_terrain_tile_failed",
         source.host,
-        lastReason,
+        reason,
       );
     }
   }
@@ -130,8 +156,8 @@ export async function getTerrainTile(
     status: "UNAVAILABLE",
     data: null,
     contentType: "",
-    message: `星图地球地形服务暂不可用${
-      lastReason ? `（${lastReason}）` : ""
-    }。`,
+    message: attempts.length
+      ? `星图地球地形服务暂不可用（${attempts.join("；")}）。`
+      : "星图地球地形服务暂不可用。",
   };
 }
