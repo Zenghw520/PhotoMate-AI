@@ -115,3 +115,29 @@ export function missingFieldLabel(code: string) {
   return WEATHER_FIELD_LABELS[code] ?? WEATHER_FIELD_LABELS[suffix] ?? code;
 }
 
+/** Groups repeated per-hour field codes into one readable line. */
+export function summarizeMissingFields(codes: string[]) {
+  const current = new Set<string>();
+  const hourly = new Map<string, number>();
+  const other = new Set<string>();
+  for (const code of codes) {
+    const parts = code.split(".");
+    const field = parts[parts.length - 1];
+    if (parts[0] === "current") {
+      current.add(missingFieldLabel(field));
+    } else if (parts[0] === "hourly") {
+      hourly.set(field, (hourly.get(field) ?? 0) + 1);
+    } else {
+      other.add(missingFieldLabel(code));
+    }
+  }
+  const summary = [...other];
+  for (const field of current) summary.push(`当前${field}`);
+  for (const [field, count] of hourly) {
+    summary.push(
+      `逐小时${missingFieldLabel(field)}${count > 1 ? `（${count} 小时）` : ""}`,
+    );
+  }
+  return summary;
+}
+

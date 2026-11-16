@@ -60,7 +60,7 @@ async function loadWeather(
   now: Date,
 ) {
   const cache = createCacheStore(db);
-  const key = await makeCacheKey("weather", "merged:v4", {
+  const key = await makeCacheKey("weather", "merged:v5", {
     latitude: coordinateGrid(location.latitude).toFixed(3),
     longitude: coordinateGrid(location.longitude).toFixed(3),
   });
@@ -87,7 +87,7 @@ async function loadWeather(
       "weather",
       fresh,
       fresh.current?.observedAt ?? null,
-      10 * 60,
+      fresh.missingFields.length ? 2 * 60 : 10 * 60,
     );
     return { weather: fresh, fetchedAt: now };
   }

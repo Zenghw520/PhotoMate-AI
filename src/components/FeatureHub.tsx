@@ -15,7 +15,12 @@ import type {
   TodayResponse,
   WeatherData,
 } from "@/functions/shared/contracts";
-import { formatDate, formatObservedAt, formatRange } from "@/src/lib/format";
+import {
+  formatDate,
+  formatObservedAt,
+  formatRange,
+  summarizeMissingFields,
+} from "@/src/lib/format";
 import { WeatherOverview } from "@/src/components/WeatherOverview";
 import { PhotoIndices } from "@/src/components/PhotoIndices";
 import { SpotRecommendations } from "@/src/components/SpotRecommendations";
@@ -672,7 +677,7 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
     { label: "观测时间", value: observedAt },
     {
       label: "缺失字段",
-      value: weather.missingFields.join("、") || "无",
+      value: summarizeMissingFields(weather.missingFields).join("、") || "无",
     },
     { label: "说明", value: weather.message ?? "当前没有额外说明。" },
   ];
