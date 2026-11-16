@@ -11,6 +11,7 @@ import {
 import type { DatabaseClient } from "./cache.ts";
 import { getTodayPhotography } from "./today.ts";
 import { claimAiUsage } from "./usage.ts";
+import { buildCameraParameters, buildPlanSchedule } from "./plan_details.ts";
 
 function shanghaiDate(now: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -80,6 +81,8 @@ export async function generateCustomPlanResponse(
 
   const aiInput: CustomPlansInput = {
     subject: input.subject,
+    equipment: input.equipment ?? null,
+    preferences: input.preferences ?? null,
     theme: input.theme,
     location: {
       name: context.location.name,
@@ -124,10 +127,18 @@ export async function generateCustomPlanResponse(
   let plans: CustomPlan[] = aiPlans.flatMap((plan) => {
     const slot = slotMap.get(plan.slotId);
     if (!slot) return [];
+    const details = buildPlanSchedule(input.subject, slot, input.equipment);
     return [{
       slotId: plan.slotId,
       title: plan.title,
       timeWindow: { start: slot.start, end: slot.end },
+      arrivalTime: details.arrivalTime,
+      schedule: details.schedule,
+      cameraParameters: buildCameraParameters(
+        input.subject,
+        slot,
+        input.equipment,
+      ),
       subjectApproach: plan.subjectApproach,
       composition: plan.composition,
       cameraSettings: plan.cameraSettings,
@@ -142,31 +153,41 @@ export async function generateCustomPlanResponse(
     const fallbackSlots = [...candidates]
       .sort((left, right) => (right.score ?? -1) - (left.score ?? -1))
       .slice(0, 2);
-    plans = fallbackSlots.map((slot) => ({
-      slotId: slot.slotId,
-      title: `围绕「${input.subject}」的${slot.label}`,
-      timeWindow: { start: slot.start, end: slot.end },
-      subjectApproach:
-        `先确认「${input.subject}」在画面中的位置与可用前景，不预设未核实的机位；结合现场环境调整主体与背景关系。`,
-      composition:
-        "利用现场可用的线条、前景或重复元素组织画面，保持主体与背景的层次；最终构图需结合现场确认。",
-      cameraSettings:
-        "先从 f/5.6、1/125s、自动白平衡开始，按现场测光与主体运动调整。",
-      lightAnalysis: `该窗口太阳方位约 ${
-        Math.round(slot.solar.azimuth)
-      }°，高度约 ${slot.solar.elevation.toFixed(1)}°；${
-        slot.weather
-          ? `天气 ${slot.weather.condition}，云量 ${
-            slot.weather.cloud ?? "—"
-          }%。`
-          : "该窗口缺少逐小时天气，光线判断以现场为准。"
-      }`,
-      risks: slot.risks.length
-        ? slot.risks
-        : ["具体机位、遮挡与通行条件需现场确认"],
-      solar: slot.solar,
-      weather: slot.weather,
-    }));
+    plans = fallbackSlots.map((slot) => {
+      const details = buildPlanSchedule(input.subject, slot, input.equipment);
+      return {
+        slotId: slot.slotId,
+        title: `围绕「${input.subject}」的${slot.label}`,
+        timeWindow: { start: slot.start, end: slot.end },
+        arrivalTime: details.arrivalTime,
+        schedule: details.schedule,
+        cameraParameters: buildCameraParameters(
+          input.subject,
+          slot,
+          input.equipment,
+        ),
+        subjectApproach:
+          `先确认「${input.subject}」在画面中的位置与可用前景，不预设未核实的机位；结合现场环境调整主体与背景关系。`,
+        composition:
+          "利用现场可用的线条、前景或重复元素组织画面，保持主体与背景的层次；最终构图需结合现场确认。",
+        cameraSettings:
+          "先从 f/5.6、1/125s、自动白平衡开始，按现场测光与主体运动调整。",
+        lightAnalysis: `该窗口太阳方位约 ${
+          Math.round(slot.solar.azimuth)
+        }°，高度约 ${slot.solar.elevation.toFixed(1)}°；${
+          slot.weather
+            ? `天气 ${slot.weather.condition}，云量 ${
+              slot.weather.cloud ?? "—"
+            }%。`
+            : "该窗口缺少逐小时天气，光线判断以现场为准。"
+        }`,
+        risks: slot.risks.length
+          ? slot.risks
+          : ["具体机位、遮挡与通行条件需现场确认"],
+        solar: slot.solar,
+        weather: slot.weather,
+      };
+    });
     if (!summary) {
       summary = aiStatus === "LIMIT_REACHED"
         ? "今日 AI 体验额度已用完，以下为结合真实天气与太阳窗口的规则建议。"

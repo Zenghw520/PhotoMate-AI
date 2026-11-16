@@ -270,12 +270,33 @@ export interface TodayRequest {
 
 export interface CustomPlanRequest extends TodayRequest {
   subject: string;
+  equipment?: string;
+  preferences?: string;
+}
+
+export interface CameraParameters {
+  iso: string;
+  aperture: string;
+  shutter: string;
+  focalLength: string;
+  exposureBias: string;
+  whiteBalance: string;
+  focusMode: string;
+}
+
+export interface PlanScheduleItem {
+  time: string;
+  label: string;
+  action: string;
 }
 
 export interface CustomPlan {
   slotId: string;
   title: string;
   timeWindow: TimeWindow;
+  arrivalTime: string;
+  schedule: PlanScheduleItem[];
+  cameraParameters: CameraParameters;
   subjectApproach: string;
   composition: string;
   cameraSettings: string;

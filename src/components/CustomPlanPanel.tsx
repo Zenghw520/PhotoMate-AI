@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Camera,
   CheckCircle2,
+  Clock3,
   Compass,
   Lightbulb,
   LoaderCircle,
@@ -16,7 +17,7 @@ import type {
   TodayResponse,
 } from "@/functions/shared/contracts";
 import { generateCustomPlans } from "@/src/lib/api";
-import { compass, formatRange, metric } from "@/src/lib/format";
+import { compass, formatRange, formatTime, metric } from "@/src/lib/format";
 
 const IDEAS = [
   "城市夜景与车轨",
@@ -68,6 +69,8 @@ export function CustomPlanPanel({
   onSelectSlot: (slotId: string) => void;
 }) {
   const [subject, setSubject] = useState("");
+  const [equipment, setEquipment] = useState("");
+  const [preferences, setPreferences] = useState("");
   const [result, setResult] = useState<CustomPlansResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -91,6 +94,8 @@ export function CustomPlanPanel({
         theme,
         date: data.date,
         subject: value,
+        ...(equipment.trim() ? { equipment: equipment.trim() } : {}),
+        ...(preferences.trim() ? { preferences: preferences.trim() } : {}),
       });
       setResult(response);
     } catch (reason) {
@@ -147,6 +152,40 @@ export function CustomPlanPanel({
           <p className="mt-2 text-right text-[11px] text-muted-foreground">
             {subject.length}/200
           </p>
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              摄影设备（可选）
+            </span>
+            <input
+              value={equipment}
+              onChange={(event) => setEquipment(event.target.value.slice(0, 80))}
+              list="photomate-equipment"
+              placeholder="例如：全画幅 + 24–70mm + 三脚架"
+              className="h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
+            />
+            <datalist id="photomate-equipment">
+              <option value="手机" />
+              <option value="全画幅相机 + 24–70mm" />
+              <option value="微单 + 50mm 定焦" />
+              <option value="相机 + 70–200mm 长焦" />
+              <option value="无人机" />
+              <option value="相机 + 三脚架" />
+            </datalist>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              拍摄偏好（可选）
+            </span>
+            <input
+              value={preferences}
+              onChange={(event) =>
+                setPreferences(event.target.value.slice(0, 200))}
+              placeholder="例如：想拍慢门、避免人多、希望有前景"
+              className="h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
+            />
+          </label>
         </div>
         <button
           type="submit"
@@ -208,6 +247,10 @@ export function CustomPlanPanel({
                     {plan.title}
                   </h4>
                   <PlanFacts plan={plan} />
+                  <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Clock3 className="size-3 text-primary" />
+                    建议 {formatTime(plan.arrivalTime)} 到达，提前完成踩点与构图
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -248,6 +291,50 @@ export function CustomPlanPanel({
                   <p className="mt-1 text-sm leading-6">{plan.lightAnalysis}</p>
                 </div>
               </div>
+              <div className="mt-4 rounded-xl border border-border/70 bg-muted/25 p-4">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Camera className="size-3.5 text-primary" />相机参数参考
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    ["ISO", plan.cameraParameters.iso],
+                    ["光圈", plan.cameraParameters.aperture],
+                    ["快门", plan.cameraParameters.shutter],
+                    ["焦距", plan.cameraParameters.focalLength],
+                    ["曝光补偿", plan.cameraParameters.exposureBias],
+                    ["白平衡", plan.cameraParameters.whiteBalance],
+                    ["对焦", plan.cameraParameters.focusMode],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <p className="text-[10px] text-muted-foreground">{label}</p>
+                      <p className="mt-0.5 text-xs font-medium leading-5">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
+                  参考值需按现场测光、设备与题材调整。
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Clock3 className="size-3.5 text-primary" />建议拍摄流程
+                </p>
+                <ol className="mt-2 space-y-2.5">
+                  {plan.schedule.map((item) => (
+                    <li key={`${item.time}-${item.label}`} className="flex gap-3 text-xs leading-5">
+                      <span className="w-12 shrink-0 font-medium tabular-nums text-primary">
+                        {formatTime(item.time)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="font-medium">{item.label}</span>
+                        <span className="text-muted-foreground"> · {item.action}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
               {plan.risks.length > 0 && (
                 <p className="mt-4 rounded-xl bg-amber-500/[0.08] p-3 text-xs leading-5 text-amber-800 dark:text-amber-300">
                   风险：{plan.risks.join("；")}

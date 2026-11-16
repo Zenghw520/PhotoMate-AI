@@ -293,6 +293,8 @@ export interface CustomSlotInput {
 
 export interface CustomPlansInput {
   subject: string;
+  equipment?: string | null;
+  preferences?: string | null;
   theme: ThemeId;
   location: { name: string; latitude: number; longitude: number };
   date: string;
@@ -329,7 +331,7 @@ const CUSTOM_PLANS_PROMPT =
 只能使用输入中的时间、天气、太阳位置与窗口事实，不得编造或修改这些数据；不得声称已经看到现场。
 只输出 JSON：
 {"summary":"两到三句总体拍摄思路","plans":[{"slotId":"输入中已存在的 slotId","title":"...","subjectApproach":"...","composition":"...","cameraSettings":"...","lightAnalysis":"...","risks":["..."]}]}
-要求：plans 为 2 到 3 个，slotId 必须来自输入且不重复；若输入可用窗口少于 2 个，则只输出 1 个方案。每个方案说明如何围绕用户题材拍摄，构图与参数需具体但以现场测光为准；risks 为 0 到 3 条。`;
+要求：plans 为 2 到 3 个，slotId 必须来自输入且不重复；若输入可用窗口少于 2 个，则只输出 1 个方案。每个方案说明如何围绕用户题材拍摄，构图与参数需具体但以现场测光为准；若输入提供 equipment 或 preferences，必须在题材切入或参数建议中体现，但不得因此修改天气、时间或太阳事实；risks 为 0 到 3 条。`;
 
 function validShort(value: unknown, max = 1_000): value is string {
   return typeof value === "string" && value.trim().length > 0 &&

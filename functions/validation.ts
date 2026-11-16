@@ -267,7 +267,23 @@ export function customPlanRequest(body: unknown): CustomPlanRequest {
       "拍摄题材需为 2～200 个字符。",
     );
   }
-  return { ...base, subject };
+  const optional = (input: unknown, max: number, label: string) => {
+    if (input === undefined || input === null) return undefined;
+    if (typeof input !== "string") {
+      throw new HttpError(400, "INVALID_SUBJECT", `${label}格式无效。`);
+    }
+    const cleaned = Array.from(input).filter((char) => {
+      const code = char.charCodeAt(0);
+      return code > 0x1f && code !== 0x7f;
+    }).join("").trim().slice(0, max);
+    return cleaned || undefined;
+  };
+  return {
+    ...base,
+    subject,
+    equipment: optional(value.equipment, 80, "摄影设备"),
+    preferences: optional(value.preferences, 200, "拍摄偏好"),
+  };
 }
 
 export function photoAnalysisRequest(body: unknown): PhotoAnalysisRequest {
