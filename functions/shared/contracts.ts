@@ -210,6 +210,28 @@ export interface PhotographyPlan {
   aiEnhanced: boolean;
 }
 
+export interface PhotographyIndexEntry {
+  id:
+    | "LANDSCAPE"
+    | "PORTRAIT"
+    | "URBAN"
+    | "NIGHT"
+    | "ASTRONOMY"
+    | "DAWN"
+    | "DUSK";
+  label: string;
+  score: number | null;
+  note: string;
+}
+
+export interface PhotographyIndices {
+  overall: number | null;
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  entries: PhotographyIndexEntry[];
+  trend: Array<{ time: string; label: string; score: number | null }>;
+  basis: string[];
+}
+
 export interface TodayResponse {
   generatedAt: string;
   date: string;
@@ -217,6 +239,7 @@ export interface TodayResponse {
   location: LocationResult;
   weather: WeatherData;
   solar: SolarData;
+  indices: PhotographyIndices;
   potential: {
     dawn: PotentialScore;
     dusk: PotentialScore;

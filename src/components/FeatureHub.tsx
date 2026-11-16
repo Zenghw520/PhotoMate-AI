@@ -15,8 +15,9 @@ import type {
   TodayResponse,
   WeatherData,
 } from "@/functions/shared/contracts";
-import { formatDate, formatObservedAt } from "@/src/lib/format";
+import { formatDate, formatObservedAt, formatRange } from "@/src/lib/format";
 import { WeatherOverview } from "@/src/components/WeatherOverview";
+import { PhotoIndices } from "@/src/components/PhotoIndices";
 import { PotentialCard } from "@/src/components/PotentialCard";
 import { FireCloudCard } from "@/src/components/FireCloudCard";
 import { SolarTimeline } from "@/src/components/SolarTimeline";
@@ -60,6 +61,12 @@ const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = 
       id: "current",
       label: "实况与逐小时",
       intro: "当前观测与未来逐小时变化均来自真实天气服务。",
+    },
+    {
+      id: "indices",
+      label: "摄影指数",
+      intro:
+        "综合与分题材摄影指数、全天评分趋势；每个指数都由当天真实天气和天文窗口计算。",
     },
     {
       id: "sources",
@@ -233,6 +240,7 @@ function FeatureMenu({
 
   return (
     <section className="mt-6" aria-labelledby="feature-menu-title">
+      {data && <TodayOverview data={data} />}
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2
@@ -277,6 +285,85 @@ function FeatureMenu({
         })}
       </div>
     </section>
+  );
+}
+
+function TodayOverview({ data }: { data: TodayResponse }) {
+  const current = data.weather.current;
+  const upcoming = data.timeline
+    .filter((item) => !item.isPast && item.score !== null)
+    .slice(0, 4);
+  const best = [...upcoming].sort((left, right) =>
+    (right.score ?? 0) - (left.score ?? 0)
+  )[0] ?? null;
+  const overall = data.indices.overall;
+  const confidence = { LOW: "较低", MEDIUM: "中等", HIGH: "较高" }[
+    data.indices.confidence
+  ];
+  return (
+    <div className="mb-5 rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-semibold">今日摄影概览</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatDate(data.date)} · {data.location.name} · {confidence}置信度
+          </p>
+        </div>
+        <span className="text-[11px] text-muted-foreground">
+          由真实天气与本地天文计算
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-xl bg-muted/45 p-3">
+          <p className="text-[11px] text-muted-foreground">综合摄影指数</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {overall === null ? "—" : Math.round(overall)}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
+              / 100
+            </span>
+          </p>
+        </div>
+        <div className="rounded-xl bg-muted/45 p-3">
+          <p className="text-[11px] text-muted-foreground">朝霞 / 晚霞</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {scoreText(data.potential.dawn.score)}
+            <span className="mx-1 text-sm font-normal text-muted-foreground">
+              /
+            </span>
+            {scoreText(data.potential.dusk.score)}
+          </p>
+        </div>
+        <div className="rounded-xl bg-muted/45 p-3">
+          <p className="text-[11px] text-muted-foreground">下一最佳窗口</p>
+          {best ? (
+            <>
+              <p className="mt-1 truncate text-sm font-semibold">{best.label}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {formatRange(best.start, best.end)} ·{" "}
+                {scoreText(best.score)} 分
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm font-semibold">今日窗口已结束</p>
+          )}
+        </div>
+        <div className="rounded-xl bg-muted/45 p-3">
+          <p className="text-[11px] text-muted-foreground">实况天气</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {current?.temperature === null || current === null
+              ? "—"
+              : `${Math.round(current.temperature)}°`}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {current
+              ? `${current.condition || "天气未知"} · 云量 ${
+                current.cloud === null ? "—" : `${Math.round(current.cloud)}%`
+              }`
+              : WEATHER_STATUS[data.weather.status]}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -429,7 +516,10 @@ function SectionDetail({
 
           <div className="mt-4">
             {section === "WEATHER" && tab === "current" && (
-              <WeatherOverview weather={data.weather} />
+              <WeatherOverview weather={data.weather} targetDate={targetDate} />
+            )}
+            {section === "WEATHER" && tab === "indices" && (
+              <PhotoIndices indices={data.indices} />
             )}
             {section === "WEATHER" && tab === "sources" && (
               <WeatherSources weather={data.weather} />

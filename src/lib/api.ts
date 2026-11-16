@@ -69,7 +69,9 @@ function isTodayResponse(value: unknown): value is TodayResponse {
   return typeof item.generatedAt === "string" && typeof item.date === "string" &&
     isLocation(item.location) && !!item.weather && Array.isArray(item.weather.hourly) &&
     !!item.solar && Array.isArray(item.solar.goldenHours) && !!item.potential &&
-    !!item.fireCloud && Array.isArray(item.timeline) && !!item.plans &&
+    !!item.fireCloud && !!item.indices && Array.isArray(item.indices.entries) &&
+    Array.isArray(item.indices.trend) &&
+    Array.isArray(item.timeline) && !!item.plans &&
     Array.isArray(item.plans.items) && Array.isArray(item.warnings);
 }
 

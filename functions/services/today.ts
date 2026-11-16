@@ -31,6 +31,7 @@ import {
   mergeHourlyForScoring,
 } from "./day_journal.ts";
 import { buildTimeline } from "./timeline.ts";
+import { buildPhotographyIndices } from "./indices.ts";
 import { claimAiUsage } from "./usage.ts";
 
 function shanghaiDate(now: Date) {
@@ -269,6 +270,14 @@ export async function getTodayPhotography(
     theme,
     now,
   );
+  const indices = buildPhotographyIndices({
+    landscape: timeline,
+    portrait: buildTimeline(location, solar, scoringHourly, "PORTRAIT", now),
+    urban: buildTimeline(location, solar, scoringHourly, "STREET", now),
+    night: buildTimeline(location, solar, scoringHourly, "NIGHT", now),
+    potential,
+    weather,
+  });
   const rulePlans = buildRulePlans(timeline, theme, location);
   const plans = await plansWithEnhancement(
     location,
@@ -337,6 +346,7 @@ export async function getTodayPhotography(
     location,
     weather,
     solar,
+    indices,
     potential,
     fireCloud,
     timeline,
