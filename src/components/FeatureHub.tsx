@@ -700,6 +700,20 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
       <p className="mt-4 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
         天气与空气质量必须来自真实服务。未配置或缺失时，页面会明确标注并暂停相关评分，不会用推测值补齐。
       </p>
+      {weather.missingFields.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3">
+          <p className="text-[11px] leading-5 text-muted-foreground">
+            部分字段暂缺，可能来自短时服务波动；可重新获取真实数据，仍缺失时不会补造。
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="min-h-9 shrink-0 rounded-full bg-background px-3 text-[11px] font-medium text-foreground shadow-sm transition hover:bg-muted"
+          >
+            重新获取
+          </button>
+        </div>
+      )}
       {multiSource && (
         <p className="mt-2 rounded-xl bg-primary/[0.06] p-3 text-xs leading-5 text-muted-foreground">
           数值字段由和风天气、OpenWeather 与 Open-Meteo 等权平均；天气现象文字优先采用和风天气，空气质量来自和风天气。单一来源缺失的字段按可用来源计算。
