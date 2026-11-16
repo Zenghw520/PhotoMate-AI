@@ -24,6 +24,7 @@ import { FireCloudCard } from "@/src/components/FireCloudCard";
 import { SolarTimeline } from "@/src/components/SolarTimeline";
 import { SolarPath } from "@/src/components/SolarPath";
 import { PhotoAnalysis, PhotoMethod } from "@/src/components/PhotoAnalysis";
+import { PhotoRecords } from "@/src/components/PhotoRecords";
 import { CustomPlanPanel } from "@/src/components/CustomPlanPanel";
 
 export type SectionId = "WEATHER" | "LIGHT" | "PLANS" | "SPOTS" | "PHOTO";
@@ -126,6 +127,11 @@ const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = 
       id: "upload",
       label: "上传分析",
       intro: "先在本地推断题材，再结合 EXIF 与画质统计，生成贴合题材的技术建议。",
+    },
+    {
+      id: "records",
+      label: "拍摄记录",
+      intro: "查看保存在当前浏览器的拍摄方案与分析记录；原始照片不会上传。",
     },
     {
       id: "method",
@@ -542,7 +548,11 @@ function SectionDetail({
             {activeTab.intro}
           </p>
           <div className="mt-4">
-            {tab === "upload" ? <PhotoAnalysis /> : <PhotoMethod />}
+            {tab === "upload"
+              ? <PhotoAnalysis />
+              : tab === "records"
+              ? <PhotoRecords />
+              : <PhotoMethod />}
           </div>
         </>
       )}

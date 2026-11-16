@@ -18,6 +18,7 @@ import type {
 } from "@/functions/shared/contracts";
 import { generateCustomPlans } from "@/src/lib/api";
 import { compass, formatRange, formatTime, metric } from "@/src/lib/format";
+import { addRecord } from "@/src/lib/records";
 
 const IDEAS = [
   "城市夜景与车轨",
@@ -74,6 +75,24 @@ export function CustomPlanPanel({
   const [result, setResult] = useState<CustomPlansResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [savedPlans, setSavedPlans] = useState<Set<string>>(new Set());
+
+  function savePlan(plan: CustomPlan) {
+    addRecord({
+      kind: "plan",
+      date: data.date,
+      locationName: data.location.name,
+      subject: subject.trim() || plan.title,
+      title: plan.title,
+      timeWindow: plan.timeWindow,
+      arrivalTime: plan.arrivalTime,
+      cameraParameters: plan.cameraParameters,
+      schedule: plan.schedule,
+      solar: plan.solar,
+      weather: plan.weather,
+    });
+    setSavedPlans((previous) => new Set(previous).add(plan.slotId));
+  }
 
   useEffect(() => {
     setResult(null);
@@ -263,6 +282,15 @@ export function CustomPlanPanel({
                 >
                   <CheckCircle2 className="size-3.5" />
                   {selectedSlotId === plan.slotId ? "已选中" : "选中时段"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => savePlan(plan)}
+                  disabled={savedPlans.has(plan.slotId)}
+                  className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full border border-border px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  {savedPlans.has(plan.slotId) ? "已保存" : "保存记录"}
                 </button>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">

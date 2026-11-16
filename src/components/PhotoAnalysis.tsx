@@ -23,6 +23,7 @@ import { analyzePhoto } from "@/src/lib/api";
 import { parseJpegExif } from "@/src/lib/exif";
 import { measurePhoto } from "@/src/lib/photo";
 import { decodeRaw, isRawFile, RAW_ACCEPT } from "@/src/lib/raw";
+import { addRecord } from "@/src/lib/records";
 
 const MAX_BYTES = 150 * 1024 * 1024;
 
@@ -146,6 +147,22 @@ export function PhotoAnalysis() {
   const [reading, setReading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
+  const [savedRecord, setSavedRecord] = useState(false);
+
+  function saveAnalysis() {
+    if (!analysis || !file) return;
+    addRecord({
+      kind: "analysis",
+      fileName: file.name,
+      sceneLabel: analysis.scene.label,
+      confidence: confidenceText(analysis.confidenceLevel),
+      summary: analysis.summary,
+      issues: analysis.issues,
+      suggestions: analysis.suggestions,
+      exifSummary: analysis.exifSummary,
+    });
+    setSavedRecord(true);
+  }
 
   useEffect(() => {
     return () => {
@@ -170,6 +187,7 @@ export function PhotoAnalysis() {
     setError("");
     setReading(true);
     setAnalysis(null);
+    setSavedRecord(false);
     setExif(null);
     setStats(null);
     setScene(null);
@@ -217,6 +235,7 @@ export function PhotoAnalysis() {
     if (!file || !stats || !scene || !signals) return;
     setAnalyzing(true);
     setError("");
+    setSavedRecord(false);
     try {
       const result = await analyzePhoto({
         fileName: file.name,
@@ -408,6 +427,18 @@ export function PhotoAnalysis() {
             </div>
             <p className="mt-3 text-sm leading-6">{analysis.summary}</p>
           </section>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={saveAnalysis}
+              disabled={savedRecord}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border px-3.5 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
+            >
+              <CheckCircle2 className="size-3.5" />
+              {savedRecord ? "已保存到拍摄记录" : "保存分析记录"}
+            </button>
+          </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
             <FindingList title="可保持的方面" items={analysis.strengths} tone="good" />
