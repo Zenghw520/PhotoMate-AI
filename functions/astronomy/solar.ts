@@ -276,6 +276,20 @@ function elevationWindows(
   return windows;
 }
 
+function twilightPair(
+  latitude: number,
+  longitude: number,
+  dayStart: number,
+  threshold: number,
+): { dawn: number | null; dusk: number | null } {
+  const crossings = findCrossings(latitude, longitude, dayStart, threshold);
+  return {
+    dawn: crossings.find((crossing) => crossing.rising)?.time ?? null,
+    dusk: [...crossings].reverse().find((crossing) => !crossing.rising)?.time ??
+      null,
+  };
+}
+
 export function computeSolar(
   latitude: number,
   longitude: number,
@@ -288,12 +302,55 @@ export function computeSolar(
   const sunset = [...sunriseCrossings].reverse().find((crossing) =>
     !crossing.rising
   );
+  const civil = twilightPair(latitude, longitude, dayStart, -6);
+  const nautical = twilightPair(latitude, longitude, dayStart, -12);
+  const astronomical = twilightPair(latitude, longitude, dayStart, -18);
+  const noonTime = findSolarNoon(latitude, longitude, dayStart);
+  const sunriseAzimuth = sunrise
+    ? solarPositionAt(latitude, longitude, new Date(sunrise.time)).azimuth
+    : null;
+  const sunsetAzimuth = sunset
+    ? solarPositionAt(latitude, longitude, new Date(sunset.time)).azimuth
+    : null;
+  const noonElevation =
+    solarPositionAt(latitude, longitude, new Date(noonTime)).elevation;
+  const path = Array.from({ length: 145 }, (_, index) => {
+    const time = dayStart + index * 10 * MINUTE_MS;
+    const position = solarPositionAt(
+      latitude,
+      longitude,
+      new Date(time),
+    );
+    return {
+      time: toShanghaiIso(time),
+      elevation: Math.round(position.elevation * 10) / 10,
+      azimuth: Math.round(position.azimuth * 10) / 10,
+    };
+  });
   return {
     sunrise: sunrise ? toShanghaiIso(sunrise.time) : null,
     sunset: sunset ? toShanghaiIso(sunset.time) : null,
-    solarNoon: toShanghaiIso(findSolarNoon(latitude, longitude, dayStart)),
+    solarNoon: toShanghaiIso(noonTime),
+    civilDawn: civil.dawn === null ? null : toShanghaiIso(civil.dawn),
+    civilDusk: civil.dusk === null ? null : toShanghaiIso(civil.dusk),
+    nauticalDawn: nautical.dawn === null ? null : toShanghaiIso(nautical.dawn),
+    nauticalDusk: nautical.dusk === null ? null : toShanghaiIso(nautical.dusk),
+    astronomicalDawn: astronomical.dawn === null
+      ? null
+      : toShanghaiIso(astronomical.dawn),
+    astronomicalDusk: astronomical.dusk === null
+      ? null
+      : toShanghaiIso(astronomical.dusk),
+    sunriseAzimuth: sunriseAzimuth === null
+      ? null
+      : Math.round(sunriseAzimuth * 10) / 10,
+    sunsetAzimuth: sunsetAzimuth === null
+      ? null
+      : Math.round(sunsetAzimuth * 10) / 10,
+    noonElevation: Math.round(noonElevation * 10) / 10,
     goldenHours: elevationWindows(latitude, longitude, dayStart, -4, 6),
     blueHours: elevationWindows(latitude, longitude, dayStart, -6, -4),
+    path,
     algorithm: "NOAA_SOLAR_POSITION",
   };
 }

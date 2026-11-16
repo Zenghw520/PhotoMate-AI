@@ -20,6 +20,7 @@ import { WeatherOverview } from "@/src/components/WeatherOverview";
 import { PotentialCard } from "@/src/components/PotentialCard";
 import { FireCloudCard } from "@/src/components/FireCloudCard";
 import { SolarTimeline } from "@/src/components/SolarTimeline";
+import { SolarPath } from "@/src/components/SolarPath";
 import { PhotoAnalysis, PhotoMethod } from "@/src/components/PhotoAnalysis";
 import { CustomPlanPanel } from "@/src/components/CustomPlanPanel";
 
@@ -72,6 +73,12 @@ const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = 
       label: "霞光与火烧云",
       intro:
         "朝霞、晚霞与火烧云合并在同一页；火烧云可能性与鲜艳度依据窗口附近的真实总云量、能见度与湿度判断。",
+    },
+    {
+      id: "solar",
+      label: "太阳轨迹",
+      intro:
+        "拖动时间轴查看太阳全天轨迹、方位角与高度角，并核对晨昏蒙影、黄金与蓝调时刻。",
     },
     {
       id: "timeline",
@@ -447,6 +454,9 @@ function SectionDetail({
                   预测思路参考公开火烧云研究：中高云适量、低云不挡光、空气通透时更有利。可能性与鲜艳度依据窗口云量、高/中/低云分层与气溶胶数据判断，仍只表示环境条件，不能替代卫星云图与现场判断。
                 </p>
               </div>
+            )}
+            {section === "LIGHT" && tab === "solar" && (
+              <SolarPath solar={data.solar} date={targetDate} />
             )}
             {section === "LIGHT" && tab === "timeline" && (
               <>

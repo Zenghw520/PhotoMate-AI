@@ -87,12 +87,28 @@ export interface SolarPosition {
   azimuth: number;
 }
 
+export interface SolarPathPoint {
+  time: string;
+  elevation: number;
+  azimuth: number;
+}
+
 export interface SolarData {
   sunrise: string | null;
   sunset: string | null;
   solarNoon: string;
+  civilDawn: string | null;
+  civilDusk: string | null;
+  nauticalDawn: string | null;
+  nauticalDusk: string | null;
+  astronomicalDawn: string | null;
+  astronomicalDusk: string | null;
+  sunriseAzimuth: number | null;
+  sunsetAzimuth: number | null;
+  noonElevation: number | null;
   goldenHours: TimeWindow[];
   blueHours: TimeWindow[];
+  path: SolarPathPoint[];
   algorithm: "NOAA_SOLAR_POSITION";
 }
 

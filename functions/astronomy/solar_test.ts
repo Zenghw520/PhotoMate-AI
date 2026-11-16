@@ -157,3 +157,25 @@ Deno.test("非法坐标与日期会被拒绝", () => {
   assert.throws(() => solarPositionAt(91, 120, new Date()), RangeError);
   assert.throws(() => computeSolar(31.2, 121.4, "2025-02-30"), RangeError);
 });
+
+Deno.test("太阳轨迹包含晨昏阶段、方位角与全天采样", () => {
+  const solar = computeSolar(31.2304, 121.4737, "2025-03-20");
+  assert.ok(solar.civilDawn && solar.civilDusk);
+  assert.ok(solar.nauticalDawn && solar.nauticalDusk);
+  assert.ok(solar.astronomicalDawn && solar.astronomicalDusk);
+  assert.ok(
+    localMinutes(solar.astronomicalDawn!) <
+      localMinutes(solar.nauticalDawn!),
+  );
+  assert.ok(
+    localMinutes(solar.nauticalDawn!) < localMinutes(solar.civilDawn!),
+  );
+  assert.ok(localMinutes(solar.civilDawn!) < localMinutes(solar.sunrise!));
+  assert.ok(localMinutes(solar.sunset!) < localMinutes(solar.civilDusk!));
+  assert.ok(solar.sunriseAzimuth !== null && solar.sunriseAzimuth > 80);
+  assert.ok(solar.sunsetAzimuth !== null && solar.sunsetAzimuth > 260);
+  assert.ok(solar.noonElevation !== null && solar.noonElevation > 50);
+  assert.equal(solar.path.length, 145);
+  assert.ok(solar.path[0].time.endsWith("T00:00:00+08:00"));
+  assert.ok(solar.path[72].elevation > 0);
+});
