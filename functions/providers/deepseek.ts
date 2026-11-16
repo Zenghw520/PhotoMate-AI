@@ -1,5 +1,6 @@
 import { PHOTO_SUBJECT_LABELS, PHOTO_SUBJECTS } from "../shared/contracts.ts";
 import type {
+  CameraParameters,
   LocationResult,
   PhotoExif,
   PhotographyPlan,
@@ -316,6 +317,7 @@ export interface AiCustomPlan {
   subjectApproach: string;
   composition: string;
   cameraSettings: string;
+  cameraParameters?: CameraParameters;
   lightAnalysis: string;
   risks: string[];
 }
@@ -330,12 +332,39 @@ const CUSTOM_PLANS_PROMPT =
   `你是摄影策划编辑。用户给出一个拍摄题材；输入同时包含真实日期、位置、天气、太阳方位与可用光线窗口。
 只能使用输入中的时间、天气、太阳位置与窗口事实，不得编造或修改这些数据；不得声称已经看到现场。
 只输出 JSON：
-{"summary":"两到三句总体拍摄思路","plans":[{"slotId":"输入中已存在的 slotId","title":"...","subjectApproach":"...","composition":"...","cameraSettings":"...","lightAnalysis":"...","risks":["..."]}]}
-要求：plans 为 2 到 3 个，slotId 必须来自输入且不重复；若输入可用窗口少于 2 个，则只输出 1 个方案。每个方案说明如何围绕用户题材拍摄，构图与参数需具体但以现场测光为准；若输入提供 equipment 或 preferences，必须在题材切入或参数建议中体现，但不得因此修改天气、时间或太阳事实；risks 为 0 到 3 条。`;
+{"summary":"两到三句总体拍摄思路","plans":[{"slotId":"输入中已存在的 slotId","title":"...","subjectApproach":"...","composition":"...","cameraSettings":"...","cameraParameters":{"iso":"...","aperture":"...","shutter":"...","focalLength":"...","exposureBias":"...","whiteBalance":"...","focusMode":"..."},"lightAnalysis":"...","risks":["..."]}]}
+要求：plans 为 2 到 3 个，slotId 必须来自输入且不重复；若输入可用窗口少于 2 个，则只输出 1 个方案。每个方案说明如何围绕用户题材拍摄，构图与参数需具体但以现场测光为准；cameraParameters 的七个字段都必须给出简短范围，并与 cameraSettings 保持一致；若输入提供 equipment 或 preferences，必须在题材切入或参数建议中体现，但不得因此修改天气、时间或太阳事实；risks 为 0 到 3 条。`;
 
 function validShort(value: unknown, max = 1_000): value is string {
   return typeof value === "string" && value.trim().length > 0 &&
     value.length <= max;
+}
+
+const CAMERA_KEYS = [
+  "iso",
+  "aperture",
+  "shutter",
+  "focalLength",
+  "exposureBias",
+  "whiteBalance",
+  "focusMode",
+] as const;
+
+function cameraParameters(value: unknown): CameraParameters | null {
+  const entry = record(value);
+  if (!entry) return null;
+  for (const key of CAMERA_KEYS) {
+    if (!validShort(entry[key], 80)) return null;
+  }
+  return {
+    iso: (entry.iso as string).trim(),
+    aperture: (entry.aperture as string).trim(),
+    shutter: (entry.shutter as string).trim(),
+    focalLength: (entry.focalLength as string).trim(),
+    exposureBias: (entry.exposureBias as string).trim(),
+    whiteBalance: (entry.whiteBalance as string).trim(),
+    focusMode: (entry.focusMode as string).trim(),
+  };
 }
 
 export async function generateCustomPlans(
@@ -428,12 +457,14 @@ export async function generateCustomPlans(
         return { status: "INVALID_RESPONSE", summary: null, plans: [] };
       }
       seen.add(entry.slotId);
+      const camera = cameraParameters(entry.cameraParameters);
       plans.push({
         slotId: entry.slotId,
         title: entry.title.trim(),
         subjectApproach: entry.subjectApproach.trim(),
         composition: entry.composition.trim(),
         cameraSettings: entry.cameraSettings.trim(),
+        ...(camera ? { cameraParameters: camera } : {}),
         lightAnalysis: entry.lightAnalysis.trim(),
         risks: entry.risks.map((risk: string) => risk.trim()),
       });

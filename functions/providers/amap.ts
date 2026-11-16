@@ -528,7 +528,10 @@ export async function searchPhotoSpots(
       const name = text(poi.name);
       const gcj = parseGcjLocation(poi.location);
       if (!id || !name || !gcj || seen.has(id)) continue;
-      if (/停车场|售票|厕所|游客中心|入口/.test(name)) continue;
+      if (
+        /停车场|售票|厕所|游客中心|入口|出口|公交站|地铁站|车站|管理处|派出所|卫生间/
+          .test(name)
+      ) continue;
       seen.add(id);
       const distance = Number(poi.distance);
       spots.push({

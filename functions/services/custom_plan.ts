@@ -134,11 +134,12 @@ export async function generateCustomPlanResponse(
       timeWindow: { start: slot.start, end: slot.end },
       arrivalTime: details.arrivalTime,
       schedule: details.schedule,
-      cameraParameters: buildCameraParameters(
-        input.subject,
-        slot,
-        input.equipment,
-      ),
+      cameraParameters: plan.cameraParameters ??
+        buildCameraParameters(
+          input.subject,
+          slot,
+          input.equipment,
+        ),
       subjectApproach: plan.subjectApproach,
       composition: plan.composition,
       cameraSettings: plan.cameraSettings,
