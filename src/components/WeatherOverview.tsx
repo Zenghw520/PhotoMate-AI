@@ -1,6 +1,7 @@
 import { AlertTriangle, Cloud, CloudSun, Droplets, Eye, Gauge, Thermometer, Umbrella, Wind } from "lucide-react";
 import type { HourlyWeather, WeatherData } from "@/functions/shared/contracts";
 import { formatObservedAt, formatTime, metric, shanghaiDate } from "@/src/lib/format";
+import { WeatherTrend } from "@/src/components/WeatherTrend";
 
 const statusLabels = { OK: "实时", STALE: "缓存", UNCONFIGURED: "未配置", UNAVAILABLE: "暂不可用" };
 
@@ -110,10 +111,7 @@ export function WeatherOverview({ weather, targetDate }: { weather: WeatherData;
           <span className="text-[11px] text-muted-foreground">{hours.length ? `${hours.length} 小时逐时预报` : "所选日期暂无逐时数据"}</span>
         </div>
         {hours.length ? (
-          <>
-            <TemperatureChart hours={hours} />
-            <CloudRainChart hours={hours} />
-          </>
+          <WeatherTrend hours={hours} />
         ) : (
           <p className="mt-3 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
             所选日期超出逐小时预报覆盖范围，未用其他日期数据代替。
@@ -159,66 +157,6 @@ function CloudLayer({ label, value, tone }: { label: string; value: number | nul
       <p className="mt-1 text-lg font-semibold tabular-nums">{value === null ? "—" : `${Math.round(value)}%`}</p>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
         <div className={`h-full rounded-full ${tone}`} style={{ width: `${value ?? 0}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function TemperatureChart({ hours }: { hours: HourlyWeather[] }) {
-  const values = hours.map((entry) => entry.temperature).filter((value): value is number => value !== null);
-  if (values.length < 2) {
-    return <p className="mt-3 rounded-xl bg-muted/45 p-3 text-xs text-muted-foreground">所选日期温度数据不足，无法绘制变化曲线。</p>;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = Math.max(1, max - min);
-  const width = 720;
-  const height = 118;
-  const x = (index: number) => 12 + (index / Math.max(1, hours.length - 1)) * (width - 24);
-  const y = (value: number) => height - 16 - ((value - min) / span) * (height - 34);
-  const points = hours.map((entry, index) =>
-    entry.temperature === null ? null : `${x(index).toFixed(1)},${y(entry.temperature).toFixed(1)}`
-  ).filter((point): point is string => point !== null).join(" ");
-  return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>温度</span>
-        <span className="tabular-nums">{min.toFixed(1)}° — {max.toFixed(1)}°</span>
-      </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="mt-1 h-auto w-full" role="img" aria-label="逐小时温度变化">
-        <line x1="12" x2={width - 12} y1={y(min)} y2={y(min)} stroke="var(--border)" strokeDasharray="4 6" />
-        <line x1="12" x2={width - 12} y1={y(max)} y2={y(max)} stroke="var(--border)" strokeDasharray="4 6" />
-        <polyline points={points} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-        {hours.map((entry, index) => index % 3 === 0 ? (
-          <text key={entry.time} x={x(index)} y={height - 2} textAnchor="middle" fontSize="9" fill="var(--muted-foreground)">{formatTime(entry.time)}</text>
-        ) : null)}
-      </svg>
-    </div>
-  );
-}
-
-function CloudRainChart({ hours }: { hours: HourlyWeather[] }) {
-  return (
-    <div className="mt-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-        <span>云量与降水概率</span>
-        <span className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-zinc-400/70" />云量</span>
-          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-sky-500/60" />降水概率</span>
-        </span>
-      </div>
-      <div className="mt-2 flex h-28 items-end gap-[3px]">
-        {hours.map((entry) => (
-          <div key={entry.time} className="flex h-full flex-1 items-end justify-center gap-[1px]" title={`${formatTime(entry.time)} 云量 ${entry.cloud ?? "—"}% 降水概率 ${entry.precipitationProbability ?? "—"}%`}>
-            <div className="w-[45%] rounded-t-sm bg-zinc-400/60" style={{ height: `${Math.max(2, entry.cloud ?? 0)}%` }} />
-            <div className="w-[45%] rounded-t-sm bg-sky-500/55" style={{ height: `${Math.max(2, entry.precipitationProbability ?? 0)}%` }} />
-          </div>
-        ))}
-      </div>
-      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-        <span>{formatTime(hours[0].time)}</span>
-        <span>{formatTime(hours[Math.floor(hours.length / 2)].time)}</span>
-        <span>{formatTime(hours[hours.length - 1].time)}</span>
       </div>
     </div>
   );
