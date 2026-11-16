@@ -1,7 +1,8 @@
-import { ChevronDown, CloudSun, Sunrise, Sunset } from "lucide-react";
+import { ChevronDown, Clock3, CloudSun, Sunrise, Sunset } from "lucide-react";
 import type { PotentialScore } from "@/functions/shared/contracts";
 import {
   formatRange,
+  formatTime,
   missingFieldLabel,
   scoreLabel,
 } from "@/src/lib/format";
@@ -28,6 +29,12 @@ export function PotentialCard({ type, data }: { type: "dawn" | "dusk"; data: Pot
         </div>
       </div>
       <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">{data.summary}</p>
+      {data.forecastWindow && (
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Clock3 className="size-3.5 text-primary" />
+          建议 {formatTime(new Date(Date.parse(data.forecastWindow.start) - 40 * 60_000).toISOString())} 前到达，完成机位与构图。
+        </p>
+      )}
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
         <span className="flex flex-wrap items-center gap-2 text-muted-foreground">
           {data.forecastWindow ? formatRange(data.forecastWindow.start, data.forecastWindow.end) : "对应预报窗口不可用"}
