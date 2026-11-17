@@ -232,7 +232,7 @@ export async function getOpenWeather(
       const payload = await request(apiKey, "/data/3.0/onecall", {
         ...location,
         exclude: "minutely,daily,alerts",
-      }, 7_000);
+      }, 3_500);
       const root = record(payload);
       const current = mapCurrent(root?.current);
       const hourly = (Array.isArray(root?.hourly) ? root.hourly : [])
