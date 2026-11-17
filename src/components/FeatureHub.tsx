@@ -710,13 +710,17 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
   const forecastUpdated = weather.forecastUpdatedAt
     ? formatObservedAt(weather.forecastUpdatedAt)
     : "未提供";
-  const firstHour = weather.hourly[0]?.time;
-  const lastHour = weather.hourly.at(-1)?.time;
+  const nowHour = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+  const futureHours = weather.hourly.filter((entry) =>
+    Date.parse(entry.time) >= nowHour
+  );
+  const firstHour = futureHours[0]?.time;
+  const lastHour = futureHours.at(-1)?.time;
   const coverage = firstHour && lastHour
     ? `${formatObservedAt(firstHour)} 至 ${
       formatObservedAt(lastHour)
-    }（${weather.hourly.length} 条）`
-    : "无逐小时数据";
+    }（${futureHours.length} 条未来逐小时数据）`
+    : "无未来逐小时数据";
   const rows = [
     { label: "数据状态", value: WEATHER_STATUS[weather.status] },
     {
