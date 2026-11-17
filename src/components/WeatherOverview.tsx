@@ -9,6 +9,17 @@ function hoursForDate(hourly: HourlyWeather[], date: string) {
   return hourly.filter((entry) => entry.time.slice(0, 10) === date).slice(0, 24);
 }
 
+function rollingHours(hourly: HourlyWeather[], date: string) {
+  const dateStart = Date.parse(`${date}T00:00:00+08:00`);
+  const nowHour = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+  const start = date === shanghaiDate(0)
+    ? Math.max(dateStart, nowHour)
+    : dateStart;
+  return hourly
+    .filter((entry) => Date.parse(entry.time) >= start)
+    .slice(0, 72);
+}
+
 function referenceHour(hourly: HourlyWeather[], date: string) {
   if (hourly.length === 0) return null;
   if (date !== shanghaiDate(0)) {
@@ -51,6 +62,7 @@ function weatherAlerts(hours: HourlyWeather[]) {
 export function WeatherOverview({ weather, targetDate }: { weather: WeatherData; targetDate: string }) {
   const current = weather.current;
   const hours = hoursForDate(weather.hourly, targetDate);
+  const forecastHours = rollingHours(weather.hourly, targetDate);
   const reference = referenceHour(hours, targetDate);
   const alerts = weatherAlerts(hours);
   const hasLayers = reference !== null &&
@@ -106,12 +118,25 @@ export function WeatherOverview({ weather, targetDate }: { weather: WeatherData;
       )}
 
       <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold">天气变化</h3>
-          <span className="text-[11px] text-muted-foreground">{hours.length ? `${hours.length} 小时逐时预报` : "所选日期暂无逐时数据"}</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">天气变化趋势</h3>
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+              预报数据，支持 24 / 48 / 72 小时与五项指标切换。
+            </p>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {forecastHours.length
+              ? `覆盖未来 ${forecastHours.length} 小时`
+              : "所选日期暂无逐时预报"}
+          </span>
         </div>
-        {hours.length ? (
-          <WeatherTrend hours={hours} />
+        {forecastHours.length ? (
+          <WeatherTrend
+            hours={forecastHours}
+            forecastUpdatedAt={weather.forecastUpdatedAt}
+            sources={weather.sources}
+          />
         ) : (
           <p className="mt-3 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
             所选日期超出逐小时预报覆盖范围，未用其他日期数据代替。

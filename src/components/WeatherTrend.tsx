@@ -1,16 +1,124 @@
 import { useEffect, useRef, useState } from "react";
 import type { HourlyWeather } from "@/functions/shared/contracts";
-import { formatTime, metric } from "@/src/lib/format";
+import { formatObservedAt, formatTime, metric } from "@/src/lib/format";
 
 const WIDTH = 720;
-const HEIGHT = 118;
+const HEIGHT = 190;
+const PLOT_LEFT = 38;
+const PLOT_RIGHT = 14;
+const PLOT_TOP = 14;
+const PLOT_BOTTOM = 26;
 const LONG_PRESS_MS = 320;
+
+type MetricKey =
+  | "temperature"
+  | "cloud"
+  | "humidity"
+  | "windSpeed"
+  | "precipitationProbability";
+
+const METRICS: Record<
+  MetricKey,
+  {
+    label: string;
+    unit: string;
+    digits: number;
+    color: string;
+    pick: (entry: HourlyWeather) => number | null;
+  }
+> = {
+  temperature: {
+    label: "温度",
+    unit: "°C",
+    digits: 1,
+    color: "var(--primary)",
+    pick: (entry) => entry.temperature,
+  },
+  cloud: {
+    label: "云量",
+    unit: "%",
+    digits: 0,
+    color: "#71717a",
+    pick: (entry) => entry.cloud,
+  },
+  humidity: {
+    label: "湿度",
+    unit: "%",
+    digits: 0,
+    color: "#0ea5e9",
+    pick: (entry) => entry.humidity,
+  },
+  windSpeed: {
+    label: "风速",
+    unit: "m/s",
+    digits: 1,
+    color: "#8b5cf6",
+    pick: (entry) => entry.windSpeed,
+  },
+  precipitationProbability: {
+    label: "降水概率",
+    unit: "%",
+    digits: 0,
+    color: "#0284c7",
+    pick: (entry) => entry.precipitationProbability,
+  },
+};
+
+const RANGES = [24, 48, 72] as const;
+type RangeHours = (typeof RANGES)[number];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function WeatherTrend({ hours }: { hours: HourlyWeather[] }) {
+function valuesOf(hours: HourlyWeather[], key: MetricKey) {
+  return hours
+    .map((entry) => METRICS[key].pick(entry))
+    .filter((value): value is number => value !== null);
+}
+
+function scaleFor(key: MetricKey, values: number[]) {
+  if (values.length === 0) return { min: 0, max: 100, ticks: [0, 50, 100] };
+  if (key === "temperature") {
+    const min = Math.floor(Math.min(...values) - 2);
+    const max = Math.ceil(Math.max(...values) + 2);
+    const middle = Math.round((min + max) / 2);
+    return { min, max, ticks: [min, middle, max] };
+  }
+  if (key === "windSpeed") {
+    const max = Math.max(6, Math.ceil(Math.max(...values) + 1));
+    return { min: 0, max, ticks: [0, Math.round(max / 2), max] };
+  }
+  return { min: 0, max: 100, ticks: [0, 50, 100] };
+}
+
+function formatValue(value: number, key: MetricKey) {
+  return `${value.toFixed(METRICS[key].digits)}${METRICS[key].unit}`;
+}
+
+function dayTime(value: string, withDate: boolean) {
+  if (!withDate) return formatTime(value);
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+}
+
+export function WeatherTrend({
+  hours,
+  forecastUpdatedAt,
+  sources,
+}: {
+  hours: HourlyWeather[];
+  forecastUpdatedAt?: string | null;
+  sources: string[];
+}) {
+  const [range, setRange] = useState<RangeHours>(24);
+  const [metricKey, setMetricKey] = useState<MetricKey>("temperature");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
@@ -32,9 +140,10 @@ export function WeatherTrend({ hours }: { hours: HourlyWeather[] }) {
 
   function indexAt(clientX: number) {
     const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0 || hours.length === 0) return null;
+    const visible = hours.slice(0, range);
+    if (!rect || rect.width === 0 || visible.length === 0) return null;
     const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
-    return Math.round(ratio * (hours.length - 1));
+    return Math.round(ratio * (visible.length - 1));
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -88,131 +197,228 @@ export function WeatherTrend({ hours }: { hours: HourlyWeather[] }) {
 
   if (hours.length === 0) return null;
 
-  const temperatures = hours
-    .map((entry) => entry.temperature)
-    .filter((value): value is number => value !== null);
-  const min = temperatures.length ? Math.min(...temperatures) : 0;
-  const max = temperatures.length ? Math.max(...temperatures) : 1;
-  const span = Math.max(1, max - min);
+  const visible = hours.slice(0, range);
+  const config = METRICS[metricKey];
+  const values = valuesOf(visible, metricKey);
+  const scale = scaleFor(metricKey, values);
+  const span = Math.max(1, scale.max - scale.min);
+  const plotWidth = WIDTH - PLOT_LEFT - PLOT_RIGHT;
+  const plotHeight = HEIGHT - PLOT_TOP - PLOT_BOTTOM;
   const x = (index: number) =>
-    12 + (index / Math.max(1, hours.length - 1)) * (WIDTH - 24);
+    PLOT_LEFT + (index / Math.max(1, visible.length - 1)) * plotWidth;
   const y = (value: number) =>
-    HEIGHT - 16 - ((value - min) / span) * (HEIGHT - 34);
-  const points = hours.map((entry, index) =>
-    entry.temperature === null
-      ? null
-      : `${x(index).toFixed(1)},${y(entry.temperature).toFixed(1)}`
-  ).filter((point): point is string => point !== null).join(" ");
-  const active = activeIndex === null ? null : hours[activeIndex] ?? null;
-  const activePercent = activeIndex === null ? 0 : x(activeIndex) / WIDTH * 100;
-  const tooltipPercent = clamp(activePercent, 15, 85);
+    PLOT_TOP + (1 - (value - scale.min) / span) * plotHeight;
+
+  const segments: Array<Array<{ index: number; value: number }>> = [];
+  let current: Array<{ index: number; value: number }> = [];
+  visible.forEach((entry, index) => {
+    const value = config.pick(entry);
+    if (value === null) {
+      if (current.length) segments.push(current);
+      current = [];
+      return;
+    }
+    current.push({ index, value });
+  });
+  if (current.length) segments.push(current);
+
+  const active = activeIndex === null
+    ? null
+    : visible[clamp(activeIndex, 0, visible.length - 1)] ?? null;
+  const activeValue = active ? config.pick(active) : null;
+  const activePercent = activeIndex === null
+    ? 0
+    : x(clamp(activeIndex, 0, visible.length - 1)) / WIDTH * 100;
+  const tooltipPercent = clamp(activePercent, 18, 82);
+  const crossesDay = visible[0].time.slice(0, 10) !==
+    visible[visible.length - 1].time.slice(0, 10);
+  const timeTicks = [
+    ...new Set([
+      0,
+      Math.floor((visible.length - 1) / 3),
+      Math.floor((visible.length - 1) * 2 / 3),
+      visible.length - 1,
+    ]),
+  ];
 
   return (
-    <div
-      ref={containerRef}
-      className="relative mt-3 select-none"
-      style={{ touchAction: "pan-y" }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerEnd}
-      onPointerCancel={handlePointerEnd}
-      onPointerLeave={handlePointerLeave}
-      onContextMenu={(event) => event.preventDefault()}
-    >
-      <div className="relative">
+    <div className="mt-3 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          role="group"
+          aria-label="预报范围"
+          className="flex gap-1.5 rounded-full bg-muted p-1"
+        >
+          {RANGES.map((item) => (
+            <button
+              key={item}
+              type="button"
+              aria-pressed={range === item}
+              disabled={hours.length < item}
+              onClick={() => {
+                setRange(item);
+                setActiveIndex(null);
+              }}
+              className={`min-h-8 rounded-full px-3 text-[11px] font-medium transition ${
+                range === item
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45"
+              }`}
+            >
+              未来 {item} 小时
+            </button>
+          ))}
+        </div>
+        <span className="text-[10px] text-muted-foreground">
+          {hours.length < 72
+            ? `上游仅覆盖未来 ${hours.length} 小时`
+            : "预报缺口以断线显示，不补造数值"}
+        </span>
+      </div>
+
+      <div
+        role="group"
+        aria-label="趋势指标"
+        className="scrollbar-none flex gap-1.5 overflow-x-auto pb-1"
+      >
+        {(Object.keys(METRICS) as MetricKey[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={metricKey === key}
+            onClick={() => {
+              setMetricKey(key);
+              setActiveIndex(null);
+            }}
+            className={`min-h-8 shrink-0 rounded-full border px-3 text-[11px] font-medium transition ${
+              metricKey === key
+                ? "border-primary/25 bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {METRICS[key].label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        ref={containerRef}
+        className="relative select-none"
+        style={{ touchAction: "pan-y" }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={handlePointerLeave}
+        onContextMenu={(event) => event.preventDefault()}
+      >
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>温度</span>
+          <span>{config.label}变化</span>
           <span className="tabular-nums">
-            {min.toFixed(1)}° — {max.toFixed(1)}°
+            {values.length
+              ? `${formatValue(Math.min(...values), metricKey)} — ${
+                formatValue(Math.max(...values), metricKey)
+              }`
+              : "所选范围缺少该字段"}
           </span>
         </div>
+
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           className="mt-1 h-auto w-full"
           role="img"
-          aria-label="逐小时温度变化"
+          aria-label={`未来${range}小时${config.label}变化`}
         >
-          <line x1="12" x2={WIDTH - 12} y1={y(min)} y2={y(min)} stroke="var(--border)" strokeDasharray="4 6" />
-          <line x1="12" x2={WIDTH - 12} y1={y(max)} y2={y(max)} stroke="var(--border)" strokeDasharray="4 6" />
-          <polyline
-            points={points}
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-          {hours.map((entry, index) =>
-            index % 3 === 0 && entry.temperature !== null ? (
+          {scale.ticks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={PLOT_LEFT}
+                x2={WIDTH - PLOT_RIGHT}
+                y1={y(tick)}
+                y2={y(tick)}
+                stroke="var(--border)"
+                strokeDasharray={tick === scale.ticks[0] ? "0" : "4 6"}
+              />
               <text
-                key={entry.time}
-                x={x(index)}
-                y={HEIGHT - 2}
-                textAnchor="middle"
+                x={PLOT_LEFT - 5}
+                y={y(tick) + 3}
+                textAnchor="end"
                 fontSize="9"
                 fill="var(--muted-foreground)"
               >
-                {formatTime(entry.time)}
+                {tick}
               </text>
-            ) : null
-          )}
-          {active && activeIndex !== null && active.temperature !== null && (
+            </g>
+          ))}
+          {segments.map((segment, index) => {
+            const points = segment.map((point) =>
+              `${x(point.index).toFixed(1)},${y(point.value).toFixed(1)}`
+            ).join(" ");
+            if (segment.length === 1) {
+              return (
+                <circle
+                  key={`point-${index}`}
+                  cx={x(segment[0].index)}
+                  cy={y(segment[0].value)}
+                  r="2.5"
+                  fill={config.color}
+                />
+              );
+            }
+            const first = segment[0];
+            const last = segment[segment.length - 1];
+            const area = `M ${x(first.index)} ${y(first.value)} L ${
+              segment.map((point) =>
+                `${x(point.index)} ${y(point.value)}`
+              ).join(" L ")
+            } L ${x(last.index)} ${HEIGHT - PLOT_BOTTOM} L ${
+              x(first.index)
+            } ${HEIGHT - PLOT_BOTTOM} Z`;
+            return (
+              <g key={`segment-${index}`}>
+                <path d={area} fill={config.color} fillOpacity="0.08" />
+                <polyline
+                  points={points}
+                  fill="none"
+                  stroke={config.color}
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </g>
+            );
+          })}
+          {timeTicks.map((index) => (
+            <text
+              key={`time-${index}`}
+              x={x(index)}
+              y={HEIGHT - 6}
+              textAnchor={index === 0
+                ? "start"
+                : index === visible.length - 1
+                ? "end"
+                : "middle"}
+              fontSize="9"
+              fill="var(--muted-foreground)"
+            >
+              {dayTime(visible[index].time, crossesDay)}
+            </text>
+          ))}
+          {active && activeIndex !== null && activeValue !== null && (
             <circle
               r="4.5"
               cx="0"
               cy="0"
-              fill="var(--primary)"
+              fill={config.color}
               stroke="var(--card)"
               strokeWidth="2"
               style={{
-                transform: `translate(${x(activeIndex)}px, ${y(active.temperature)}px)`,
+                transform: `translate(${x(activeIndex)}px, ${y(activeValue)}px)`,
                 transition: "transform 160ms ease",
               }}
             />
           )}
         </svg>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <span>云量与降水概率</span>
-          <span className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1">
-              <span className="size-2 rounded-sm bg-zinc-400/70" />云量
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="size-2 rounded-sm bg-sky-500/60" />降水概率
-            </span>
-          </span>
-        </div>
-        <div className="mt-2 flex h-28 items-end gap-[3px]">
-          {hours.map((entry, index) => {
-            const isActive = activeIndex === index;
-            const dimmed = activeIndex !== null && !isActive;
-            return (
-              <div
-                key={entry.time}
-                className={`flex h-full flex-1 items-end justify-center gap-[1px] rounded-t-md transition-[background-color,opacity] duration-150 ${
-                  isActive ? "bg-primary/10" : ""
-                } ${dimmed ? "opacity-50" : "opacity-100"}`}
-              >
-                <div
-                  className="w-[45%] rounded-t-sm bg-zinc-400/60"
-                  style={{ height: `${Math.max(2, entry.cloud ?? 0)}%` }}
-                />
-                <div
-                  className="w-[45%] rounded-t-sm bg-sky-500/55"
-                  style={{
-                    height: `${Math.max(2, entry.precipitationProbability ?? 0)}%`,
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-          <span>{formatTime(hours[0].time)}</span>
-          <span>{formatTime(hours[Math.floor(hours.length / 2)].time)}</span>
-          <span>{formatTime(hours[hours.length - 1].time)}</span>
-        </div>
 
         {active && (
           <>
@@ -224,7 +430,7 @@ export function WeatherTrend({ hours }: { hours: HourlyWeather[] }) {
               }}
             />
             <div
-              className="pointer-events-none absolute top-0 z-10 w-[12.5rem] rounded-xl border border-border bg-popover/95 p-2.5 text-[11px] leading-4 shadow-lg backdrop-blur"
+              className="pointer-events-none absolute top-0 z-10 w-[13rem] rounded-xl border border-border bg-popover/95 p-2.5 text-[11px] leading-4 shadow-lg backdrop-blur"
               style={{
                 left: `${tooltipPercent}%`,
                 transform: "translateX(-50%)",
@@ -233,30 +439,52 @@ export function WeatherTrend({ hours }: { hours: HourlyWeather[] }) {
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold tabular-nums">
-                  {formatTime(active.time)}
+                  {dayTime(active.time, true)}
                 </span>
                 <span className="truncate text-muted-foreground">
                   {active.condition || "天气未知"}
                 </span>
               </div>
+              <p
+                className="mt-1 text-sm font-semibold tabular-nums"
+                style={{ color: config.color }}
+              >
+                {config.label}{" "}
+                {activeValue === null
+                  ? "—"
+                  : formatValue(activeValue, metricKey)}
+              </p>
               <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-muted-foreground">
-                <span>温度 {metric(active.temperature, "°")}</span>
+                <span>温度 {metric(active.temperature, "°", 1)}</span>
                 <span>云量 {metric(active.cloud, "%")}</span>
-                <span>降水 {metric(active.precipitationProbability, "%")}</span>
+                <span>湿度 {metric(active.humidity, "%")}</span>
                 <span>风速 {metric(active.windSpeed, "m/s", 1)}</span>
-                <span className="col-span-2">
+                <span>降水 {metric(active.precipitationProbability, "%")}</span>
+                <span>
                   能见度{" "}
                   {active.visibility === null
                     ? "—"
-                    : `${(active.visibility / 1000).toFixed(1)} km`}
+                    : `${(active.visibility / 1000).toFixed(1)}km`}
                 </span>
               </div>
             </div>
           </>
         )}
+
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
+          <span>
+            {forecastUpdatedAt
+              ? `预报获取于 ${formatObservedAt(forecastUpdatedAt)}`
+              : "预报获取时间未提供"}
+          </span>
+          <span className="truncate">
+            {sources.length ? `来源 ${sources.join(" / ")}` : "来源未提供"}
+          </span>
+        </div>
       </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">
-        悬停图表查看逐小时数据；触控端长按后拖动。
+
+      <p className="text-[10px] text-muted-foreground">
+        悬停或长按拖动查看逐小时详情；图表为预报数据，实况以“此刻天气”观测时间为准。
       </p>
     </div>
   );
