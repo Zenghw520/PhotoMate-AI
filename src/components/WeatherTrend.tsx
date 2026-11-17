@@ -254,7 +254,6 @@ export function WeatherTrend({
               key={item}
               type="button"
               aria-pressed={range === item}
-              disabled={hours.length < item}
               onClick={() => {
                 setRange(item);
                 setActiveIndex(null);
@@ -262,7 +261,7 @@ export function WeatherTrend({
               className={`min-h-8 rounded-full px-3 text-[11px] font-medium transition ${
                 range === item
                   ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               未来 {item} 小时

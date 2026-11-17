@@ -109,7 +109,11 @@ async function loadWeather(
       "weather",
       fresh,
       fresh.current?.observedAt ?? null,
-      criticalMissing ? 30 : 5 * 60,
+      criticalMissing
+        ? 30
+        : fresh.missingFields.length === 0
+        ? 10 * 60
+        : 5 * 60,
     );
     return { weather: fresh, fetchedAt: now };
   }
