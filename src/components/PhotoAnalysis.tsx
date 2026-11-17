@@ -259,13 +259,13 @@ export function PhotoAnalysis() {
 
   return (
     <div className="space-y-4">
-      <section className="pm-panel p-5">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center border border-border text-primary">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
             <ImageUp className="size-5" />
           </span>
           <div>
-            <p className="pm-kicker">Local Develop</p><h3 className="pm-display mt-2 text-2xl">上传照片获取改进建议</h3>
+            <h3 className="font-semibold">上传照片获取改进建议</h3>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               支持 JPEG / PNG / WebP 与主流 RAW（NEF、ARW、CR2、CR3、DNG、RAF、ORF、RW2 等），最大 150MB。照片只在浏览器本地解析，原始图像不会上传。
             </p>
@@ -289,12 +289,12 @@ export function PhotoAnalysis() {
             const selected = event.dataTransfer.files?.[0];
             if (selected) void prepare(selected);
           }}
-          className="mt-4 border border-dashed border-border bg-muted/20 p-5 text-center"
+          className="mt-4 rounded-2xl border border-dashed border-border bg-muted/25 p-5 text-center"
         >
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="pm-action pm-action--solid inline-flex min-h-11 items-center gap-2 px-5 text-sm font-semibold"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             <ImageUp className="size-4" />选择照片
           </button>
@@ -312,7 +312,7 @@ export function PhotoAnalysis() {
       </section>
 
       {error && (
-        <div className="flex items-start gap-2 border border-destructive/30 bg-destructive/[0.05] p-4 text-sm" role="alert">
+        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
           <span>{error}</span>
         </div>
@@ -329,7 +329,7 @@ export function PhotoAnalysis() {
 
       {preview && stats && scene && (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="pm-panel p-3">
+          <div className="rounded-[var(--radius)] border border-border bg-card p-3 shadow-sm">
             <img
               src={preview}
               alt="待分析照片预览"
@@ -337,7 +337,7 @@ export function PhotoAnalysis() {
             />
           </div>
           <div className="space-y-3">
-            <section className="pm-panel p-4">
+            <section className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold">
                   <Camera className="size-4 text-primary" />照片参数
@@ -363,7 +363,7 @@ export function PhotoAnalysis() {
                 </p>
               )}
             </section>
-            <section className="pm-panel border-l-2 border-l-primary p-4">
+            <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold">
                   <ScanSearch className="size-4 text-primary" />识别题材
@@ -383,7 +383,7 @@ export function PhotoAnalysis() {
                 题材由本地像素统计推断；开始分析后由 DeepSeek 基于同一组特征复核，不识别具体人物或物体。
               </p>
             </section>
-            <section className="pm-panel p-4">
+            <section className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
               <h4 className="text-sm font-semibold">本地画质统计</h4>
               <div className="mt-3"><StatsGrid stats={stats} /></div>
             </section>
@@ -396,7 +396,7 @@ export function PhotoAnalysis() {
           type="button"
           onClick={startAnalysis}
           disabled={analyzing}
-          className="pm-action pm-action--solid inline-flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-60 sm:w-auto"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60 sm:w-auto"
         >
           {analyzing
             ? <><LoaderCircle className="size-4 animate-spin" />正在分析…</>
@@ -408,7 +408,7 @@ export function PhotoAnalysis() {
 
       {analysis && (
         <div className="space-y-3">
-          <section className="pm-panel border-l-2 border-l-primary p-5">
+          <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
                 <Sparkles className="size-3" />{aiLabel(analysis.aiStatus)}
@@ -465,7 +465,7 @@ export function PhotoAnalysis() {
 export function PhotoMethod() {
   return (
     <div className="space-y-3">
-      <section className="pm-panel p-5">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <h3 className="flex items-center gap-2 font-semibold">
           <Camera className="size-4 text-primary" />RAW 解码
         </h3>
@@ -478,7 +478,7 @@ export function PhotoMethod() {
           RAW 解码基于 LibRaw（LGPL-2.1 / CDDL）与 libraw-wasm（ISC）。
         </p>
       </section>
-      <section className="pm-panel p-5">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <h3 className="flex items-center gap-2 font-semibold">
           <Camera className="size-4 text-primary" />读取的 EXIF 字段
         </h3>
@@ -488,7 +488,7 @@ export function PhotoMethod() {
           <li>· 没有 EXIF 时仍会分析画质统计，但建议会更有限。</li>
         </ul>
       </section>
-      <section className="pm-panel p-5">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <h3 className="flex items-center gap-2 font-semibold">
           <Info className="size-4 text-primary" />本地画质统计
         </h3>
@@ -498,7 +498,7 @@ export function PhotoMethod() {
           <li>· 统计结果受缩图、主体纹理与后期影响，建议仅作为技术参考。</li>
         </ul>
       </section>
-      <section className="pm-panel p-5">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <h3 className="flex items-center gap-2 font-semibold">
           <ScanSearch className="size-4 text-primary" />题材推断
         </h3>
@@ -508,7 +508,7 @@ export function PhotoMethod() {
           <li>· 本地先做像素统计推断，DeepSeek 再依据同一组特征复核；两者都不是对象识别，具体人物、物体和构图问题仍需自行判断。</li>
         </ul>
       </section>
-      <section className="pm-panel p-5">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <h3 className="flex items-center gap-2 font-semibold">
           <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />边界与隐私
         </h3>

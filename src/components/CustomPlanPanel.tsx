@@ -128,14 +128,13 @@ export function CustomPlanPanel({
 
   return (
     <div className="space-y-4">
-      <form onSubmit={submit} className="pm-panel p-5">
+      <form onSubmit={submit} className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center border border-border text-primary">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
             <Sparkles className="size-5" />
           </span>
           <div>
-            <p className="pm-kicker">AI Field Plan</p>
-            <h3 className="pm-display mt-2 text-2xl">按题材生成拍摄方案</h3>
+            <h3 className="font-semibold">按题材生成拍摄方案</h3>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               输入想拍的内容。AI 只使用所选日期的真实天气、太阳方位与光线窗口，不编造现场信息。
             </p>
@@ -150,7 +149,7 @@ export function CustomPlanPanel({
             onChange={(event) => setSubject(event.target.value.slice(0, 200))}
             rows={2}
             placeholder="例如：雨后的城市街头骑行、古建筑屋檐与晚霞…"
-            className="w-full resize-none border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition focus:border-[var(--ov-cold)] focus:ring-0"
+            className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
           />
         </label>
         <div className="mt-3">
@@ -163,7 +162,7 @@ export function CustomPlanPanel({
                 key={idea}
                 type="button"
                 onClick={() => setSubject(idea)}
-                className="pm-chip"
+                className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
               >
                 {idea}
               </button>
@@ -183,7 +182,7 @@ export function CustomPlanPanel({
               onChange={(event) => setEquipment(event.target.value.slice(0, 80))}
               list="photomate-equipment"
               placeholder="例如：全画幅 + 24–70mm + 三脚架"
-              className="h-11 w-full border border-border bg-background px-4 text-sm outline-none transition focus:border-[var(--ov-cold)] focus:ring-0"
+              className="h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
             />
             <datalist id="photomate-equipment">
               <option value="手机" />
@@ -203,14 +202,14 @@ export function CustomPlanPanel({
               onChange={(event) =>
                 setPreferences(event.target.value.slice(0, 200))}
               placeholder="例如：想拍慢门、避免人多、希望有前景"
-              className="h-11 w-full border border-border bg-background px-4 text-sm outline-none transition focus:border-[var(--ov-cold)] focus:ring-0"
+              className="h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
             />
           </label>
         </div>
         <button
           type="submit"
           disabled={loading || subject.trim().length < 2}
-          className="pm-action pm-action--solid mt-4 inline-flex min-h-11 items-center gap-2 px-5 text-sm font-semibold disabled:opacity-60"
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
           {loading
             ? <><LoaderCircle className="size-4 animate-spin" />生成中…</>
@@ -222,7 +221,7 @@ export function CustomPlanPanel({
       </form>
 
       {error && (
-        <div className="flex items-start gap-2 border border-destructive/30 bg-destructive/[0.05] p-4 text-sm" role="alert">
+        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
           <span>{error}</span>
         </div>
@@ -230,7 +229,7 @@ export function CustomPlanPanel({
 
       {result && (
         <div className="space-y-3">
-          <section className="pm-panel border-l-2 border-l-primary p-5">
+          <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
                 <Sparkles className="size-3" />{aiLabel(result.aiStatus)}
@@ -240,7 +239,7 @@ export function CustomPlanPanel({
               </span>
             </div>
             <p className="mt-3 text-sm leading-6">{result.summary}</p>
-            <p className="mt-2 border border-border p-3 text-xs leading-5 text-muted-foreground">
+            <p className="mt-2 rounded-xl bg-background/60 p-3 text-xs leading-5 text-muted-foreground">
               当天天气依据：{result.weatherSummary}
             </p>
             {result.warnings.length > 0 && (
@@ -251,19 +250,19 @@ export function CustomPlanPanel({
           </section>
 
           {result.plans.length === 0 && (
-            <p className="border border-border bg-card p-5 text-sm text-muted-foreground">
+            <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
               所选日期没有适合生成方案的光线窗口。
             </p>
           )}
 
           {result.plans.map((plan) => (
-            <article key={plan.slotId} className="pm-panel p-5">
+            <article key={plan.slotId} className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="pm-mono font-medium text-primary">
+                  <p className="text-xs font-medium text-primary">
                     {formatRange(plan.timeWindow.start, plan.timeWindow.end)}
                   </p>
-                  <h4 className="pm-display mt-2 text-2xl tracking-[-0.02em]">
+                  <h4 className="mt-1 text-lg font-semibold tracking-tight">
                     {plan.title}
                   </h4>
                   <PlanFacts plan={plan} />
@@ -275,8 +274,11 @@ export function CustomPlanPanel({
                 <button
                   type="button"
                   onClick={() => onSelectSlot(plan.slotId)}
-                  aria-pressed={selectedSlotId === plan.slotId}
-                  className="pm-chip inline-flex min-h-10 shrink-0 items-center gap-1 px-3"
+                  className={`inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-medium transition ${
+                    selectedSlotId === plan.slotId
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   <CheckCircle2 className="size-3.5" />
                   {selectedSlotId === plan.slotId ? "已选中" : "选中时段"}
@@ -285,7 +287,7 @@ export function CustomPlanPanel({
                   type="button"
                   onClick={() => savePlan(plan)}
                   disabled={savedPlans.has(plan.slotId)}
-                  className="pm-action inline-flex min-h-10 shrink-0 items-center gap-1 px-3"
+                  className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full border border-border px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
                 >
                   <CheckCircle2 className="size-3.5" />
                   {savedPlans.has(plan.slotId) ? "已保存" : "保存记录"}

@@ -31,35 +31,35 @@ const METRICS: Record<
     label: "温度",
     unit: "°C",
     digits: 1,
-    color: "var(--chart-1)",
+    color: "var(--primary)",
     pick: (entry) => entry.temperature,
   },
   cloud: {
     label: "云量",
     unit: "%",
     digits: 0,
-    color: "var(--chart-5)",
+    color: "#71717a",
     pick: (entry) => entry.cloud,
   },
   humidity: {
     label: "湿度",
     unit: "%",
     digits: 0,
-    color: "var(--chart-4)",
+    color: "#0ea5e9",
     pick: (entry) => entry.humidity,
   },
   windSpeed: {
     label: "风速",
     unit: "m/s",
     digits: 1,
-    color: "var(--chart-3)",
+    color: "#8b5cf6",
     pick: (entry) => entry.windSpeed,
   },
   precipitationProbability: {
     label: "降水概率",
     unit: "%",
     digits: 0,
-    color: "var(--chart-2)",
+    color: "#0284c7",
     pick: (entry) => entry.precipitationProbability,
   },
 };
@@ -247,7 +247,7 @@ export function WeatherTrend({
         <div
           role="group"
           aria-label="预报范围"
-          className="flex gap-1.5"
+          className="flex gap-1.5 rounded-full bg-muted p-1"
         >
           {RANGES.map((item) => (
             <button
@@ -258,7 +258,11 @@ export function WeatherTrend({
                 setRange(item);
                 setActiveIndex(null);
               }}
-              className="pm-chip min-h-8 px-3"
+              className={`min-h-8 rounded-full px-3 text-[11px] font-medium transition ${
+                range === item
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               未来 {item} 小时
             </button>
@@ -285,7 +289,11 @@ export function WeatherTrend({
               setMetricKey(key);
               setActiveIndex(null);
             }}
-            className="pm-chip min-h-8 shrink-0 px-3"
+            className={`min-h-8 shrink-0 rounded-full border px-3 text-[11px] font-medium transition ${
+              metricKey === key
+                ? "border-primary/25 bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground"
+            }`}
           >
             {METRICS[key].label}
           </button>

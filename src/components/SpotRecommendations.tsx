@@ -79,8 +79,8 @@ export function SpotRecommendations({
 
   return (
     <div className="space-y-4">
-      <section className="pm-panel p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div
             role="group"
             aria-label="查询日期"
@@ -92,13 +92,17 @@ export function SpotRecommendations({
                 type="button"
                 aria-pressed={dayOffset === item.offset}
                 onClick={() => onDayChange(item.offset)}
-                className="pm-chip min-h-10 px-3.5"
+                className={`min-h-10 rounded-full px-3.5 text-xs font-medium transition ${
+                  dayOffset === item.offset
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
               >
                 {item.label}
               </button>
             ))}
           </div>
-          <span className="pm-mono text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {formatDate(date)}
           </span>
         </div>
@@ -109,7 +113,11 @@ export function SpotRecommendations({
               type="button"
               aria-pressed={theme === item.id}
               onClick={() => setTheme(item.id)}
-              className="pm-chip min-h-9 px-3"
+              className={`min-h-9 rounded-full px-3 text-xs font-medium transition ${
+                theme === item.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
             >
               {item.label}
             </button>
@@ -127,7 +135,7 @@ export function SpotRecommendations({
         </div>
       )}
       {error && (
-        <div className="flex items-start gap-2 border border-destructive/30 bg-destructive/[0.05] p-4 text-sm" role="alert">
+        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
           <span>{error}</span>
         </div>
@@ -135,9 +143,9 @@ export function SpotRecommendations({
 
       {result && (
         <>
-          <section className="pm-panel border-l-2 border-l-primary p-5">
+          <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="inline-flex items-center gap-1 border border-border px-2.5 py-1 font-medium text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
                 <Sun className="size-3" />建议窗口{" "}
                 {result.recommendedWindow
                   ? formatRange(
@@ -146,7 +154,7 @@ export function SpotRecommendations({
                   )
                   : "暂不可用"}
               </span>
-              <span className="inline-flex items-center gap-1 border border-border px-2.5 py-1 text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
                 <Sunrise className="size-3" />日出方位{" "}
                 {result.sunriseAzimuth === null
                   ? "—"
@@ -154,7 +162,7 @@ export function SpotRecommendations({
                     Math.round(result.sunriseAzimuth)
                   }°`}
               </span>
-              <span className="inline-flex items-center gap-1 border border-border px-2.5 py-1 text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
                 <Sunset className="size-3" />日落方位{" "}
                 {result.sunsetAzimuth === null
                   ? "—"
@@ -172,30 +180,30 @@ export function SpotRecommendations({
           </section>
 
           {result.spots.length === 0 && !loading && (
-            <p className="border border-dashed border-border bg-card/60 p-5 text-sm text-muted-foreground">
+            <p className="rounded-2xl border border-dashed border-border bg-card/60 p-5 text-sm text-muted-foreground">
               周边暂未找到匹配的摄影点，可换一个题材或更靠近城区的位置。
             </p>
           )}
 
           <div className="grid gap-3 lg:grid-cols-2">
             {result.spots.map((spot, index) => (
-              <article key={spot.id} className="pm-panel p-4">
+              <article key={spot.id} className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="pm-mono font-medium text-primary">
+                    <p className="text-[11px] font-medium text-primary">
                       #{index + 1} · {distanceText(spot.distanceMeters)} ·{" "}
                       {spot.direction}方向
                     </p>
-                    <h3 className="pm-display mt-2 truncate text-xl">{spot.name}</h3>
+                    <h3 className="mt-1 truncate font-semibold">{spot.name}</h3>
                     <p className="mt-1 truncate text-xs text-muted-foreground">
                       {spot.address || spot.type || "地址未提供"}
                     </p>
                   </div>
-                  <span className="grid size-9 shrink-0 place-items-center border border-border text-primary">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                     <Navigation className="size-4" />
                   </span>
                 </div>
-                <p className="mt-3 border border-border p-2.5 text-[11px] leading-4 text-muted-foreground">
+                <p className="mt-3 rounded-xl bg-muted/45 p-2.5 text-[11px] leading-4 text-muted-foreground">
                   {spot.sunNote}
                 </p>
                 <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
@@ -207,7 +215,7 @@ export function SpotRecommendations({
                     href={spot.mapUrl}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="inline-flex items-center gap-1 border border-border px-2.5 py-1 font-medium text-foreground transition hover:border-[var(--ov-cold)] hover:text-[var(--ov-cold)]"
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 font-medium text-foreground transition hover:bg-primary/10"
                   >
                     在高德地图打开<ArrowUpRight className="size-3" />
                   </a>
@@ -218,7 +226,7 @@ export function SpotRecommendations({
         </>
       )}
 
-      <p className="flex items-start gap-1.5 border border-border p-3 text-[11px] leading-5 text-muted-foreground">
+      <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
         地点排序基于 POI 距离与题材关键词，不代表现场机位质量；未接入高德 JS API Key，
         因此不内嵌地图。出发前请核对开放时间、通行与地形遮挡。

@@ -4,9 +4,9 @@ import { Monitor, Moon, Sun } from "lucide-react";
 type Theme = "light" | "dark" | "system";
 
 const options = [
-  { id: "light" as const, label: "印纸", hint: "Paper", icon: Sun },
-  { id: "dark" as const, label: "暗场", hint: "Stage", icon: Moon },
-  { id: "system" as const, label: "自动", hint: "Auto", icon: Monitor },
+  { id: "light" as const, label: "浅色", icon: Sun },
+  { id: "dark" as const, label: "深色", icon: Moon },
+  { id: "system" as const, label: "跟随系统", icon: Monitor },
 ];
 
 export function ThemeToggle() {
@@ -28,23 +28,18 @@ export function ThemeToggle() {
   }, [theme]);
 
   return (
-    <div
-      className="pm-theme-toggle"
-      role="group"
-      aria-label="外观模式"
-    >
-      {options.map(({ id, label, hint, icon: Icon }) => (
+    <div className="flex items-center rounded-full border border-border/80 bg-card/70 p-1 shadow-sm backdrop-blur" aria-label="外观模式">
+      {options.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
           type="button"
-          title={`${label} · ${hint}`}
-          aria-label={`${label} ${hint}`}
+          title={label}
+          aria-label={label}
           aria-pressed={theme === id}
           onClick={() => setTheme(id)}
-          className="pm-theme-toggle__item"
+          className={`grid size-11 place-items-center rounded-full transition-colors ${theme === id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Icon className="size-3.5" />
-          <span className="hidden sm:inline">{label}</span>
+          <Icon className="size-4" />
         </button>
       ))}
     </div>

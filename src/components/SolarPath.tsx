@@ -195,21 +195,20 @@ export function SolarPath({
 
   return (
     <div className="space-y-4">
-      <section className="pm-panel p-5 2xl:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
+      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm 2xl:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="pm-kicker">Solar Path / NOAA</p>
-            <h3 className="pm-display mt-2 text-2xl">太阳全天轨迹</h3>
+            <h3 className="font-semibold">太阳全天轨迹</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               拖动时间轴查看太阳方位与高度；色带为黄金时刻与蓝调时刻。
             </p>
           </div>
-          <span className="border border-border px-3 py-1 text-[10px] font-medium text-primary">
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             {clock(minutes)} 所选时刻
           </span>
         </div>
 
-        <div className="mt-4 overflow-hidden border border-border bg-muted/20 p-2">
+        <div className="mt-4 overflow-hidden rounded-2xl bg-muted/25 p-2">
           <svg
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             className="h-auto w-full"
@@ -359,13 +358,13 @@ export function SolarPath({
         </label>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="border border-border bg-card p-3">
+          <div className="rounded-xl bg-muted/45 p-3">
             <p className="text-[11px] text-muted-foreground">所选时刻太阳高度</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {selected ? `${selected.elevation.toFixed(1)}°` : "—"}
             </p>
           </div>
-          <div className="border border-border bg-card p-3">
+          <div className="rounded-xl bg-muted/45 p-3">
             <p className="text-[11px] text-muted-foreground">所选时刻太阳方位</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {selected
@@ -373,7 +372,7 @@ export function SolarPath({
                 : "—"}
             </p>
           </div>
-          <div className="border border-border bg-card p-3">
+          <div className="rounded-xl bg-muted/45 p-3">
             <p className="text-[11px] text-muted-foreground">正午太阳高度</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {solar.noonElevation === null
@@ -381,7 +380,7 @@ export function SolarPath({
                 : `${solar.noonElevation.toFixed(1)}°`}
             </p>
           </div>
-          <div className="border border-border bg-card p-3">
+          <div className="rounded-xl bg-muted/45 p-3">
             <p className="text-[11px] text-muted-foreground">所选时刻地形遮挡</p>
             {terrain && selectedHorizon !== null ? (
               <>
@@ -411,12 +410,12 @@ export function SolarPath({
           </p>
         )}
         {!terrainLoading && terrainError && (
-          <p className="mt-3 border border-border p-3 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-3 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
             地形遮挡未计算：{terrainError}太阳轨迹仍按本地天文算法显示，未叠加地形地平线。
           </p>
         )}
         {!terrainLoading && terrain && (
-          <p className="mt-3 border border-border p-3 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-3 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
             地形地平线来自星图地球 Terrain-RGB（{terrain.loadedTiles}/
             {terrain.totalTiles} 瓦片，采样半径 12km）。日出方位：
             {sunriseBlocked ? "被地形遮挡" : "可见"}；日落方位：
@@ -426,8 +425,8 @@ export function SolarPath({
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-        <section className="pm-panel p-5">
-          <h3 className="pm-display text-xl">晨昏与黄金时刻</h3>
+        <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
+          <h3 className="text-sm font-semibold">晨昏与黄金时刻</h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <SolarFact
               icon={Sunrise}
@@ -498,7 +497,7 @@ export function SolarPath({
           </div>
         </section>
 
-        <section className="pm-panel p-5">
+        <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             <Compass className="size-4 text-primary" />方向罗盘
           </h3>
@@ -513,7 +512,7 @@ export function SolarPath({
         </section>
       </div>
 
-      <p className="flex items-start gap-1.5 border border-border p-3 text-[11px] leading-5 text-muted-foreground">
+      <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
         太阳位置由 NOAA 算法在本地计算；地形地平线取自星图地球 Terrain-RGB（约 12km 半径），不含建筑与植被。地图联动需要高德 JS API Key，当前以方位罗盘呈现方向。
       </p>
@@ -531,7 +530,7 @@ function SolarFact({
   value: string;
 }) {
   return (
-    <div className="border border-border p-3">
+    <div className="rounded-xl border border-border/70 p-3">
       <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Icon className="size-3.5 text-primary" />
         {label}

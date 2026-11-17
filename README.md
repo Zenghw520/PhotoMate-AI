@@ -108,17 +108,6 @@ DeepSeek 返回的参数会与文字说明保持一致；AI 不可用或额度�
 
 ---
 
-## 设计语言
-
-界面视觉参考开源项目 [Overture · 序曲](https://github.com/ruiqichenbiec/design-systems)（MIT）：
-
-- **Paper / Stage 双主题**：温暖印纸与近黑舞台，朱红标记操作、冷光标记焦点。
-- **Bodoni Moda + Manrope**：衬线标题承担舞台尺度，无衬线承担数据与控制；字体按 SIL OFL 1.1 随包保留许可文本。
-- **直角相纸与 1px 细线**：静态区块不使用阴影，浮层才使用投影；圆形只保留给取景、光圈与状态点。
-- **显影式动效**：页面与内容切换使用短促的模糊淡入，尊重 `prefers-reduced-motion`。
-
-字体来源与许可：`public/fonts/BodoniModa-OFL.txt`、`public/fonts/Manrope-OFL.txt`。
-
 ## 系统架构
 
 ```mermaid
@@ -308,8 +297,7 @@ npx deno test --allow-env functions/
 ├─ src/                  React 前端
 │  ├─ components/        页面与可视化组件
 │  ├─ lib/               API、格式化、天文/像素/RAW/本地记录
-│  └─ globals.css        Overture 设计令牌、主题与动效
-├─ public/fonts/         Bodoni Moda / Manrope 与 OFL 许可
+│  └─ globals.css        主题与动效
 ├─ functions/            Deno Edge Function
 │  ├─ providers/         和风、OpenWeather、Open-Meteo、MET Norway、高德、星图、DeepSeek
 │  ├─ services/          聚合、评分、指数、方案、照片分析、缓存
