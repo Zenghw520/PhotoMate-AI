@@ -155,10 +155,11 @@ function windAlert(hours: HourlyWeather[]): WeatherAlert | null {
 function bestWindowAlert(
   timeline: TimelineItem[],
   now: Date,
+  date: string,
 ): WeatherAlert | null {
   const future = timeline.filter((item) =>
-    !item.isPast && item.score !== null &&
-    Date.parse(item.end) > now.getTime()
+    item.start.slice(0, 10) === date && !item.isPast &&
+    item.score !== null && Date.parse(item.end) > now.getTime()
   );
   if (future.length === 0) return null;
   const best =
@@ -221,7 +222,7 @@ export function buildWeatherAlerts(
     hours.length ? visibilityAlert(hours) : null,
     hours.length ? windAlert(hours) : null,
     hours.length ? cloudShiftAlert(hours) : null,
-    bestWindowAlert(timeline, now),
+    bestWindowAlert(timeline, now, date),
   ].filter((alert): alert is WeatherAlert => alert !== null);
   const rank = { WARNING: 0, WATCH: 1, INFO: 2 };
   return alerts

@@ -125,7 +125,7 @@ export function WeatherOverview({
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-x-3 gap-y-4 sm:justify-self-end sm:gap-x-6">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:justify-self-end sm:gap-x-6">
                 <Metric
                   icon={Droplets}
                   label="湿度"

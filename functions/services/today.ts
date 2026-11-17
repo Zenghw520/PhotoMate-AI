@@ -56,6 +56,7 @@ function isWeatherData(value: unknown): value is WeatherData {
 }
 
 function withForecastTime(weather: WeatherData, at: Date): WeatherData {
+  if (!weather.forecastUpdatedAt && weather.hourly.length === 0) return weather;
   return {
     ...weather,
     forecastUpdatedAt: weather.forecastUpdatedAt ?? at.toISOString(),
