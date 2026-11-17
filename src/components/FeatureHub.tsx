@@ -571,7 +571,11 @@ function SectionDetail({
 
           <div className="mt-4">
             {section === "WEATHER" && tab === "current" && (
-              <WeatherOverview weather={data.weather} targetDate={targetDate} />
+              <WeatherOverview
+                weather={data.weather}
+                targetDate={targetDate}
+                alerts={data.alerts}
+              />
             )}
             {section === "WEATHER" && tab === "indices" && (
               <PhotoIndices indices={data.indices} />
@@ -581,20 +585,32 @@ function SectionDetail({
             )}
             {section === "LIGHT" && tab === "glow" && (
               <div className="space-y-5">
-                {(["dawn", "dusk"] as const).map((type) => (
-                  <div key={type}>
-                    <h3 className="text-sm font-semibold">
-                      {type === "dawn" ? "朝霞" : "晚霞"}
-                    </h3>
-                    <div className="mt-3 grid gap-4 xl:grid-cols-2">
-                      <PotentialCard
-                        type={type}
-                        data={data.potential[type]}
-                      />
-                      <FireCloudCard type={type} data={data.fireCloud[type]} />
+                {(["dawn", "dusk"] as const).map((type) => {
+                  const context = solarEventContext(data.solar, type);
+                  return (
+                    <div key={type}>
+                      <h3 className="text-sm font-semibold">
+                        {type === "dawn" ? "朝霞" : "晚霞"}
+                      </h3>
+                      <div className="mt-3 grid gap-4 xl:grid-cols-2">
+                        <PotentialCard
+                          type={type}
+                          data={data.potential[type]}
+                          eventTime={context.eventTime}
+                          azimuth={context.azimuth}
+                          elevation={context.elevation}
+                        />
+                        <FireCloudCard
+                          type={type}
+                          data={data.fireCloud[type]}
+                          eventTime={context.eventTime}
+                          azimuth={context.azimuth}
+                          elevation={context.elevation}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <p className="rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
                   预测思路参考公开火烧云研究：中高云适量、低云不挡光、空气通透时更有利。可能性与鲜艳度依据窗口云量、高/中/低云分层与气溶胶数据判断，仍只表示环境条件，不能替代卫星云图与现场判断。
                 </p>
@@ -672,18 +688,43 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
   const observedAt = weather.current
     ? formatObservedAt(weather.current.observedAt)
     : "暂无观测时间";
+  const forecastUpdated = weather.forecastUpdatedAt
+    ? formatObservedAt(weather.forecastUpdatedAt)
+    : "未提供";
+  const firstHour = weather.hourly[0]?.time;
+  const lastHour = weather.hourly.at(-1)?.time;
+  const coverage = firstHour && lastHour
+    ? `${formatObservedAt(firstHour)} 至 ${
+      formatObservedAt(lastHour)
+    }（${weather.hourly.length} 条）`
+    : "无逐小时数据";
   const rows = [
     { label: "数据状态", value: WEATHER_STATUS[weather.status] },
+    {
+      label: "实况观测",
+      value: `${observedAt} · 当前天气为站点观测/实况数据`,
+    },
+    {
+      label: "逐小时预报",
+      value: `获取于 ${forecastUpdated} · 覆盖 ${coverage}`,
+    },
     {
       label: "数据来源",
       value: weather.sources.join(" / ") || "未提供",
     },
-    { label: "观测时间", value: observedAt },
+    {
+      label: "两类数据",
+      value:
+        "实况只用于“此刻天气”；逐小时预报用于趋势、霞光、摄影指数与提醒，页面分别标注观测时间和获取时间。",
+    },
     {
       label: "缺失字段",
       value: summarizeMissingFields(weather.missingFields).join("、") || "无",
     },
-    { label: "说明", value: weather.message ?? "当前没有额外说明。" },
+    {
+      label: "说明",
+      value: weather.message ?? "当前没有额外说明。",
+    },
   ];
   return (
     <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
@@ -704,6 +745,11 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
       <p className="mt-4 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
         天气与空气质量必须来自真实服务。未配置或缺失时，页面会明确标注并暂停相关评分，不会用推测值补齐。
       </p>
+      {weather.status === "STALE" && (
+        <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs leading-5 text-muted-foreground">
+          当前为短时真实缓存，观测与预报时间保持不变；评分置信度已按数据时效降低。
+        </p>
+      )}
       {weather.missingFields.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3">
           <p className="text-[11px] leading-5 text-muted-foreground">
@@ -723,6 +769,9 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
           数值字段由和风天气、OpenWeather 与 Open-Meteo 等权平均；天气现象文字优先采用和风天气，空气质量来自和风天气。单一来源缺失的字段按可用来源计算。
         </p>
       )}
+      <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+        和风天气提供实况、天气现象与空气质量；OpenWeather 与 Open-Meteo 提供数值与逐小时预报；高/中/低云分层与气溶胶来自 Open-Meteo。来源名称与更新时间均由后端随响应返回。
+      </p>
       {weather.sources.includes("Open-Meteo") && (
         <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
           Open-Meteo 免费接口用于非商业演示，数据遵循 CC BY 4.0。
@@ -734,4 +783,29 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
 
 function scoreText(score: number | null): string {
   return score === null ? "—" : String(Math.round(score));
+}
+
+function solarEventContext(
+  solar: TodayResponse["solar"],
+  type: "dawn" | "dusk",
+): {
+  eventTime: string | null;
+  azimuth: number | null;
+  elevation: number | null;
+} {
+  const eventTime = type === "dawn" ? solar.sunrise : solar.sunset;
+  const azimuth = type === "dawn"
+    ? solar.sunriseAzimuth
+    : solar.sunsetAzimuth;
+  const target = eventTime ? Date.parse(eventTime) : NaN;
+  if (!eventTime || !Number.isFinite(target) || solar.path.length === 0) {
+    return { eventTime, azimuth, elevation: null };
+  }
+  const nearest = solar.path.reduce((best, point) =>
+    Math.abs(Date.parse(point.time) - target) <
+        Math.abs(Date.parse(best.time) - target)
+      ? point
+      : best
+  );
+  return { eventTime, azimuth, elevation: nearest.elevation };
 }

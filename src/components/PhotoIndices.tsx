@@ -1,8 +1,21 @@
-import { Activity, Info, Sparkles } from "lucide-react";
-import type { PhotographyIndices } from "@/functions/shared/contracts";
-import { formatTime, scoreLabel } from "@/src/lib/format";
+import { Activity, ChevronDown, Info, Sparkles } from "lucide-react";
+import type {
+  PhotographyIndexEntry,
+  PhotographyIndices,
+} from "@/functions/shared/contracts";
+import {
+  formatTime,
+  missingFieldLabel,
+  scoreLabel,
+} from "@/src/lib/format";
 
 const confidenceLabels = { LOW: "较低", MEDIUM: "中等", HIGH: "较高" };
+
+const statusLabels = {
+  OK: "数据完整",
+  PARTIAL: "部分字段缺失",
+  UNAVAILABLE: "数据不足",
+};
 
 function barColor(score: number) {
   if (score >= 70) return "bg-emerald-500/75";
@@ -22,7 +35,7 @@ export function PhotoIndices({ indices }: { indices: PhotographyIndices }) {
               <Sparkles className="size-4 text-primary" />今日综合摄影指数
             </h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              按题材评分加权，每一项都来自当天真实天气与天文窗口。
+              七个题材各自使用独立权重，全部由当天真实逐小时天气与太阳窗口计算。
             </p>
           </div>
           <div
@@ -55,35 +68,27 @@ export function PhotoIndices({ indices }: { indices: PhotographyIndices }) {
             {indices.entries.filter((entry) => entry.score !== null).length} /{" "}
             {indices.entries.length} 项有可用评分
           </span>
+          <span className="rounded-full bg-muted px-2.5 py-1">
+            可展开核对每个因子的数值与贡献
+          </span>
         </div>
       </section>
 
       <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-        <h3 className="text-sm font-semibold">分题材指数</h3>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold">分题材指数</h3>
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+              每个题材的光线窗口、云层、能见度、降水、风速、湿度与气溶胶权重不同。
+            </p>
+          </div>
+          <span className="text-[10px] text-muted-foreground">
+            点击“评分依据”展开
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
           {indices.entries.map((entry) => (
-            <div
-              key={entry.id}
-              className="rounded-xl border border-border/70 p-3"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">{entry.label}</span>
-                <span className="text-lg font-semibold tabular-nums">
-                  {entry.score === null ? "—" : Math.round(entry.score)}
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={`h-full rounded-full ${
-                    entry.score === null ? "bg-muted" : barColor(entry.score)
-                  }`}
-                  style={{ width: `${entry.score ?? 0}%` }}
-                />
-              </div>
-              <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-                {entry.note}
-              </p>
-            </div>
+            <IndexCard key={entry.id} entry={entry} />
           ))}
         </div>
       </section>
@@ -91,10 +96,10 @@ export function PhotoIndices({ indices }: { indices: PhotographyIndices }) {
       {trend.length > 0 && (
         <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <Activity className="size-4 text-primary" />全天评分趋势
+            <Activity className="size-4 text-primary" />全天光线窗口评分
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            风光题材各光线时段的评分变化；空白表示该时段缺少可用天气。
+            风光题材各光线时段的评分变化，用于比较清晨、白天与傍晚；空白表示该时段缺少可用天气。
           </p>
           <div className="mt-4 overflow-x-auto">
             <div className="flex min-w-[32rem] items-end gap-2">
@@ -129,9 +134,83 @@ export function PhotoIndices({ indices }: { indices: PhotographyIndices }) {
         </ul>
         <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
           <Info className="mt-0.5 size-3.5 shrink-0" />
-          指数是辅助决策，不是气象部门预报；缺少数据的题材不参与综合加权。
+          指数是辅助决策，不是气象部门预报；缺少真实天气的题材不评分，部分缺失的题材按剩余权重归一化并标注。
         </p>
       </section>
     </div>
+  );
+}
+
+function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
+  return (
+    <article className="rounded-xl border border-border/70 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">{entry.label}</p>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            {entry.windowLabel}
+          </p>
+        </div>
+        <div className="text-right">
+          <span className="text-lg font-semibold tabular-nums">
+            {entry.score === null ? "—" : Math.round(entry.score)}
+          </span>
+          <span className="ml-1 text-[10px] text-muted-foreground">/ 100</span>
+        </div>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full ${
+            entry.score === null ? "bg-muted" : barColor(entry.score)
+          }`}
+          style={{ width: `${entry.score ?? 0}%` }}
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+        <span className="rounded-full bg-muted px-2 py-0.5">
+          置信度 {confidenceLabels[entry.confidence]}
+        </span>
+        <span className="rounded-full bg-muted px-2 py-0.5">
+          {statusLabels[entry.status]}
+        </span>
+      </div>
+      <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+        {entry.note}
+      </p>
+      <details className="group/detail mt-2">
+        <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between rounded-lg text-[11px] font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          评分依据
+          <ChevronDown className="size-3.5 transition group-open/detail:rotate-180" />
+        </summary>
+        <div className="mt-2 space-y-2 rounded-xl bg-muted/45 p-3">
+          {entry.basis.length ? (
+            entry.basis.map((item) => (
+              <div
+                key={item.code}
+                className="grid grid-cols-[1fr_auto] items-start gap-2 text-[11px]"
+                title={item.explanation}
+              >
+                <span className="font-medium">{item.label}</span>
+                <span className="text-right text-muted-foreground">
+                  {item.value === null ? "缺失" : `${item.value}${item.unit}`}
+                  {item.contribution !== null &&
+                    ` · ${Math.round(item.contribution)} 分`}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              该题材没有可用的逐项天气数据。
+            </p>
+          )}
+          {entry.missingFields.length > 0 && (
+            <p className="border-t border-border/60 pt-2 text-[10px] leading-4 text-amber-700 dark:text-amber-400">
+              缺少：{entry.missingFields.map(missingFieldLabel).join("、")}
+              ，已按剩余权重归一化。
+            </p>
+          )}
+        </div>
+      </details>
+    </article>
   );
 }

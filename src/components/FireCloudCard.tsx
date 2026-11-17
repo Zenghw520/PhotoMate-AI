@@ -1,8 +1,10 @@
 import { ChevronDown, Cloud, Flame, Sunrise, Sunset } from "lucide-react";
 import type { FireCloudPrediction } from "@/functions/shared/contracts";
 import {
+  compass,
   fireCloudLabel,
   formatRange,
+  formatTime,
   missingFieldLabel,
 } from "@/src/lib/format";
 
@@ -15,17 +17,31 @@ function percent(value: number | null) {
 export function FireCloudCard({
   type,
   data,
+  eventTime,
+  azimuth,
+  elevation,
 }: {
   type: "dawn" | "dusk";
   data: FireCloudPrediction;
+  eventTime: string | null;
+  azimuth: number | null;
+  elevation: number | null;
 }) {
   const isDawn = type === "dawn";
   const Icon = isDawn ? Sunrise : Sunset;
   const score = data.score === null ? null : Math.round(data.score);
-  const direction = isDawn ? "东方" : "西方";
+  const direction = azimuth === null
+    ? isDawn ? "东方" : "西方"
+    : `${compass(azimuth)} · ${Math.round(azimuth)}°`;
   const isPastWindow = data.forecastWindow
     ? Date.parse(data.forecastWindow.end) < Date.now()
     : false;
+  const arrival = data.forecastWindow
+    ? formatTime(
+      new Date(Date.parse(data.forecastWindow.start) - 40 * 60_000)
+        .toISOString(),
+    )
+    : null;
   return (
     <article className="group rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm transition hover:border-primary/30">
       <div className="flex items-start justify-between gap-4">
@@ -86,6 +102,24 @@ export function FireCloudCard({
           </p>
         </div>
       </div>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-xl bg-muted/45 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">太阳方位</p>
+          <p className="mt-0.5 font-semibold">{direction}</p>
+        </div>
+        <div className="rounded-xl bg-muted/45 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">太阳高度角</p>
+          <p className="mt-0.5 font-semibold">
+            {elevation === null ? "—" : `${elevation.toFixed(1)}°`}
+          </p>
+        </div>
+      </div>
+      {data.forecastWindow && (
+        <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+          推荐 {formatTime(data.forecastWindow.start)} 拍摄；建议 {arrival} 前到达，面向
+          {azimuth === null ? direction : compass(azimuth)} 寻找可被低角度光照亮的云层。
+        </p>
+      )}
       <div className="mt-2 rounded-xl border border-border/60 p-3">
         <p className="flex items-center gap-1.5 text-[11px] font-medium">
           <Cloud className="size-3.5 text-primary" />云量判断
@@ -147,6 +181,19 @@ export function FireCloudCard({
               </span>
             </div>
           ))}
+          <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+            <span>太阳事件 {eventTime ? formatTime(eventTime) : "—"}</span>
+            <span>
+              太阳方位{" "}
+              {azimuth === null
+                ? "—"
+                : `${Math.round(azimuth)}° ${compass(azimuth)}`}
+            </span>
+            <span>
+              太阳高度 {elevation === null ? "—" : `${elevation.toFixed(1)}°`}
+            </span>
+            <span>窗口锚定日出/日落时刻</span>
+          </div>
           {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && (
             <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
               <Flame className="mt-0.5 size-3.5 shrink-0" />

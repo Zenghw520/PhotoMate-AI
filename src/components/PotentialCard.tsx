@@ -1,6 +1,7 @@
 import { ChevronDown, Clock3, CloudSun, Sunrise, Sunset } from "lucide-react";
 import type { PotentialScore } from "@/functions/shared/contracts";
 import {
+  compass,
   formatRange,
   formatTime,
   missingFieldLabel,
@@ -9,13 +10,34 @@ import {
 
 const confidenceLabels = { LOW: "较低", MEDIUM: "中等", HIGH: "较高" };
 
-export function PotentialCard({ type, data }: { type: "dawn" | "dusk"; data: PotentialScore }) {
+export function PotentialCard({
+  type,
+  data,
+  eventTime,
+  azimuth,
+  elevation,
+}: {
+  type: "dawn" | "dusk";
+  data: PotentialScore;
+  eventTime: string | null;
+  azimuth: number | null;
+  elevation: number | null;
+}) {
   const isDawn = type === "dawn";
   const Icon = isDawn ? Sunrise : Sunset;
   const score = data.score === null ? null : Math.round(data.score);
   const isPastWindow = data.forecastWindow
     ? Date.parse(data.forecastWindow.end) < Date.now()
     : false;
+  const direction = azimuth === null
+    ? isDawn ? "东方" : "西方"
+    : `${compass(azimuth)} · ${Math.round(azimuth)}°`;
+  const arrival = data.forecastWindow
+    ? formatTime(
+      new Date(Date.parse(data.forecastWindow.start) - 40 * 60_000)
+        .toISOString(),
+    )
+    : null;
   return (
     <article className="group rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm transition hover:border-primary/30">
       <div className="flex items-start justify-between gap-4">
@@ -29,10 +51,23 @@ export function PotentialCard({ type, data }: { type: "dawn" | "dusk"; data: Pot
         </div>
       </div>
       <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">{data.summary}</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-xl bg-muted/45 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">推荐拍摄方向</p>
+          <p className="mt-0.5 font-semibold">{direction}</p>
+        </div>
+        <div className="rounded-xl bg-muted/45 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">太阳高度角</p>
+          <p className="mt-0.5 font-semibold">
+            {elevation === null ? "—" : `${elevation.toFixed(1)}°`}
+          </p>
+        </div>
+      </div>
       {data.forecastWindow && (
-        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Clock3 className="size-3.5 text-primary" />
-          建议 {formatTime(new Date(Date.parse(data.forecastWindow.start) - 40 * 60_000).toISOString())} 前到达，完成机位与构图。
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
+          <Clock3 className="size-3.5 shrink-0 text-primary" />
+          推荐 {formatTime(data.forecastWindow.start)} 拍摄；建议 {arrival} 前到达，面向
+          {azimuth === null ? direction : compass(azimuth)} 寻找地景与构图。
         </p>
       )}
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
@@ -51,6 +86,22 @@ export function PotentialCard({ type, data }: { type: "dawn" | "dusk"; data: Pot
               <span className="text-muted-foreground">{item.value === null ? "缺失" : `${item.value}${item.unit}`}{item.contribution !== null && ` · ${Math.round(item.contribution)}分`}</span>
             </div>
           ))}
+          <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+            <span>太阳事件 {eventTime ? formatTime(eventTime) : "—"}</span>
+            <span>
+              太阳方位{" "}
+              {azimuth === null
+                ? "—"
+                : `${Math.round(azimuth)}° ${compass(azimuth)}`}
+            </span>
+            <span>
+              太阳高度 {elevation === null ? "—" : `${elevation.toFixed(1)}°`}
+            </span>
+            <span>窗口锚定日出/日落时刻</span>
+          </div>
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            太阳高度角与方位角用于锁定拍摄窗口和推荐方向，不参与气象权重；地形遮挡仍需现场确认。
+          </p>
           {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400"><CloudSun className="mt-0.5 size-3.5 shrink-0" />缺少：{data.missingFields.map(missingFieldLabel).join("、")}。评分已按可用数据降级。</p>}
           <p className="text-[11px] leading-4 text-muted-foreground">这是摄影环境评估，不是气象部门官方预报；置信度不代表霞光出现概率。</p>
         </div>
