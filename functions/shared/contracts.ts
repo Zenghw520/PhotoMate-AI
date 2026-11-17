@@ -87,6 +87,8 @@ export interface WeatherData {
 export interface SolarPosition {
   elevation: number;
   azimuth: number;
+  /** 未计入大气折射的几何高度，用于日出、暮光与黄金时刻阈值。 */
+  geometricElevation?: number;
 }
 
 export interface SolarPathPoint {

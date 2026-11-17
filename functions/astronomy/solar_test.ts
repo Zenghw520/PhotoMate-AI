@@ -60,8 +60,8 @@ for (const reference of NOAA_REFERENCES) {
     );
     assert.ok(solar.sunrise);
     assert.ok(solar.sunset);
-    assertNear(localMinutes(solar.sunrise!), reference.sunrise, 5, "日出");
-    assertNear(localMinutes(solar.sunset!), reference.sunset, 5, "日落");
+    assertNear(localMinutes(solar.sunrise!), reference.sunrise, 2, "日出");
+    assertNear(localMinutes(solar.sunset!), reference.sunset, 2, "日落");
     assert.ok(solar.sunrise!.endsWith("+08:00"));
     assert.ok(solar.sunset!.endsWith("+08:00"));
     assert.equal(solar.algorithm, "NOAA_SOLAR_POSITION");
@@ -76,8 +76,20 @@ for (const reference of NOAA_REFERENCES) {
       reference.longitude,
       new Date(solar.sunset!),
     );
-    assertNear(sunrisePosition.elevation, -0.833, 0.02, "日出高度角");
-    assertNear(sunsetPosition.elevation, -0.833, 0.02, "日落高度角");
+    assertNear(sunrisePosition.elevation, -0.435, 0.08, "日出视高度角");
+    assertNear(sunsetPosition.elevation, -0.435, 0.08, "日落视高度角");
+    assertNear(
+      sunrisePosition.geometricElevation!,
+      -0.833,
+      0.02,
+      "日出几何高度角",
+    );
+    assertNear(
+      sunsetPosition.geometricElevation!,
+      -0.833,
+      0.02,
+      "日落几何高度角",
+    );
     assert.ok(
       sunrisePosition.azimuth >= reference.sunriseAzimuth[0] &&
         sunrisePosition.azimuth <= reference.sunriseAzimuth[1],
@@ -94,6 +106,29 @@ for (const reference of NOAA_REFERENCES) {
     assertNear(noonPosition.azimuth, 180, 0.2, "正午方位");
   });
 }
+
+Deno.test("NREL SPA 基准案例：天顶角与方位角误差小于 0.01°", () => {
+  // NREL SPA report test case, Golden CO, 2003-10-17 19:30:30 UTC.
+  // Reference: topocentric zenith 50.11162°, azimuth 194.34024°.
+  const position = solarPositionAt(
+    39.742476,
+    -105.1786,
+    new Date("2003-10-17T19:30:30Z"),
+  );
+  assertNear(90 - position.elevation, 50.11162, 0.01, "SPA 天顶角");
+  assertNear(position.azimuth, 194.34024, 0.01, "SPA 方位角");
+});
+
+Deno.test("极昼与极夜边界不产生伪造的日出日落", () => {
+  const polarDay = computeSolar(69.6492, 18.9553, "2025-06-21");
+  assert.equal(polarDay.sunrise, null);
+  assert.equal(polarDay.sunset, null);
+  assert.ok(polarDay.noonElevation !== null);
+
+  const polarNight = computeSolar(69.6492, 18.9553, "2025-12-21");
+  assert.equal(polarNight.sunrise, null);
+  assert.equal(polarNight.sunset, null);
+});
 
 Deno.test("黄金和蓝调窗口按高度阈值生成且顺序衔接", () => {
   const solar = computeSolar(31.2304, 121.4737, "2025-03-20");
@@ -156,6 +191,21 @@ Deno.test("正午太阳高度是当日一分钟扫描区间内的最大值附近
 Deno.test("非法坐标与日期会被拒绝", () => {
   assert.throws(() => solarPositionAt(91, 120, new Date()), RangeError);
   assert.throws(() => computeSolar(31.2, 121.4, "2025-02-30"), RangeError);
+});
+
+Deno.test("经度方向与东八区时区转换正确", () => {
+  const shanghai = computeSolar(31.2304, 121.4737, "2025-03-20");
+  const urumqi = computeSolar(43.8256, 87.6168, "2025-03-20");
+  assert.ok(
+    localMinutes(urumqi.solarNoon) > localMinutes(shanghai.solarNoon) + 100,
+  );
+  assert.ok(localMinutes(shanghai.solarNoon) > 11 * 60);
+  assert.ok(localMinutes(shanghai.solarNoon) < 13 * 60);
+  assert.ok(localMinutes(urumqi.solarNoon) > 12 * 60);
+  assert.ok(localMinutes(urumqi.solarNoon) < 15 * 60);
+  for (const value of [shanghai.sunriseAzimuth, shanghai.sunsetAzimuth]) {
+    assert.ok(value !== null && value >= 0 && value < 360);
+  }
 });
 
 Deno.test("太阳轨迹包含晨昏阶段、方位角与全天采样", () => {

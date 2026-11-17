@@ -119,7 +119,15 @@ export function solarPositionAt(
         ) * DEG + 180,
   );
 
-  return { elevation: geometricElevation + refraction, azimuth };
+  return {
+    elevation: geometricElevation + refraction,
+    azimuth,
+    geometricElevation,
+  };
+}
+
+function eventElevation(position: SolarPosition): number {
+  return position.geometricElevation ?? position.elevation;
 }
 
 function parseLocalDate(localDate: string): number {
@@ -154,11 +162,13 @@ function refineCrossing(
   threshold: number,
 ): number {
   const rising =
-    solarPositionAt(latitude, longitude, new Date(left)).elevation < threshold;
+    eventElevation(solarPositionAt(latitude, longitude, new Date(left))) <
+      threshold;
   for (let index = 0; index < 32; index++) {
     const middle = (left + right) / 2;
-    const elevation =
-      solarPositionAt(latitude, longitude, new Date(middle)).elevation;
+    const elevation = eventElevation(
+      solarPositionAt(latitude, longitude, new Date(middle)),
+    );
     if (
       (rising && elevation < threshold) || (!rising && elevation >= threshold)
     ) {
@@ -178,12 +188,14 @@ function findCrossings(
 ): Crossing[] {
   const crossings: Crossing[] = [];
   let leftTime = dayStart;
-  let leftElevation =
-    solarPositionAt(latitude, longitude, new Date(leftTime)).elevation;
+  let leftElevation = eventElevation(
+    solarPositionAt(latitude, longitude, new Date(leftTime)),
+  );
   for (let minute = 1; minute <= 1440; minute++) {
     const rightTime = dayStart + minute * MINUTE_MS;
-    const rightElevation =
-      solarPositionAt(latitude, longitude, new Date(rightTime)).elevation;
+    const rightElevation = eventElevation(
+      solarPositionAt(latitude, longitude, new Date(rightTime)),
+    );
     if (
       (leftElevation < threshold && rightElevation >= threshold) ||
       (leftElevation >= threshold && rightElevation < threshold)
@@ -214,8 +226,9 @@ function findSolarNoon(
   let bestElevation = -Infinity;
   for (let minute = 0; minute <= 1440; minute++) {
     const time = dayStart + minute * MINUTE_MS;
-    const elevation =
-      solarPositionAt(latitude, longitude, new Date(time)).elevation;
+    const elevation = eventElevation(
+      solarPositionAt(latitude, longitude, new Date(time)),
+    );
     if (elevation > bestElevation) {
       bestElevation = elevation;
       bestTime = time;
@@ -226,10 +239,12 @@ function findSolarNoon(
   for (let index = 0; index < 36; index++) {
     const first = left + (right - left) / 3;
     const second = right - (right - left) / 3;
-    const firstElevation =
-      solarPositionAt(latitude, longitude, new Date(first)).elevation;
-    const secondElevation =
-      solarPositionAt(latitude, longitude, new Date(second)).elevation;
+    const firstElevation = eventElevation(
+      solarPositionAt(latitude, longitude, new Date(first)),
+    );
+    const secondElevation = eventElevation(
+      solarPositionAt(latitude, longitude, new Date(second)),
+    );
     if (firstElevation < secondElevation) left = first;
     else right = second;
   }
@@ -244,8 +259,9 @@ function elevationWindows(
   upper: number,
 ): TimeWindow[] {
   const inRange = (time: number) => {
-    const elevation =
-      solarPositionAt(latitude, longitude, new Date(time)).elevation;
+    const elevation = eventElevation(
+      solarPositionAt(latitude, longitude, new Date(time)),
+    );
     return elevation >= lower && elevation <= upper;
   };
   const crossings = [
