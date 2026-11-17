@@ -74,6 +74,14 @@ const SECTION_ORDER: SectionId[] = [
   "PHOTO",
 ];
 
+const SECTION_NUMBERS: Record<SectionId, string> = {
+  WEATHER: "01",
+  LIGHT: "02",
+  PLANS: "03",
+  SPOTS: "04",
+  PHOTO: "05",
+};
+
 const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = {
   WEATHER: [
     {
@@ -274,22 +282,24 @@ function FeatureMenu({
   };
 
   return (
-    <section className="mt-6" aria-labelledby="feature-menu-title">
+    <section className="mt-7" aria-labelledby="feature-menu-title">
       {data && <TodayOverview data={data} />}
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-3">
         <div>
+          <p className="pm-kicker">02 / Field Index</p>
           <h2
             id="feature-menu-title"
-            className="text-lg font-semibold tracking-tight 2xl:text-xl"
+            className="pm-display mt-2 text-3xl 2xl:text-4xl"
           >
             功能导航
           </h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground 2xl:text-sm">
+          <p className="mt-2 text-xs leading-5 text-muted-foreground 2xl:text-sm">
             天气、霞光与光线、拍摄方案、照片分析分开展示。点击卡片进入对应功能。
           </p>
         </div>
+        <p className="pm-mono text-muted-foreground">05 modules</p>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:mt-4 2xl:grid-cols-5 2xl:gap-4">
+      <div className="mt-4 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-5">
         {SECTION_ORDER.map((id) => {
           const meta = SECTION_META[id];
           const Icon = meta.icon;
@@ -300,24 +310,52 @@ function FeatureMenu({
               type="button"
               onClick={() =>
                 needsLocation ? onNeedLocation() : onSectionChange(id)}
-              className="group flex min-h-44 flex-col rounded-[var(--radius)] border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 2xl:min-h-48 2xl:p-6"
+              className="pm-corners group flex min-h-48 flex-col bg-card p-5 text-left transition-colors hover:bg-secondary/45 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 2xl:min-h-56 2xl:p-6"
             >
               <div className="flex items-start justify-between gap-3">
-                <span className="grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary 2xl:size-12">
-                  <Icon className="size-5 2xl:size-6" />
+                <span className="pm-mono text-muted-foreground">
+                  {SECTION_NUMBERS[id]} / {id}
                 </span>
-                <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:text-primary 2xl:size-5" />
+                <ArrowUpRight className="size-4 text-muted-foreground transition-colors group-hover:text-[var(--ov-cold)] 2xl:size-5" />
               </div>
-              <h3 className="mt-4 font-semibold 2xl:text-lg">{meta.title}</h3>
+              <span className="mt-6 grid size-10 place-items-center border border-border text-primary 2xl:size-12">
+                <Icon className="size-5 2xl:size-6" />
+              </span>
+              <h3 className="pm-display mt-4 text-2xl 2xl:text-3xl">
+                {meta.title}
+              </h3>
               <p className="mt-2 text-xs leading-5 text-muted-foreground 2xl:text-sm 2xl:leading-6">
                 {meta.intro}
               </p>
-              <p className="mt-auto pt-4 text-xs font-medium text-primary 2xl:text-sm">
+              <p className="pm-mono mt-auto pt-4 text-primary">
                 {summaries[id]}
               </p>
             </button>
           );
         })}
+        <div className="hidden min-h-48 flex-col justify-between bg-card p-5 sm:flex xl:hidden">
+          <div>
+            <p className="pm-kicker">Field Notes / End of Index</p>
+            <p className="pm-display mt-6 text-2xl leading-[1.05]">
+              光线先于构图，
+              <br />
+              天气决定等待。
+            </p>
+          </div>
+          <div className="flex items-end justify-between gap-4">
+            <p className="pm-mono max-w-40 leading-5 text-muted-foreground">
+              Real weather
+              <br />
+              NOAA solar
+              <br />
+              Explainable score
+            </p>
+            <div className="pm-reticle size-16 shrink-0" aria-hidden="true">
+              <span className="pm-reticle__inner" />
+              <span className="pm-reticle__dot" />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -336,60 +374,60 @@ function TodayOverview({ data }: { data: TodayResponse }) {
     data.indices.confidence
   ];
   return (
-    <div className="mb-5 rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <div className="pm-panel pm-corners mb-6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <div>
-          <h2 className="text-sm font-semibold">今日摄影概览</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="pm-kicker">Today / Data Plate</p>
+          <h2 className="pm-display mt-2 text-2xl">今日摄影概览</h2>
+          <p className="pm-mono mt-2 text-muted-foreground">
             {formatDate(data.date)} · {data.location.name} · {confidence}置信度
           </p>
         </div>
-        <span className="text-[11px] text-muted-foreground">
-          由真实天气与本地天文计算
-        </span>
+        <p className="pm-mono text-muted-foreground">
+          Real weather · Local solar
+        </p>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">综合摄影指数</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
+      <div className="mt-4 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
+        <div className="bg-card p-4">
+          <p className="pm-mono text-muted-foreground">综合摄影指数</p>
+          <p className="pm-display mt-3 text-4xl tabular-nums">
             {overall === null ? "—" : Math.round(overall)}
-            <span className="ml-1 text-xs font-normal text-muted-foreground">
+            <span className="ml-1 font-sans text-xs tracking-normal text-muted-foreground">
               / 100
             </span>
           </p>
         </div>
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">朝霞 / 晚霞</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
+        <div className="bg-card p-4">
+          <p className="pm-mono text-muted-foreground">朝霞 / 晚霞</p>
+          <p className="pm-display mt-3 text-4xl tabular-nums">
             {scoreText(data.potential.dawn.score)}
-            <span className="mx-1 text-sm font-normal text-muted-foreground">
+            <span className="mx-1 font-sans text-sm text-muted-foreground">
               /
             </span>
             {scoreText(data.potential.dusk.score)}
           </p>
         </div>
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">下一最佳窗口</p>
+        <div className="bg-card p-4">
+          <p className="pm-mono text-muted-foreground">下一最佳窗口</p>
           {best ? (
             <>
-              <p className="mt-1 truncate text-sm font-semibold">{best.label}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {formatRange(best.start, best.end)} ·{" "}
-                {scoreText(best.score)} 分
+              <p className="mt-3 truncate text-sm font-semibold">{best.label}</p>
+              <p className="pm-mono mt-1.5 text-muted-foreground">
+                {formatRange(best.start, best.end)} · {scoreText(best.score)} 分
               </p>
             </>
           ) : (
-            <p className="mt-1 text-sm font-semibold">今日窗口已结束</p>
+            <p className="mt-3 text-sm font-semibold">今日窗口已结束</p>
           )}
         </div>
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">实况天气</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
+        <div className="bg-card p-4">
+          <p className="pm-mono text-muted-foreground">实况天气</p>
+          <p className="pm-display mt-3 text-4xl tabular-nums">
             {current?.temperature === null || current === null
               ? "—"
               : `${Math.round(current.temperature)}°`}
           </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
             {current
               ? `${current.condition || "天气未知"} · 云量 ${
                 current.cloud === null ? "—" : `${Math.round(current.cloud)}%`
@@ -448,11 +486,7 @@ function SectionDetail({
           role="tab"
           aria-selected={tab === item.id}
           onClick={() => setTab(item.id)}
-          className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-medium transition ${
-            tab === item.id
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
+          className="pm-tab min-h-10 shrink-0"
         >
           {item.label}
         </button>
@@ -465,30 +499,33 @@ function SectionDetail({
       <button
         type="button"
         onClick={() => onSectionChange(null)}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full text-sm font-medium text-muted-foreground transition hover:text-foreground"
+        className="pm-mono inline-flex min-h-11 items-center gap-1.5 border-b border-transparent text-muted-foreground transition hover:border-[var(--ov-cold)] hover:text-[var(--ov-cold)]"
       >
         <ArrowLeft className="size-4" />返回功能导航
       </button>
 
-      <div className="mt-2 flex items-start gap-4 rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm 2xl:p-6">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary 2xl:size-12">
+      <div className="pm-panel pm-corners mt-3 flex items-start gap-4 p-5 2xl:p-6">
+        <span className="grid size-11 shrink-0 place-items-center border border-border text-primary 2xl:size-12">
           <Icon className="size-5 2xl:size-6" />
         </span>
         <div>
+          <p className="pm-kicker">
+            Section {SECTION_NUMBERS[section]} / {section}
+          </p>
           <h2
             id="section-title"
-            className="text-lg font-semibold tracking-tight 2xl:text-xl"
+            className="pm-display mt-2 text-3xl tracking-[-0.03em] 2xl:text-4xl"
           >
             {meta.title}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">
             {meta.intro}
           </p>
         </div>
       </div>
 
       {section === "LIGHT" && (
-        <div className="mt-4 rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
+        <div className="mt-4 border border-border bg-card p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div
               role="group"
@@ -501,17 +538,13 @@ function SectionDetail({
                   type="button"
                   aria-pressed={dayOffset === item.offset}
                   onClick={() => onDayChange(item.offset)}
-                  className={`min-h-10 rounded-full px-3.5 text-xs font-medium transition ${
-                    dayOffset === item.offset
-                      ? "bg-foreground text-background"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
+                  className="pm-chip min-h-10 px-3.5"
                 >
                   {item.label}
                 </button>
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="pm-mono text-muted-foreground">
               {formatDate(targetDate)}
             </span>
           </div>
@@ -539,7 +572,7 @@ function SectionDetail({
       )}
 
       {!data && section === "LIGHT" && (
-        <div className="mt-4 rounded-[var(--radius)] border border-dashed border-border bg-card/60 p-5 text-sm leading-6 text-muted-foreground">
+        <div className="mt-4 border border-dashed border-border bg-card/60 p-5 text-sm leading-6 text-muted-foreground">
           {location
             ? "位置已确定，正在获取真实环境并生成霞光评分与光线时间轴。"
             : "请先在主页面选择拍摄位置，再查看当天的霞光评分与光线时间轴。"}
@@ -565,7 +598,7 @@ function SectionDetail({
       {section !== "PHOTO" && section !== "SPOTS" && data && (
         <>
           {tabs.length > 1 && tabBar}
-          <p className="mt-4 text-xs leading-5 text-muted-foreground">
+          <p className="mt-3 border-l-2 border-[var(--ov-cold)] pl-3 text-xs leading-5 text-muted-foreground">
             {activeTab.intro}
           </p>
 
@@ -589,7 +622,7 @@ function SectionDetail({
             )}
             {section === "LIGHT" && tab === "glow" && (
               <div className="space-y-5">
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-[11px] text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-between gap-2 border border-border px-3 py-2 text-[11px] text-muted-foreground">
                   <span>
                     实况观测于{" "}
                     {data.weather.current
@@ -630,7 +663,7 @@ function SectionDetail({
                     </div>
                   );
                 })}
-                <p className="rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+                <p className="border border-border p-3 text-xs leading-5 text-muted-foreground">
                   预测思路参考公开火烧云研究：中高云适量、低云不挡光、空气通透时更有利。可能性与鲜艳度依据窗口云量、高/中/低云分层与气溶胶数据判断，仍只表示环境条件，不能替代卫星云图与现场判断。
                 </p>
               </div>
@@ -655,11 +688,7 @@ function SectionDetail({
                       type="button"
                       aria-pressed={period === item.id}
                       onClick={() => setPeriod(item.id)}
-                      className={`min-h-10 shrink-0 rounded-full px-3.5 text-xs font-medium transition ${
-                        period === item.id
-                          ? "bg-foreground text-background"
-                          : "bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
+                      className="pm-chip min-h-10 shrink-0 px-3.5"
                     >
                       {item.label}
                     </button>
@@ -690,11 +719,12 @@ function SectionDetail({
 
 function LocationPrompt() {
   return (
-    <div className="mt-4 grid min-h-52 place-items-center rounded-[var(--radius)] border border-border bg-card p-6 text-center shadow-sm">
+    <div className="pm-panel pm-corners mt-4 grid min-h-52 place-items-center p-6 text-center">
       <div className="max-w-md">
         <MapPin className="mx-auto size-8 text-primary" />
-        <h3 className="mt-3 text-lg font-semibold">先确定拍摄位置</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        <p className="pm-kicker mt-4 justify-center">Location required</p>
+        <h3 className="pm-display mt-2 text-3xl">先确定拍摄位置</h3>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
           请先在主页面选择拍摄位置，天气和拍摄方案会自动沿用该位置。
         </p>
       </div>
@@ -750,53 +780,54 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
     },
   ];
   return (
-    <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-      <h3 className="font-semibold">来源与完整性</h3>
-      <dl className="mt-4 divide-y divide-border/70">
+    <section className="pm-panel p-5">
+      <p className="pm-kicker">Provenance / Completeness</p>
+      <h3 className="pm-display mt-2 text-2xl">来源与完整性</h3>
+      <dl className="mt-4 divide-y divide-border">
         {rows.map((row) => (
           <div
             key={row.label}
             className="grid gap-1 py-3 text-sm sm:grid-cols-[8rem_1fr] sm:gap-3"
           >
-            <dt className="text-xs font-medium text-muted-foreground">
+            <dt className="pm-mono text-muted-foreground">
               {row.label}
             </dt>
             <dd className="leading-6">{row.value}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-4 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+      <p className="mt-4 border border-border p-3 text-xs leading-5 text-muted-foreground">
         天气与空气质量必须来自真实服务。未配置或缺失时，页面会明确标注并暂停相关评分，不会用推测值补齐。
       </p>
       {weather.status === "STALE" && (
-        <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs leading-5 text-muted-foreground">
+        <p className="mt-2 border border-amber-500/30 bg-amber-500/[0.04] p-3 text-xs leading-5 text-muted-foreground">
           当前为短时真实缓存，观测与预报时间保持不变；评分置信度已按数据时效降低。
         </p>
       )}
       {weather.missingFields.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border border-amber-500/30 bg-amber-500/[0.04] p-3">
           <p className="text-[11px] leading-5 text-muted-foreground">
             部分字段暂缺，可能来自短时服务波动；可重新获取真实数据，仍缺失时不会补造。
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="min-h-9 shrink-0 rounded-full bg-background px-3 text-[11px] font-medium text-foreground shadow-sm transition hover:bg-muted"
+            className="pm-action min-h-9 shrink-0 px-3"
           >
             重新获取
           </button>
         </div>
       )}
       {multiSource && (
-        <p className="mt-2 rounded-xl bg-primary/[0.06] p-3 text-xs leading-5 text-muted-foreground">
+        <p className="mt-2 border border-border p-3 text-xs leading-5 text-muted-foreground">
           数值字段由和风天气、OpenWeather 与 Open-Meteo 等权平均；天气现象文字优先采用和风天气，空气质量来自和风天气。单一来源缺失的字段按可用来源计算。
         </p>
       )}
-      <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+      <p className="mt-2 border border-border p-3 text-xs leading-5 text-muted-foreground">
         和风天气提供实况、天气现象与空气质量；OpenWeather、Open-Meteo 与 MET Norway 提供数值与逐小时预报；高/中/低云分层与气溶胶来自 Open-Meteo 或 MET Norway（CC BY 4.0）。来源名称与更新时间均由后端随响应返回。
       </p>
       {weather.sources.includes("Open-Meteo") && (
-        <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+        <p className="mt-2 border border-border p-3 text-xs leading-5 text-muted-foreground">
           Open-Meteo 免费接口用于非商业演示，数据遵循 CC BY 4.0。
         </p>
       )}

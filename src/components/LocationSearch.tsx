@@ -144,10 +144,10 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
             onFocus={() => results.length && setOpen(true)}
             placeholder="搜索城市或区县，例如惠州、惠城区…"
             autoComplete="off"
-            className="h-12 w-full rounded-2xl border border-border bg-card/85 pl-11 pr-11 text-sm shadow-sm outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
+            className="pm-corners h-12 w-full border border-border bg-card pl-11 pr-11 text-sm outline-none transition focus:border-[var(--ov-cold)] focus:ring-0"
           />
           {searching ? <LoaderCircle className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-primary" /> : query ? (
-            <button type="button" aria-label="清空搜索" onClick={() => { setQuery(""); setResults([]); }} className="absolute right-0.5 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted">
+            <button type="button" aria-label="清空搜索" onClick={() => { setQuery(""); setResults([]); }} className="absolute right-0.5 top-1/2 grid size-11 -translate-y-1/2 place-items-center text-muted-foreground transition hover:text-[var(--ov-cold)]">
               <X className="size-4" />
             </button>
           ) : null}
@@ -158,7 +158,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
           disabled={locating}
           aria-label="使用当前位置"
           title="使用当前位置"
-          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-border bg-card text-muted-foreground shadow-sm transition hover:text-foreground disabled:opacity-60"
+          className="grid size-12 shrink-0 place-items-center border border-border bg-card text-muted-foreground transition hover:border-[var(--ov-cold)] hover:text-[var(--ov-cold)] disabled:opacity-60"
         >
           {locating ? <LoaderCircle className="size-4 animate-spin text-primary" /> : <Crosshair className="size-4" />}
         </button>
@@ -168,17 +168,17 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
         {location
           ? <span className="inline-flex flex-wrap items-center gap-1.5"><MapPin className="size-3.5 text-primary" />{location.name}<span className="text-border">·</span>{precisionLabel(location.precision)}</span>
           : <span>{locating ? "正在使用当前位置…" : "搜索城市或区县，或点击右侧定位。"}</span>}
-        <button type="button" onClick={() => setManualOpen((value) => !value)} className="inline-flex min-h-11 items-center gap-1 font-medium hover:text-foreground">
-          <SlidersHorizontal className="size-3.5" />手动坐标
+        <button type="button" onClick={() => setManualOpen((value) => !value)} className="inline-flex min-h-11 items-center gap-1 font-medium hover:text-[var(--ov-cold)]">
+          <SlidersHorizontal className="size-3.5" />输入经纬度
         </button>
       </div>
 
       {error && <p className="mt-2 text-sm text-destructive" role="alert">{error}</p>}
 
       {open && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-14 z-30 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 shadow-xl">
+        <div className="absolute left-0 right-0 top-14 z-30 overflow-hidden border border-border bg-popover p-1.5 shadow-xl">
           {results.map((item) => (
-            <button key={`${item.id}-${item.latitude}-${item.longitude}`} type="button" onClick={() => choose(item)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-muted">
+            <button key={`${item.id}-${item.latitude}-${item.longitude}`} type="button" onClick={() => choose(item)} className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted hover:text-[var(--ov-cold)]">
               <MapPin className="size-4 shrink-0 text-primary" />
               <span className="min-w-0"><span className="block truncate text-sm font-medium">{item.name}</span><span className="block truncate text-xs text-muted-foreground">{item.region ?? "中国区县"}</span></span>
             </button>
@@ -187,10 +187,10 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
       )}
 
       {manualOpen && (
-        <form onSubmit={submitManual} className="mt-3 grid gap-2 rounded-2xl border border-border bg-card/70 p-3 sm:grid-cols-[1fr_1fr_auto]">
-          <label><span className="mb-1 block text-xs text-muted-foreground">纬度</span><input required inputMode="decimal" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="39.9042" className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" /></label>
-          <label><span className="mb-1 block text-xs text-muted-foreground">经度</span><input required inputMode="decimal" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="116.4074" className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" /></label>
-          <button type="submit" className="h-10 self-end rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-85">应用坐标</button>
+        <form onSubmit={submitManual} className="mt-3 grid gap-2 border border-border bg-card/70 p-3 sm:grid-cols-[1fr_1fr_auto]">
+          <label><span className="mb-1 block text-xs text-muted-foreground">纬度</span><input required inputMode="decimal" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="39.9042" className="h-10 w-full border border-border bg-background px-3 text-sm outline-none focus:border-[var(--ov-cold)] focus:ring-0" /></label>
+          <label><span className="mb-1 block text-xs text-muted-foreground">经度</span><input required inputMode="decimal" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="116.4074" className="h-10 w-full border border-border bg-background px-3 text-sm outline-none focus:border-[var(--ov-cold)] focus:ring-0" /></label>
+          <button type="submit" className="pm-action pm-action--solid h-10 self-end px-4">应用坐标</button>
         </form>
       )}
     </div>

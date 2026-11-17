@@ -1,4 +1,4 @@
-import { ChevronDown, Cloud, Flame, Sunrise, Sunset } from "lucide-react";
+import { ChevronDown, Cloud, Sunrise, Sunset } from "lucide-react";
 import type { FireCloudPrediction } from "@/functions/shared/contracts";
 import {
   compass,
@@ -43,56 +43,44 @@ export function FireCloudCard({
     )
     : null;
   return (
-    <article className="group rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm transition hover:border-primary/30">
+    <article className="pm-panel pm-corners p-5 transition-colors hover:border-[var(--ov-cold)]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="mb-3 flex items-center gap-2">
             <span
-              className={`grid size-10 place-items-center rounded-2xl ${
-                isDawn
-                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                  : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
+              className={`grid size-10 place-items-center border border-border ${
+                isDawn ? "text-[var(--ov-warning)]" : "text-primary"
               }`}
             >
               <Icon className="size-5" />
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
-              <Flame className="size-3" />环境潜力
+            <span className="pm-mono border border-border px-2 py-1 text-primary">
+              环境潜力
             </span>
           </div>
-          <h3 className="font-semibold">
+          <h3 className="pm-display text-2xl">
             {isDawn ? "日出火烧云" : "日落火烧云"}
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="pm-mono mt-1.5 text-muted-foreground">
             {fireCloudLabel(data.score)} · 观测方向 {direction}
           </p>
         </div>
-        <div
-          className="relative grid size-20 shrink-0 place-items-center rounded-full"
-          style={{
-            background: score === null
-              ? "var(--muted)"
-              : `conic-gradient(var(--primary) ${score * 3.6}deg, var(--muted) 0deg)`,
-          }}
-        >
-          <div className="grid size-[4.25rem] place-items-center rounded-full bg-card">
-            <span className="text-2xl font-semibold tracking-tight">
-              {score ?? "—"}
-            </span>
-          </div>
+        <div className="shrink-0 text-right">
+          <p className="pm-score">{score ?? "—"}</p>
+          <p className="pm-mono mt-2 text-muted-foreground">/ 100</p>
         </div>
       </div>
       <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">
         {data.summary}
       </p>
-      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">可能性</p>
-          <p className="mt-0.5 font-semibold">{data.outlook.possibilityLabel}</p>
+      <div className="mt-4 grid grid-cols-2 gap-px bg-border text-xs">
+        <div className="bg-card px-3 py-2">
+          <p className="pm-mono text-muted-foreground">可能性</p>
+          <p className="mt-1 font-semibold">{data.outlook.possibilityLabel}</p>
         </div>
-        <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">鲜艳度</p>
-          <p className="mt-0.5 font-semibold">
+        <div className="bg-card px-3 py-2">
+          <p className="pm-mono text-muted-foreground">鲜艳度</p>
+          <p className="mt-1 font-semibold">
             {data.outlook.vividnessLabel}
             {data.outlook.vividness !== null && (
               <span className="ml-1 text-[11px] font-normal text-muted-foreground">
@@ -102,14 +90,14 @@ export function FireCloudCard({
           </p>
         </div>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">太阳方位</p>
-          <p className="mt-0.5 font-semibold">{direction}</p>
+      <div className="mt-2 grid grid-cols-2 gap-px bg-border text-xs">
+        <div className="bg-card px-3 py-2">
+          <p className="pm-mono text-muted-foreground">太阳方位</p>
+          <p className="mt-1 font-semibold">{direction}</p>
         </div>
-        <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">太阳高度角</p>
-          <p className="mt-0.5 font-semibold">
+        <div className="bg-card px-3 py-2">
+          <p className="pm-mono text-muted-foreground">太阳高度角</p>
+          <p className="mt-1 font-semibold">
             {elevation === null ? "—" : `${elevation.toFixed(1)}°`}
           </p>
         </div>
@@ -120,7 +108,7 @@ export function FireCloudCard({
           {azimuth === null ? direction : compass(azimuth)} 寻找可被低角度光照亮的云层。
         </p>
       )}
-      <div className="mt-2 rounded-xl border border-border/60 p-3">
+      <div className="mt-2 border border-border p-3">
         <p className="flex items-center gap-1.5 text-[11px] font-medium">
           <Cloud className="size-3.5 text-primary" />云量判断
         </p>
@@ -148,7 +136,7 @@ export function FireCloudCard({
           可能性为环境条件分级，不是出现概率。
         </p>
       </div>
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3 text-xs">
         <span className="text-muted-foreground">
           {data.forecastWindow
             ? formatRange(data.forecastWindow.start, data.forecastWindow.end)
@@ -156,18 +144,18 @@ export function FireCloudCard({
           {isPastWindow && (data.score !== null ? " · 已过回算" : " · 已过")}
         </span>
         <span
-          className="shrink-0 rounded-full bg-muted px-2 py-1 font-medium text-muted-foreground"
+          className="shrink-0 border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground"
           title="置信度反映数据完整性与新鲜度，不是火烧云出现概率"
         >
           置信度 {confidenceLabels[data.confidenceLevel]}
         </span>
       </div>
-      <details className="group/detail mt-3">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <details className="group/detail mt-3 border-t border-border pt-1">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
           查看预测依据
           <ChevronDown className="size-3.5 transition group-open/detail:rotate-180" />
         </summary>
-        <div className="mt-2 space-y-3 rounded-xl bg-muted/45 p-3">
+        <div className="mt-2 space-y-3 border border-border p-3">
           {data.basis.map((item) => (
             <div
               key={item.code}
@@ -196,7 +184,7 @@ export function FireCloudCard({
           </div>
           {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && (
             <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
-              <Flame className="mt-0.5 size-3.5 shrink-0" />
+              <Cloud className="mt-0.5 size-3.5 shrink-0" />
               缺少：{data.missingFields.map(missingFieldLabel).join("、")}。评分已按可用数据降级。
             </p>
           )}

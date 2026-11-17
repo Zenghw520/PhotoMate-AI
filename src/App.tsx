@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Aperture, CloudSun, Compass } from "lucide-react";
+import { Aperture, Compass } from "lucide-react";
 import type { LocationResult, ThemeId, TodayResponse } from "@/functions/shared/contracts";
 import { getToday } from "@/src/lib/api";
 import { shanghaiDate } from "@/src/lib/format";
@@ -128,33 +128,92 @@ export default function App() {
 
   return (
     <div className="app-shell flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-40 shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
+      <header className="sticky top-0 z-40 shrink-0 border-b border-border/80 bg-background/95 backdrop-blur-sm">
+        <div className="mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 lg:px-8 md:grid-cols-[1fr_auto_1fr] 2xl:max-w-[1680px] 2xl:px-10">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Aperture className="size-5" /></span>
-            <div><p className="text-sm font-bold tracking-tight">PhotoMate <span className="text-primary">AI</span></p><p className="text-[10px] tracking-[0.16em] text-muted-foreground">智能摄影规划助手</p></div>
+            <span className="grid size-9 place-items-center border border-border text-primary">
+              <Aperture className="size-5" />
+            </span>
+            <div>
+              <p className="pm-display text-lg leading-none tracking-[-0.02em]">
+                PhotoMate <span className="text-primary">AI</span>
+              </p>
+              <p className="pm-mono mt-1.5 text-muted-foreground">
+                Photographic Field System
+              </p>
+            </div>
           </div>
-          <ThemeToggle />
+          <p className="pm-mono hidden justify-self-center text-muted-foreground md:block">
+            Real weather · Solar position · Field plan
+          </p>
+          <div className="justify-self-end">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-12 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
         {section === null && (
-          <section className="relative py-7 sm:py-10 2xl:py-14">
-            <div className="relative max-w-2xl 2xl:max-w-3xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>
-              <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
-              <div className="mt-5 rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur 2xl:p-5">
-                <LocationSearch location={location} onSelect={chooseLocation} autoLocate />
+          <section className="relative py-8 sm:py-12 2xl:py-16">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end 2xl:grid-cols-[minmax(0,1fr)_21rem]">
+              <div className="max-w-3xl">
+                <p className="pm-kicker">01 / Field Notes</p>
+                <h1 className="pm-display mt-5 text-[2.65rem] leading-[0.94] sm:text-5xl lg:text-[4.15rem] 2xl:text-[5rem]">
+                  把下一次快门，
+                  <br />
+                  留给最好的光。
+                </h1>
+                <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground 2xl:text-base">
+                  分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。
+                </p>
+                <div className="pm-corners mt-6 max-w-2xl border border-border bg-card/60 p-4 2xl:p-5">
+                  <LocationSearch
+                    location={location}
+                    onSelect={chooseLocation}
+                    autoLocate
+                  />
+                </div>
               </div>
+              <aside className="hidden lg:flex lg:flex-col lg:items-end lg:justify-end lg:gap-6">
+                <div className="pm-reticle size-48 2xl:size-56" aria-hidden="true">
+                  <span className="pm-reticle__inner" />
+                  <span className="pm-reticle__dot" />
+                </div>
+                <div className="text-right">
+                  <p className="pm-mono text-muted-foreground">Frame 01</p>
+                  <p className="pm-display mt-2 text-2xl leading-none">
+                    Light,
+                    <br />
+                    timed.
+                  </p>
+                  <p className="pm-mono mt-4 leading-6 text-muted-foreground">
+                    Real weather
+                    <br />
+                    NOAA solar
+                    <br />
+                    Local calculation
+                  </p>
+                </div>
+              </aside>
             </div>
           </section>
         )}
 
         <div className="space-y-4">
-          {error && <ErrorNotice message={error} onRetry={() => setRefreshKey((value) => value + 1)} />}
-          {loading && <div className="flex items-center gap-2 text-xs font-medium text-primary" role="status"><span className="size-2 animate-pulse rounded-full bg-primary" />正在获取真实环境并重新计算摄影计划…</div>}
+          {error && (
+            <div className="border-l-2 border-primary py-1 pl-3">
+              <ErrorNotice
+                message={error}
+                onRetry={() => setRefreshKey((value) => value + 1)}
+              />
+            </div>
+          )}
+          {loading && (
+            <div className="flex items-center gap-2 pm-mono text-primary" role="status">
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              正在获取真实环境并重新计算摄影计划…
+            </div>
+          )}
         </div>
 
         <FeatureHub
@@ -173,10 +232,25 @@ export default function App() {
         />
       </main>
 
-      <footer className="shrink-0 border-t border-border/60 py-6">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10 2xl:text-xs">
-          <p>PhotoMate AI · 摄影指数是辅助评估，并非官方气象预报。</p>
-          <p className="flex items-center gap-1.5"><Compass className="size-3.5" />天气数据来自和风天气、OpenWeather、Open-Meteo、MET Norway 等已标注来源；地图来自高德，太阳位置由本地算法计算。</p>
+      <footer className="shrink-0 border-t border-border py-8">
+        <div className="mx-auto grid max-w-[1440px] gap-4 px-4 sm:grid-cols-[1fr_auto] sm:items-start sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
+          <div>
+            <p className="pm-mono text-muted-foreground">
+              PhotoMate AI / Photographic Field System
+            </p>
+            <p className="mt-2 max-w-xl text-[11px] leading-5 text-muted-foreground">
+              摄影指数是辅助评估，并非官方气象预报。天气、地图与太阳位置均来自真实数据与本地计算。
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground sm:justify-end">
+              <Compass className="size-3.5" />
+              和风天气 / OpenWeather / Open-Meteo / MET Norway / 高德
+            </p>
+            <p className="pm-mono mt-2 text-muted-foreground">
+              Design language · Overture (MIT)
+            </p>
+          </div>
         </div>
       </footer>
     </div>

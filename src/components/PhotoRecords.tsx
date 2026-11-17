@@ -26,10 +26,10 @@ export function PhotoRecords() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
+      <section className="pm-panel p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="font-semibold">本地拍摄记录</h3>
+            <p className="pm-kicker">Local Archive</p><h3 className="pm-display mt-2 text-2xl">本地拍摄记录</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               保存生成的拍摄方案与照片分析结果；仅存储文字与参数，原始照片不会保存或上传。
             </p>
@@ -38,27 +38,27 @@ export function PhotoRecords() {
             <button
               type="button"
               onClick={() => clearRecords()}
-              className="min-h-10 rounded-full bg-muted px-4 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+              className="pm-action min-h-10 px-4"
             >
               清空记录
             </button>
           )}
         </div>
-        <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-3 flex items-start gap-1.5 border border-border p-3 text-[11px] leading-5 text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           记录保存在当前浏览器 localStorage，不会同步到服务器；更换设备或清理浏览器后会丢失。
         </p>
       </section>
 
       {records.length === 0 && (
-        <p className="rounded-2xl border border-dashed border-border bg-card/60 p-5 text-sm text-muted-foreground">
+        <p className="border border-dashed border-border bg-card/60 p-5 text-sm text-muted-foreground">
           还没有记录。在拍摄方案中保存方案，或在照片分析结果中保存分析。
         </p>
       )}
 
       <div className="space-y-3">
         {records.map((record) => (
-          <article key={record.id} className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
+          <article key={record.id} className="pm-panel p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
@@ -69,7 +69,7 @@ export function PhotoRecords() {
                     {formatObservedAt(record.savedAt)}
                   </span>
                 </p>
-                <h4 className="mt-1 truncate font-semibold">
+                <h4 className="pm-display mt-2 truncate text-xl">
                   {record.kind === "plan" ? record.title : record.fileName}
                 </h4>
                 {record.kind === "plan" && (
@@ -95,7 +95,7 @@ export function PhotoRecords() {
                 type="button"
                 onClick={() => deleteRecord(record.id)}
                 aria-label="删除记录"
-                className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                className="grid size-9 shrink-0 place-items-center border border-border text-muted-foreground transition hover:border-destructive hover:text-destructive"
               >
                 <Trash2 className="size-4" />
               </button>
@@ -106,7 +106,7 @@ export function PhotoRecords() {
                 <summary className="cursor-pointer text-xs font-medium text-primary">
                   查看参数与流程
                 </summary>
-                <div className="mt-2 grid gap-2 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground sm:grid-cols-2">
+                <div className="mt-2 grid gap-2 border border-border p-3 text-[11px] leading-5 text-muted-foreground sm:grid-cols-2">
                   <p>ISO {record.cameraParameters.iso}</p>
                   <p>光圈 {record.cameraParameters.aperture}</p>
                   <p>快门 {record.cameraParameters.shutter}</p>
@@ -128,7 +128,7 @@ export function PhotoRecords() {
                 <summary className="cursor-pointer text-xs font-medium text-primary">
                   查看分析摘要
                 </summary>
-                <div className="mt-2 space-y-2 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+                <div className="mt-2 space-y-2 border border-border p-3 text-[11px] leading-5 text-muted-foreground">
                   <p>{record.summary}</p>
                   {record.issues.length > 0 && (
                     <p>关注：{record.issues.join("；")}</p>

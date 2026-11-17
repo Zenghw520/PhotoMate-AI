@@ -85,22 +85,25 @@ export function WeatherOverview({
       reference.cloudLow !== undefined);
   return (
     <div className="space-y-4">
-      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-5 py-4">
-          <div className="flex items-center gap-2.5">
-            <CloudSun className="size-5 text-primary" />
+      <section className="pm-panel overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className="grid size-9 place-items-center border border-border text-primary">
+              <CloudSun className="size-5" />
+            </span>
             <div>
-              <h2 className="font-semibold">此刻天气</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="pm-kicker">Live / Observation</p>
+              <h2 className="pm-display mt-1.5 text-2xl">此刻天气</h2>
+              <p className="mt-1 text-[10px] tracking-[0.06em] text-muted-foreground">
                 实况观测数据，与逐小时预报分开标注
               </p>
             </div>
           </div>
           <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+            className={`border border-border px-2.5 py-1 text-[10px] tracking-[0.1em] ${
               weather.status === "OK"
-                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                : "bg-muted text-muted-foreground"
+                ? "text-[var(--ov-success)]"
+                : "text-muted-foreground"
             }`}
           >
             {statusLabels[weather.status]}
@@ -110,11 +113,11 @@ export function WeatherOverview({
           <>
             <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
               <div className="flex items-end gap-3">
-                <span className="text-5xl font-light tracking-[-0.06em]">
+                <span className="pm-display text-7xl tabular-nums 2xl:text-8xl">
                   {current.temperature === null
                     ? "—"
                     : Math.round(current.temperature)}
-                  <span className="ml-1 text-2xl">°</span>
+                  <span className="ml-1 text-3xl">°</span>
                 </span>
                 <div className="pb-1">
                   <p className="font-medium">
@@ -163,7 +166,7 @@ export function WeatherOverview({
                 />
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-5 py-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-3 text-[10px] tracking-[0.04em] text-muted-foreground">
               <span>实况观测于 {formatObservedAt(current.observedAt)}</span>
               <span className="text-right">
                 预报获取于{" "}
@@ -173,7 +176,7 @@ export function WeatherOverview({
                 · {weather.sources.join(" / ") || "来源未知"}
               </span>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-5 py-2.5 text-[11px] text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-2.5 text-[10px] tracking-[0.04em] text-muted-foreground">
               <span>
                 {current.airQuality
                   ? `空气质量 ${current.airQuality.aqi ?? "—"} ${
@@ -202,25 +205,26 @@ export function WeatherOverview({
         )}
       </section>
 
-      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <AlertTriangle className="size-4 text-amber-500" />摄影天气提醒
-          </h3>
-          <span className="text-[11px] text-muted-foreground">
+      <section className="pm-panel p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+          <div>
+            <p className="pm-kicker">Alerts / Field Notes</p>
+            <h3 className="pm-display mt-2 text-2xl">摄影天气提醒</h3>
+          </div>
+          <span className="pm-mono text-muted-foreground">
             根据所选日期真实逐小时变化生成
           </span>
         </div>
         {alerts.length ? (
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {alerts.map((alert) => (
               <li
                 key={alert.id}
-                className={`rounded-xl border p-3 ${alertTones[alert.level]}`}
+                className={`border border-border border-l-2 p-3 ${alertTones[alert.level]}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold">{alert.title}</p>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                  <span className="pm-mono shrink-0 text-muted-foreground">
                     {alert.time ? formatTime(alert.time) : "全天"}
                   </span>
                 </div>
@@ -238,16 +242,19 @@ export function WeatherOverview({
       </section>
 
       {hasLayers && reference && (
-        <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold">
-              <Cloud className="size-4 text-primary" />云层结构
-            </h3>
-            <span className="text-xs font-normal text-muted-foreground">
+        <section className="pm-panel p-5">
+          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
+            <div>
+              <p className="pm-kicker">Cloud Structure</p>
+              <h3 className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                <Cloud className="size-4 text-primary" />云层结构
+              </h3>
+            </div>
+            <span className="pm-mono text-muted-foreground">
               {formatTime(reference.time)} 附近 · 逐小时预报
             </span>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
             <CloudLayer
               label="总云量"
               value={reference.cloud ?? null}
@@ -275,15 +282,16 @@ export function WeatherOverview({
         </section>
       )}
 
-      <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="pm-panel p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-3">
           <div>
-            <h3 className="text-sm font-semibold">天气变化趋势</h3>
+            <p className="pm-kicker">Forecast / 72H</p>
+            <h3 className="mt-2 text-sm font-semibold">天气变化趋势</h3>
             <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               预报数据，支持 24 / 48 / 72 小时与五项指标切换。
             </p>
           </div>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="pm-mono text-muted-foreground">
             {forecastHours.length
               ? `覆盖未来 ${forecastHours.length} 小时`
               : "所选日期暂无逐时预报"}
@@ -296,14 +304,14 @@ export function WeatherOverview({
             sources={weather.sources}
           />
         ) : (
-          <p className="mt-3 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+          <p className="mt-3 border border-border p-3 text-xs leading-5 text-muted-foreground">
             所选日期超出逐小时预报覆盖范围，未用其他日期数据代替。
           </p>
         )}
       </section>
 
       {hours.length > 0 && (
-        <details className="group rounded-[var(--radius)] border border-border bg-card px-5 py-4 shadow-sm">
+        <details className="pm-panel px-5 py-4">
           <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between text-xs font-medium text-muted-foreground">
             逐小时明细（{hours.length} 小时）
             <ChevronDown className="size-4 transition group-open:rotate-180" />
@@ -350,14 +358,14 @@ function CloudLayer({
   tone: string;
 }) {
   return (
-    <div className="rounded-xl bg-muted/45 p-3">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums">
+    <div className="bg-card p-3 text-center">
+      <p className="pm-mono text-muted-foreground">{label}</p>
+      <p className="pm-display mt-2 text-2xl tabular-nums">
         {value === null ? "—" : `${Math.round(value)}%`}
       </p>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div className="mt-2 h-[3px] overflow-hidden bg-muted">
         <div
-          className={`h-full rounded-full ${tone}`}
+          className={`h-full ${tone}`}
           style={{ width: `${value ?? 0}%` }}
         />
       </div>
@@ -376,7 +384,7 @@ function Metric({
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+      <div className="pm-mono flex items-center gap-1 text-muted-foreground">
         <Icon className="size-3.5" />
         {label}
       </div>
