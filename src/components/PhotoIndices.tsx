@@ -4,6 +4,7 @@ import type {
   PhotographyIndices,
 } from "@/functions/shared/contracts";
 import {
+  formatObservedAt,
   formatTime,
   missingFieldLabel,
   scoreLabel,
@@ -23,7 +24,15 @@ function barColor(score: number) {
   return "bg-rose-500/60";
 }
 
-export function PhotoIndices({ indices }: { indices: PhotographyIndices }) {
+export function PhotoIndices({
+  indices,
+  forecastUpdatedAt,
+  sources,
+}: {
+  indices: PhotographyIndices;
+  forecastUpdatedAt?: string | null;
+  sources: string[];
+}) {
   const overall = indices.overall;
   const trend = indices.trend.filter((entry) => entry.score !== null);
   return (
@@ -72,6 +81,13 @@ export function PhotoIndices({ indices }: { indices: PhotographyIndices }) {
             可展开核对每个因子的数值与贡献
           </span>
         </div>
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          天气预报获取于{" "}
+          {forecastUpdatedAt
+            ? formatObservedAt(forecastUpdatedAt)
+            : "未提供"}{" "}
+          · 来源 {sources.join(" / ") || "未提供"}
+        </p>
       </section>
 
       <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">

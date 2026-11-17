@@ -578,13 +578,32 @@ function SectionDetail({
               />
             )}
             {section === "WEATHER" && tab === "indices" && (
-              <PhotoIndices indices={data.indices} />
+              <PhotoIndices
+                indices={data.indices}
+                forecastUpdatedAt={data.weather.forecastUpdatedAt}
+                sources={data.weather.sources}
+              />
             )}
             {section === "WEATHER" && tab === "sources" && (
               <WeatherSources weather={data.weather} />
             )}
             {section === "LIGHT" && tab === "glow" && (
               <div className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-[11px] text-muted-foreground">
+                  <span>
+                    实况观测于{" "}
+                    {data.weather.current
+                      ? formatObservedAt(data.weather.current.observedAt)
+                      : "暂不可用"}
+                  </span>
+                  <span>
+                    预报获取于{" "}
+                    {data.weather.forecastUpdatedAt
+                      ? formatObservedAt(data.weather.forecastUpdatedAt)
+                      : "未提供"}{" "}
+                    · 来源 {data.weather.sources.join(" / ") || "未提供"}
+                  </span>
+                </div>
                 {(["dawn", "dusk"] as const).map((type) => {
                   const context = solarEventContext(data.solar, type);
                   return (

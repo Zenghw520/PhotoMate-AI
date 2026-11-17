@@ -34,10 +34,12 @@ PhotoMate AI 是一个面向摄影爱好者的智能拍摄规划平台：把**�
 
 ### 1. 多源真实天气分析
 
-- 和风天气、OpenWeather、Open-Meteo **三源等权合并**，单源缺失时按可用字段计算。
+- 和风天气、OpenWeather、Open-Meteo、MET Norway **四源等权合并**，单源缺失时按可用字段计算。
 - 展示温度、体感、湿度、总云量、高/中/低云、降水概率与降水量、风速风向、能见度、气压、空气质量。
-- 逐小时温度曲线、云量/降水概率图、逐小时明细与异常天气提醒。
-- 明确标注观测时间、数据来源与缺失字段；缺失数据不会被推测值补齐。
+- 天气趋势支持 24 / 48 / 72 小时切换，并可查看温度、云量、湿度、风速、降水概率五项指标；支持悬停与触控长按拖动。
+- 七个摄影题材各自独立权重，逐项展示光线窗口、云层、能见度、降水、风速、湿度与气溶胶的数值和贡献。
+- 根据真实逐小时变化动态生成云量、降水、能见度、风速与最佳窗口提醒。
+- 明确标注实况观测时间、预报获取时间、数据来源与缺失字段；缺失数据不会被推测值补齐。
 
 ### 2. 朝霞、晚霞与火烧云
 
@@ -115,6 +117,7 @@ flowchart LR
   FN --> QW["和风天气"]
   FN --> OW["OpenWeather"]
   FN --> OM["Open-Meteo\n预报 + 空气质量"]
+  FN --> MN["MET Norway\n分层云量"]
   FN --> AM["高德地图\n区县 / 逆地理 / POI"]
   FN --> DS["DeepSeek"]
   FN --> DB[("PostgreSQL\nprovider_cache / usage_counters")]
@@ -132,15 +135,16 @@ flowchart LR
 | 数据 | 来源 | 用途 |
 | --- | --- | --- |
 | 实时与逐小时天气 | 和风天气 | 天气现象优先级、空气质量、逐小时预报 |
-| 实时与逐小时天气 | OpenWeather | 多源数值合并 |
+| 实时与逐小时天气 | OpenWeather | 多源数值合并与逐小时能见度 |
 | 预报、云层分层、气溶胶 | Open-Meteo（Forecast + Air Quality） | 高/中/低云、AOD、能见度与 96 小时覆盖 |
+| 分层云量与逐小时预报 | MET Norway（Locationforecast） | 高/中/低云、温度、湿度、风与 72 小时以上覆盖 |
 | 区县、逆地理、摄影点 | 高德地图 Web 服务 | 行政区检索、坐标解析、周边 POI |
 | 地形高程 | 星图地球数据云 Terrain-RGB | 3×3 高程瓦片、地平线剖面与地形遮挡 |
 | AI 文本 | DeepSeek | 题材复核、方案文案、参数与摘要 |
 | 太阳位置与晨昏 | 本地 NOAA 算法 | 日出日落、黄金/蓝调时刻、太阳轨迹 |
 | RAW 解码 | LibRaw / libraw-wasm | 浏览器内 RAW 预览与统计 |
 
-> Open-Meteo 数据遵循 **CC BY 4.0**，免费接口用于非商业演示。其他服务遵循各自使用条款。
+> Open-Meteo 与 MET Norway 数据遵循 **CC BY 4.0**，免费接口用于非商业演示。其他服务遵循各自使用条款。
 
 ---
 
@@ -201,7 +205,7 @@ npm run dev:function
 | `DEEPSEEK_MODEL` | 可选 | 默认 `deepseek-chat` |
 | `AI_DAILY_LIMIT` | 可选 | 每日 AI 调用上限，默认 `120` |
 
-天气源缺失时页面会明确降级，不会编造数值。Open-Meteo 无需密钥。
+天气源缺失时页面会明确降级，不会编造数值。Open-Meteo 与 MET Norway 无需密钥。
 
 ---
 
@@ -281,7 +285,7 @@ npx deno lint functions
 npx deno test --allow-env functions/
 ```
 
-当前结果：**82 项函数测试全部通过**，覆盖天文计算、天气合并、霞光/火烧云评分、摄影指数、AI 响应校验、地点推荐映射与照片分析。
+当前结果：**89 项函数测试全部通过**，覆盖天文计算、天气合并、分层云量、霞光/火烧云评分、七题材摄影指数、动态提醒、AI 响应校验、地点推荐映射与照片分析。
 
 线上还会对真实天气、指数、太阳轨迹、AI 方案、地点推荐、移动端布局与控制台错误进行验收。
 
@@ -295,7 +299,7 @@ npx deno test --allow-env functions/
 │  ├─ lib/               API、格式化、天文/像素/RAW/本地记录
 │  └─ globals.css        主题与动效
 ├─ functions/            Deno Edge Function
-│  ├─ providers/         和风、OpenWeather、Open-Meteo、高德、星图、DeepSeek
+│  ├─ providers/         和风、OpenWeather、Open-Meteo、MET Norway、高德、星图、DeepSeek
 │  ├─ services/          聚合、评分、指数、方案、照片分析、缓存
 │  ├─ astronomy/         NOAA 太阳计算
 │  └─ shared/            共享契约与环境工具
