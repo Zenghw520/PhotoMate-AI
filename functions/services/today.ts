@@ -32,6 +32,7 @@ import {
 } from "./day_journal.ts";
 import { buildTimeline } from "./timeline.ts";
 import { buildPhotographyIndices } from "./indices.ts";
+import { buildWeatherAlerts } from "./weather_alerts.ts";
 import { claimAiUsage } from "./usage.ts";
 
 function shanghaiDate(now: Date) {
@@ -54,13 +55,20 @@ function isWeatherData(value: unknown): value is WeatherData {
     Array.isArray(weather.sources) && Array.isArray(weather.missingFields);
 }
 
+function withForecastTime(weather: WeatherData, at: Date): WeatherData {
+  return {
+    ...weather,
+    forecastUpdatedAt: weather.forecastUpdatedAt ?? at.toISOString(),
+  };
+}
+
 async function loadWeather(
   location: LocationInput,
   db: DatabaseClient | undefined,
   now: Date,
 ) {
   const cache = createCacheStore(db);
-  const key = await makeCacheKey("weather", "merged:v6", {
+  const key = await makeCacheKey("weather", "merged:v7", {
     latitude: coordinateGrid(location.latitude).toFixed(3),
     longitude: coordinateGrid(location.longitude).toFixed(3),
   });
@@ -70,7 +78,10 @@ async function loadWeather(
     : null;
   if (cached && cachedWeather && cacheFreshness(cached, now) === "FRESH") {
     return {
-      weather: { ...cachedWeather, status: "OK" as const },
+      weather: withForecastTime(
+        { ...cachedWeather, status: "OK" as const },
+        new Date(cachedWeather.forecastUpdatedAt ?? cached.fetchedAt),
+      ),
       fetchedAt: new Date(cached.fetchedAt),
     };
   }
@@ -80,7 +91,10 @@ async function loadWeather(
     getOpenWeather(location.latitude, location.longitude),
     getOpenMeteo(location.latitude, location.longitude),
   ]);
-  const fresh = mergeWeather(qweather, openWeather, openMeteo);
+  const fresh = withForecastTime(
+    mergeWeather(qweather, openWeather, openMeteo),
+    now,
+  );
   if (fresh.status === "OK") {
     await cache.set(
       key,
@@ -93,11 +107,11 @@ async function loadWeather(
   }
   if (cached && cachedWeather && cacheFreshness(cached, now) === "STALE") {
     return {
-      weather: {
+      weather: withForecastTime({
         ...cachedWeather,
         status: "STALE" as const,
         message: "实时更新暂时失败，当前展示短时真实缓存，评分置信度已降低。",
-      },
+      }, new Date(cachedWeather.forecastUpdatedAt ?? cached.fetchedAt)),
       fetchedAt: new Date(cached.fetchedAt),
     };
   }
@@ -270,6 +284,7 @@ export async function getTodayPhotography(
     theme,
     now,
   );
+  const alerts = buildWeatherAlerts(scoringHourly, timeline, date, now);
   const indices = buildPhotographyIndices({
     landscape: timeline,
     portrait: buildTimeline(location, solar, scoringHourly, "PORTRAIT", now),
@@ -350,6 +365,7 @@ export async function getTodayPhotography(
     potential,
     fireCloud,
     timeline,
+    alerts,
     plans,
     warnings,
   };

@@ -73,7 +73,7 @@ function isTodayResponse(value: unknown): value is TodayResponse {
     !!item.solar && Array.isArray(item.solar.goldenHours) && !!item.potential &&
     !!item.fireCloud && !!item.indices && Array.isArray(item.indices.entries) &&
     Array.isArray(item.indices.trend) &&
-    Array.isArray(item.timeline) && !!item.plans &&
+    Array.isArray(item.timeline) && Array.isArray(item.alerts) && !!item.plans &&
     Array.isArray(item.plans.items) && Array.isArray(item.warnings);
 }
 

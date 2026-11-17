@@ -6,18 +6,51 @@ import type {
 } from "../shared/contracts.ts";
 
 const LOOKOUT_MS = 90 * 60 * 1000;
-const WEIGHTS = {
-  cloud: 45,
-  precipitationProbability: 15,
-  precipitation: 10,
-  visibility: 15,
-  humidity: 5,
-  windSpeed: 10,
-  cloudHigh: 8,
-  cloudMid: 8,
-  cloudLow: 10,
-  aerosolOpticalDepth: 5,
-} as const;
+const FIELD_ORDER = [
+  "cloud",
+  "precipitationProbability",
+  "precipitation",
+  "visibility",
+  "humidity",
+  "windSpeed",
+  "cloudHigh",
+  "cloudMid",
+  "cloudLow",
+  "aerosolOpticalDepth",
+] as const;
+
+type WeatherField = (typeof FIELD_ORDER)[number];
+
+/**
+ * 朝霞与晚霞使用独立权重：清晨更看重低云与湿度（逆温、晨雾），
+ * 傍晚更看重风速与能见度。两者都只基于真实逐小时数据。
+ */
+const WEIGHT_PROFILES: Record<"dawn" | "dusk", Record<WeatherField, number>> = {
+  dawn: {
+    cloud: 45,
+    precipitationProbability: 15,
+    precipitation: 10,
+    visibility: 15,
+    humidity: 7,
+    windSpeed: 6,
+    cloudHigh: 8,
+    cloudMid: 8,
+    cloudLow: 12,
+    aerosolOpticalDepth: 5,
+  },
+  dusk: {
+    cloud: 45,
+    precipitationProbability: 15,
+    precipitation: 10,
+    visibility: 16,
+    humidity: 5,
+    windSpeed: 9,
+    cloudHigh: 8,
+    cloudMid: 8,
+    cloudLow: 10,
+    aerosolOpticalDepth: 5,
+  },
+};
 
 const CORE_FIELDS = [
   "cloud",
@@ -27,8 +60,6 @@ const CORE_FIELDS = [
   "humidity",
   "windSpeed",
 ] as const;
-
-type WeatherField = keyof typeof WEIGHTS;
 
 type Metric = (value: number) => number;
 
@@ -177,8 +208,9 @@ export function scoreTwilight(
     })
     : [];
   const eventName = kind === "dawn" ? "朝霞" : "晚霞";
+  const weights = WEIGHT_PROFILES[kind];
   const values = {} as Record<WeatherField, number | null>;
-  for (const field of Object.keys(WEIGHTS) as WeatherField[]) {
+  for (const field of FIELD_ORDER) {
     values[field] = average(
       records.map((entry) => entry[field]).filter((value): value is number =>
         typeof value === "number" && Number.isFinite(value)
@@ -189,9 +221,7 @@ export function scoreTwilight(
   const missingFields: string[] = CORE_FIELDS.filter((field) =>
     values[field] === null
   );
-  const basis: ScoreBasis[] = (Object.keys(WEIGHTS) as WeatherField[]).map((
-    field,
-  ) => ({
+  const basis: ScoreBasis[] = FIELD_ORDER.map((field) => ({
     code: field,
     label: LABELS[field].label,
     value: values[field] === null ? null : round(values[field]!),
@@ -225,20 +255,16 @@ export function scoreTwilight(
     };
   }
 
-  const availableWeight = (Object.keys(WEIGHTS) as WeatherField[]).reduce(
-    (sum, field) => sum + (values[field] === null ? 0 : WEIGHTS[field]),
+  const availableWeight = FIELD_ORDER.reduce(
+    (sum, field) => sum + (values[field] === null ? 0 : weights[field]),
     0,
   );
   let weightedScore = 0;
-  for (
-    let index = 0;
-    index < (Object.keys(WEIGHTS) as WeatherField[]).length;
-    index++
-  ) {
-    const field = (Object.keys(WEIGHTS) as WeatherField[])[index];
+  for (let index = 0; index < FIELD_ORDER.length; index++) {
+    const field = FIELD_ORDER[index];
     const value = values[field];
     if (value === null) continue;
-    const contribution = METRICS[field](value) * WEIGHTS[field] /
+    const contribution = METRICS[field](value) * weights[field] /
       availableWeight;
     weightedScore += contribution;
     basis[index].contribution = round(contribution);

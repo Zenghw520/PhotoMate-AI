@@ -24,10 +24,10 @@ function timelineItem(
     solar: { elevation: 10, azimuth: 120 },
     weather: {
       condition: "多云",
-      cloud: 40,
+      cloud: 45,
       precipitationProbability: 10,
-      windSpeed: 2,
-      visibility: 20_000,
+      windSpeed: 3,
+      visibility: 15_000,
     },
     isPast: false,
     reasons: [],
@@ -49,18 +49,40 @@ function potential(score: number): PotentialScore {
   };
 }
 
-function hourly(time: string, cloud: number | null): HourlyWeather {
+function potentialUnavailable(): PotentialScore {
+  return {
+    status: "UNAVAILABLE",
+    score: null,
+    confidence: 0,
+    confidenceLevel: "LOW",
+    basis: [],
+    missingFields: ["cloud"],
+    forecastWindow: null,
+    scoreMode: "UNAVAILABLE",
+    summary: "天气不可用",
+  };
+}
+
+function hourly(
+  time: string,
+  overrides: Partial<HourlyWeather> = {},
+): HourlyWeather {
   return {
     time,
     temperature: 10,
     condition: "多云",
     humidity: 60,
-    cloud,
+    cloud: 45,
+    cloudHigh: 40,
+    cloudMid: 35,
+    cloudLow: 20,
+    aerosolOpticalDepth: 0.2,
     precipitationProbability: 10,
     precipitation: 0,
-    windSpeed: 2,
+    windSpeed: 3,
     windDirection: "北风",
-    visibility: cloud === null ? null : 5_000,
+    visibility: 15_000,
+    ...overrides,
   };
 }
 
@@ -69,18 +91,26 @@ function weather(overrides: Partial<WeatherData> = {}): WeatherData {
     status: "OK",
     current: null,
     hourly: [
-      hourly("2026-01-02T21:00:00+08:00", 90),
-      hourly("2026-01-02T22:00:00+08:00", 90),
+      hourly("2026-01-02T06:30:00+08:00"),
+      hourly("2026-01-02T07:30:00+08:00"),
+      hourly("2026-01-02T08:30:00+08:00"),
+      hourly("2026-01-02T12:30:00+08:00"),
+      hourly("2026-01-02T17:30:00+08:00"),
+      hourly("2026-01-02T21:00:00+08:00"),
+      hourly("2026-01-02T22:00:00+08:00"),
     ],
     sources: ["test"],
     missingFields: [],
     message: null,
+    forecastUpdatedAt: "2026-01-01T23:00:00.000Z",
     ...overrides,
   };
 }
 
-Deno.test("摄影指数按题材计算、修正星空并加权综合", () => {
-  const indices = buildPhotographyIndices({
+function input(
+  overrides: Partial<Parameters<typeof buildPhotographyIndices>[0]> = {},
+) {
+  return {
     landscape: [
       timelineItem(
         "DAWN",
@@ -145,43 +175,73 @@ Deno.test("摄影指数按题材计算、修正星空并加权综合", () => {
     ],
     potential: { dawn: potential(80), dusk: potential(70) },
     weather: weather(),
-  });
+    ...overrides,
+  };
+}
 
-  const entry = (id: string) => indices.entries.find((item) => item.id === id);
-  assertEquals(entry("LANDSCAPE")?.score, 80);
-  assertEquals(entry("PORTRAIT")?.score, 75);
-  assertEquals(entry("URBAN")?.score, 62.5);
-  assertEquals(entry("NIGHT")?.score, 52.5);
-  assertEquals(entry("ASTRONOMY")?.score, 17);
-  assertEquals(entry("DAWN")?.score, 80);
-  assertEquals(entry("DUSK")?.score, 70);
-  assertEquals(indices.overall, 62.5);
+Deno.test("七个题材使用独立权重、真实逐小时数据并给出可核对依据", () => {
+  const indices = buildPhotographyIndices(input());
+  const entry = (id: string) => indices.entries.find((item) => item.id === id)!;
+
+  assertEquals(entry("LANDSCAPE").score, 87.8);
+  assertEquals(entry("PORTRAIT").score, 88.3);
+  assertEquals(entry("URBAN").score, 86);
+  assertEquals(entry("NIGHT").score, 79.5);
+  assertEquals(entry("ASTRONOMY").score, 75);
+  assertEquals(entry("DAWN").score, 80);
+  assertEquals(entry("DUSK").score, 70);
+  assertEquals(indices.overall, 81.4);
   assertEquals(indices.confidence, "HIGH");
+
+  const landscapeCloud = entry("LANDSCAPE").basis.find((item) =>
+    item.code === "cloud"
+  )!;
+  assertEquals(landscapeCloud.value, 45);
+  assertEquals(
+    landscapeCloud.contribution !== null &&
+      landscapeCloud.contribution > 0,
+    true,
+  );
+  assertEquals(entry("LANDSCAPE").status, "OK");
+  assertEquals(entry("LANDSCAPE").windowLabel, "DAWN、SUNRISE、SUNSET");
+  assertEquals(
+    entry("ASTRONOMY").basis.find((item) => item.code === "clearSky")?.value,
+    55,
+  );
   assertEquals(indices.trend.length, 4);
-  assertEquals(indices.trend[0].score, 80);
-  assertEquals(indices.basis.length >= 3, true);
+  assertEquals(indices.basis.length >= 4, true);
 });
 
-Deno.test("天气不可用时摄影指数降低置信度", () => {
-  const indices = buildPhotographyIndices({
-    landscape: [
-      timelineItem(
-        "SUNRISE",
-        null,
-        "2026-01-02T07:00:00+08:00",
-        "2026-01-02T08:00:00+08:00",
-      ),
-    ],
-    portrait: [],
-    urban: [],
-    night: [],
-    potential: { dawn: potential(0), dusk: potential(0) },
+Deno.test("天气不可用或窗口无逐小时数据时不输出摄影天气分", () => {
+  const indices = buildPhotographyIndices(input({
     weather: weather({ status: "UNAVAILABLE", hourly: [] }),
-  });
+    potential: { dawn: potentialUnavailable(), dusk: potentialUnavailable() },
+  }));
+  const astronomy = indices.entries.find((item) => item.id === "ASTRONOMY")!;
+  assertEquals(astronomy.score, null);
+  assertEquals(astronomy.status, "UNAVAILABLE");
+  assertEquals(indices.overall, null);
   assertEquals(indices.confidence, "LOW");
+});
+
+Deno.test("缺失分层云量时按剩余权重归一化并标注字段", () => {
+  const sparse = hourly("2026-01-02T21:00:00+08:00", {
+    cloudHigh: null,
+    cloudMid: null,
+    cloudLow: null,
+    aerosolOpticalDepth: null,
+  });
+  const indices = buildPhotographyIndices(input({
+    weather: weather({ hourly: [sparse] }),
+  }));
+  const astronomy = indices.entries.find((item) => item.id === "ASTRONOMY")!;
+  assertEquals(astronomy.score !== null, true);
+  assertEquals(astronomy.status, "PARTIAL");
+  assertEquals(astronomy.missingFields.includes("cloudLow"), true);
+  assertEquals(astronomy.missingFields.includes("aerosolOpticalDepth"), true);
   assertEquals(
-    indices.entries.find((item) => item.id === "ASTRONOMY")?.score,
+    astronomy.basis.find((item) => item.code === "aerosolOpticalDepth")
+      ?.contribution,
     null,
   );
-  assertEquals(indices.overall !== null, true);
 });

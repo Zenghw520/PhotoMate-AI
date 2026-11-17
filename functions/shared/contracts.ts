@@ -80,6 +80,8 @@ export interface WeatherData {
   sources: string[];
   missingFields: string[];
   message: string | null;
+  /** 逐小时预报的获取时间；与 current.observedAt 的实况观测时间区分。 */
+  forecastUpdatedAt?: string | null;
 }
 
 export interface SolarPosition {
@@ -222,6 +224,28 @@ export interface PhotographyIndexEntry {
   label: string;
   score: number | null;
   note: string;
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  status: "OK" | "PARTIAL" | "UNAVAILABLE";
+  windowLabel: string;
+  basis: ScoreBasis[];
+  missingFields: string[];
+}
+
+export type WeatherAlertKind =
+  | "CLOUD"
+  | "PRECIPITATION"
+  | "VISIBILITY"
+  | "WIND"
+  | "BEST_WINDOW"
+  | "TEMPERATURE";
+
+export interface WeatherAlert {
+  id: string;
+  kind: WeatherAlertKind;
+  level: "INFO" | "WATCH" | "WARNING";
+  title: string;
+  detail: string;
+  time: string | null;
 }
 
 export interface PhotographyIndices {
@@ -249,6 +273,7 @@ export interface TodayResponse {
     dusk: FireCloudPrediction;
   };
   timeline: TimelineItem[];
+  alerts: WeatherAlert[];
   plans: {
     mode: "AI_ENHANCED" | "RULE_BASED";
     aiStatus:

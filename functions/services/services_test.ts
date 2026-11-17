@@ -403,6 +403,38 @@ Deno.test("霞光与火烧云评分纳入分层云量与气溶胶", () => {
   );
 });
 
+Deno.test("朝霞与晚霞采用不同的气象权重", () => {
+  const layered = hourly("2025-03-20T05:00:00+08:00", {
+    cloud: 50,
+    cloudHigh: 55,
+    cloudMid: 40,
+    cloudLow: 15,
+    aerosolOpticalDepth: 0.12,
+  });
+  const dawn = scoreTwilight(
+    "dawn",
+    WINDOW,
+    [layered],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  const dusk = scoreTwilight(
+    "dusk",
+    WINDOW,
+    [layered],
+    FETCHED_AT,
+    FETCHED_AT,
+  );
+  const dawnLow = dawn.basis.find((item) => item.code === "cloudLow")
+    ?.contribution;
+  const duskLow = dusk.basis.find((item) => item.code === "cloudLow")
+    ?.contribution;
+  assert.ok(dawnLow !== null && duskLow !== null);
+  assert.notEqual(dawnLow, duskLow);
+  assert.equal(dawn.basis.find((item) => item.code === "cloud")?.value, 50);
+  assert.equal(dusk.basis.find((item) => item.code === "cloud")?.value, 50);
+});
+
 Deno.test("低云遮挡与高气溶胶会显著降低火烧云判断", () => {
   const blocked = scoreFireCloud(
     "dusk",
