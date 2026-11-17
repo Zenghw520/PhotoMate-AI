@@ -197,13 +197,14 @@ async function request(
   apiKey: string,
   path: string,
   query: Record<string, string>,
+  timeoutMs = 5_000,
 ): Promise<unknown> {
   return await fetchTrustedJson<unknown>({
     baseUrl: BASE_URL,
     path,
     allowedHosts: HOSTS,
     query: { ...query, appid: apiKey, units: "metric", lang: "zh_cn" },
-    timeoutMs: 4_000,
+    timeoutMs,
     maxResponseBytes: 512 * 1024,
     retries: 0,
   });
@@ -231,7 +232,7 @@ export async function getOpenWeather(
       const payload = await request(apiKey, "/data/3.0/onecall", {
         ...location,
         exclude: "minutely,daily,alerts",
-      });
+      }, 7_000);
       const root = record(payload);
       const current = mapCurrent(root?.current);
       const hourly = (Array.isArray(root?.hourly) ? root.hourly : [])

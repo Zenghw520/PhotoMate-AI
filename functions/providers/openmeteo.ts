@@ -308,9 +308,9 @@ export async function getOpenMeteo(
           forecast_days: "3",
           past_days: "1",
         },
-        timeoutMs: 5_000,
+        timeoutMs: 3_500,
         maxResponseBytes: 512 * 1024,
-        retries: 1,
+        retries: 0,
       }),
       loadAerosolOpticalDepth(latitude, longitude),
     ]);

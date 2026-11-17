@@ -139,7 +139,7 @@ export async function getMetNorway(
         lon: longitude.toFixed(4),
       },
       headers: { "User-Agent": USER_AGENT },
-      timeoutMs: 8_000,
+      timeoutMs: 6_000,
       maxResponseBytes: 1024 * 1024,
       retries: 1,
     });
