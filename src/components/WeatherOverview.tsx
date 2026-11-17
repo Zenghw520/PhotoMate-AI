@@ -270,7 +270,7 @@ export function WeatherOverview({
             />
           </div>
           <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-            高云与中云承接低角度光，低云过多会遮挡太阳；分层数据来自 Open-Meteo，总云量为多源合并后的逐小时值。
+            高云与中云承接低角度光，低云过多会遮挡太阳；分层数据来自 MET Norway（CC BY 4.0），Open-Meteo 可用时也会参与合并；总云量为多源合并后的逐小时值。
           </p>
         </section>
       )}

@@ -770,7 +770,7 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
         </p>
       )}
       <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
-        和风天气提供实况、天气现象与空气质量；OpenWeather 与 Open-Meteo 提供数值与逐小时预报；高/中/低云分层与气溶胶来自 Open-Meteo。来源名称与更新时间均由后端随响应返回。
+        和风天气提供实况、天气现象与空气质量；OpenWeather、Open-Meteo 与 MET Norway 提供数值与逐小时预报；高/中/低云分层与气溶胶来自 Open-Meteo 或 MET Norway（CC BY 4.0）。来源名称与更新时间均由后端随响应返回。
       </p>
       {weather.sources.includes("Open-Meteo") && (
         <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">

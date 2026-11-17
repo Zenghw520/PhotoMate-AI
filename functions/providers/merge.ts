@@ -149,13 +149,37 @@ function missingFields(
       if (value === null) missing.push(`hourly.${index}.${field}`);
     }
   }
+  if (hourly.length > 0) {
+    if (hourly.every((entry) => entry.cloudHigh === null)) {
+      missing.push("hourly.cloudHigh");
+    }
+    if (hourly.every((entry) => entry.cloudMid === null)) {
+      missing.push("hourly.cloudMid");
+    }
+    if (hourly.every((entry) => entry.cloudLow === null)) {
+      missing.push("hourly.cloudLow");
+    }
+    if (hourly.every((entry) => entry.aerosolOpticalDepth === null)) {
+      missing.push("hourly.aerosolOpticalDepth");
+    }
+  }
   return missing;
+}
+
+function hourlyDensity(source: WeatherData): number {
+  const first = Date.parse(source.hourly[0]?.time ?? "");
+  if (!Number.isFinite(first)) return 0;
+  const end = first + 72 * 60 * 60 * 1000;
+  return source.hourly.filter((entry) => {
+    const time = Date.parse(entry.time);
+    return Number.isFinite(time) && time >= first && time <= end;
+  }).length;
 }
 
 /**
  * Merges any number of weather sources. Numeric fields use an equal-weight
  * average over the sources that provide them; text fields keep source order
- * priority (和风天气 first). The longest hourly series provides the timeline.
+ * priority (和风天气 first). The densest hourly series provides the timeline.
  */
 export function mergeWeather(...sources: WeatherData[]): WeatherData {
   const available = sources.filter((source) => active(source.status));
@@ -179,8 +203,8 @@ export function mergeWeather(...sources: WeatherData[]): WeatherData {
       item,
     ): item is CurrentWeather => item !== null),
   );
-  const base = available.reduce((longest, source) =>
-    source.hourly.length > longest.hourly.length ? source : longest
+  const base = available.reduce((densest, source) =>
+    hourlyDensity(source) > hourlyDensity(densest) ? source : densest
   );
   const others = available.filter((source) => source !== base);
   const hourly = base.hourly.map((entry) =>

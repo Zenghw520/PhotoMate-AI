@@ -11,6 +11,7 @@ import type {
 import { computeSolar } from "../astronomy/solar.ts";
 import { getOpenMeteo } from "../providers/openmeteo.ts";
 import { getOpenWeather } from "../providers/openweather.ts";
+import { getMetNorway } from "../providers/metno.ts";
 import { mergeWeather } from "../providers/merge.ts";
 import { getQWeather } from "../providers/qweather.ts";
 import { enhancePlans } from "../providers/deepseek.ts";
@@ -87,22 +88,28 @@ async function loadWeather(
     };
   }
 
-  const [qweather, openWeather, openMeteo] = await Promise.all([
+  const [qweather, openWeather, openMeteo, metNorway] = await Promise.all([
     getQWeather(location.latitude, location.longitude),
     getOpenWeather(location.latitude, location.longitude),
     getOpenMeteo(location.latitude, location.longitude),
+    getMetNorway(location.latitude, location.longitude),
   ]);
   const fresh = withForecastTime(
-    mergeWeather(qweather, openWeather, openMeteo),
+    mergeWeather(qweather, openWeather, openMeteo, metNorway),
     now,
   );
   if (fresh.status === "OK") {
+    const criticalMissing = fresh.missingFields.some((field) =>
+      !field.startsWith("hourly.") ||
+      /\.(cloud|temperature|humidity|precipitationProbability|windSpeed)$/
+        .test(field)
+    );
     await cache.set(
       key,
       "weather",
       fresh,
       fresh.current?.observedAt ?? null,
-      fresh.missingFields.length ? 30 : 10 * 60,
+      criticalMissing ? 30 : 5 * 60,
     );
     return { weather: fresh, fetchedAt: now };
   }

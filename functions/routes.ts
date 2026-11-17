@@ -64,6 +64,7 @@ export function createHandler(db?: DatabaseClient) {
             weather: true,
             openWeather: Boolean(secretValue("OPENWEATHER_API_KEY")),
             openMeteo: true,
+            metNorway: true,
             spotRecommendation: Boolean(secretValue("AMAP_API_KEY")),
             terrain: Boolean(secretValue("GEOVIS_EARTH_TOKEN")),
             aiEnhancement: Boolean(secretValue("DEEPSEEK_API_KEY")),
