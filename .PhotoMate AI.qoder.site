@@ -1,1 +1,41 @@
-{"version":1,"name":"PhotoMate AI","design":{"version":1,"pages":[{"id":"home","path":"/","title":"今日摄影规划","width":390,"height":844}],"capabilities":["appearance","radius","spacing","typography","motion"]},"publication":{"actionId":"1b1e2a6f-434d-48c6-a767-dc35b147a54a","projectId":"01a1d081-0eb9-758e-a7c0-f42e17959f09","siteId":"01a1d081-0eba-70e3-b22c-cc7bbd8bab35","deploymentId":"01a1e4bc-d5aa-77bc-a543-1ef2373c0ada","artifactSha256":"2829c2420fe2f11c5768bce54c955e2c71172319b8b8dc91e2514a2af7fb8685","indexSha256":"d803164088c35e50a1665ab6d98a8711708cd3620714da9f1b72479bb462e7eb","releaseId":"01a1e4bd-143c-7dc6-896a-929b90a6bc04","indexHtml":"PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgogICAgPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIC8+CiAgICA8bWV0YSBuYW1lPSJ0aGVtZS1jb2xvciIgY29udGVudD0iIzE3MTUxMSIgLz4KICAgIDxtZXRhIG5hbWU9ImRlc2NyaXB0aW9uIiBjb250ZW50PSJQaG90b01hdGUgQUkg5qC55o2u55yf5a6e5aSp5rCU5LiO5aSq6Ziz5L2N572u77yM6KeE5YiS5pyA5L2z5ouN5pGE5pe26Ze044CB5pa55ZCR5ZKM5Y+C5pWw44CCIiAvPgogICAgPHRpdGxlPlBob3RvTWF0ZSBBSSDCtyDmmbrog73mkYTlvbHop4TliJLliqnmiYs8L3RpdGxlPgogICAgPHNjcmlwdCB0eXBlPSJtb2R1bGUiIGNyb3Nzb3JpZ2luIHNyYz0iL2Fzc2V0cy9pbmRleC1DTVJOeTh6Ty5qcyI+PC9zY3JpcHQ+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGNyb3Nzb3JpZ2luIGhyZWY9Ii9hc3NldHMvaW5kZXgtQ1FmUkRoVGguY3NzIj4KICA8L2hlYWQ+CiAgPGJvZHk+CiAgICA8ZGl2IGlkPSJyb290Ij48L2Rpdj4KICA8L2JvZHk+CjwvaHRtbD4K"},"actionId":"1b1e2a6f-434d-48c6-a767-dc35b147a54a","projectId":"01a1d081-0eb9-758e-a7c0-f42e17959f09","siteId":"01a1d081-0eba-70e3-b22c-cc7bbd8bab35","deploymentId":"01a1e4bc-d5aa-77bc-a543-1ef2373c0ada","artifactSha256":"2829c2420fe2f11c5768bce54c955e2c71172319b8b8dc91e2514a2af7fb8685","indexSha256":"d803164088c35e50a1665ab6d98a8711708cd3620714da9f1b72479bb462e7eb","releaseId":"01a1e4bd-143c-7dc6-896a-929b90a6bc04","indexHtml":"PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgogICAgPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIC8+CiAgICA8bWV0YSBuYW1lPSJ0aGVtZS1jb2xvciIgY29udGVudD0iIzE3MTUxMSIgLz4KICAgIDxtZXRhIG5hbWU9ImRlc2NyaXB0aW9uIiBjb250ZW50PSJQaG90b01hdGUgQUkg5qC55o2u55yf5a6e5aSp5rCU5LiO5aSq6Ziz5L2N572u77yM6KeE5YiS5pyA5L2z5ouN5pGE5pe26Ze044CB5pa55ZCR5ZKM5Y+C5pWw44CCIiAvPgogICAgPHRpdGxlPlBob3RvTWF0ZSBBSSDCtyDmmbrog73mkYTlvbHop4TliJLliqnmiYs8L3RpdGxlPgogICAgPHNjcmlwdCB0eXBlPSJtb2R1bGUiIGNyb3Nzb3JpZ2luIHNyYz0iL2Fzc2V0cy9pbmRleC1DTVJOeTh6Ty5qcyI+PC9zY3JpcHQ+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGNyb3Nzb3JpZ2luIGhyZWY9Ii9hc3NldHMvaW5kZXgtQ1FmUkRoVGguY3NzIj4KICA8L2hlYWQ+CiAgPGJvZHk+CiAgICA8ZGl2IGlkPSJyb290Ij48L2Rpdj4KICA8L2JvZHk+CjwvaHRtbD4K"}
+{
+  "version": 1,
+  "name": "PhotoMate AI",
+  "design": {
+    "version": 1,
+    "pages": [
+      {
+        "id": "home",
+        "path": "/",
+        "title": "今日摄影规划",
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "capabilities": [
+      "appearance",
+      "radius",
+      "spacing",
+      "typography",
+      "motion"
+    ]
+  },
+  "publication": {
+    "actionId": "1758df7e-45c4-42f0-84b8-d5b106037b14",
+    "projectId": "01a1d081-0eb9-758e-a7c0-f42e17959f09",
+    "siteId": "01a1d081-0eba-70e3-b22c-cc7bbd8bab35",
+    "deploymentId": "01a1e7e2-4cea-7e16-8587-0c88a4dacba9",
+    "artifactSha256": "72db84d49844f23703b64698f233968f8a1142aa11690f37508d02ea038e73ce",
+    "indexSha256": "2feb007957c4f9967cf0b2d88e79b53888803779a832161b4a5ced7d1fe2f629",
+    "indexHtml": "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgogICAgPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIC8+CiAgICA8bWV0YSBuYW1lPSJ0aGVtZS1jb2xvciIgY29udGVudD0iIzE3MTUxMSIgLz4KICAgIDxtZXRhIG5hbWU9ImRlc2NyaXB0aW9uIiBjb250ZW50PSJQaG90b01hdGUgQUkg5qC55o2u55yf5a6e5aSp5rCU5LiO5aSq6Ziz5L2N572u77yM6KeE5YiS5pyA5L2z5ouN5pGE5pe26Ze044CB5pa55ZCR5ZKM5Y+C5pWw44CCIiAvPgogICAgPHRpdGxlPlBob3RvTWF0ZSBBSSDCtyDmmbrog73mkYTlvbHop4TliJLliqnmiYs8L3RpdGxlPgogICAgPHNjcmlwdCB0eXBlPSJtb2R1bGUiIGNyb3Nzb3JpZ2luIHNyYz0iL2Fzc2V0cy9pbmRleC1DX1RoWV93cy5qcyI+PC9zY3JpcHQ+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGNyb3Nzb3JpZ2luIGhyZWY9Ii9hc3NldHMvaW5kZXgtQ3BUNFU5dmUuY3NzIj4KICA8L2hlYWQ+CiAgPGJvZHk+CiAgICA8ZGl2IGlkPSJyb290Ij48L2Rpdj4KICA8L2JvZHk+CjwvaHRtbD4K",
+    "releaseId": "01a1e7e2-6e23-79cc-93b9-4fd643586532"
+  },
+  "actionId": "1758df7e-45c4-42f0-84b8-d5b106037b14",
+  "projectId": "01a1d081-0eb9-758e-a7c0-f42e17959f09",
+  "siteId": "01a1d081-0eba-70e3-b22c-cc7bbd8bab35",
+  "deploymentId": "01a1e7e2-4cea-7e16-8587-0c88a4dacba9",
+  "artifactSha256": "72db84d49844f23703b64698f233968f8a1142aa11690f37508d02ea038e73ce",
+  "indexSha256": "2feb007957c4f9967cf0b2d88e79b53888803779a832161b4a5ced7d1fe2f629",
+  "indexHtml": "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgogICAgPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIC8+CiAgICA8bWV0YSBuYW1lPSJ0aGVtZS1jb2xvciIgY29udGVudD0iIzE3MTUxMSIgLz4KICAgIDxtZXRhIG5hbWU9ImRlc2NyaXB0aW9uIiBjb250ZW50PSJQaG90b01hdGUgQUkg5qC55o2u55yf5a6e5aSp5rCU5LiO5aSq6Ziz5L2N572u77yM6KeE5YiS5pyA5L2z5ouN5pGE5pe26Ze044CB5pa55ZCR5ZKM5Y+C5pWw44CCIiAvPgogICAgPHRpdGxlPlBob3RvTWF0ZSBBSSDCtyDmmbrog73mkYTlvbHop4TliJLliqnmiYs8L3RpdGxlPgogICAgPHNjcmlwdCB0eXBlPSJtb2R1bGUiIGNyb3Nzb3JpZ2luIHNyYz0iL2Fzc2V0cy9pbmRleC1DX1RoWV93cy5qcyI+PC9zY3JpcHQ+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGNyb3Nzb3JpZ2luIGhyZWY9Ii9hc3NldHMvaW5kZXgtQ3BUNFU5dmUuY3NzIj4KICA8L2hlYWQ+CiAgPGJvZHk+CiAgICA8ZGl2IGlkPSJyb290Ij48L2Rpdj4KICA8L2JvZHk+CjwvaHRtbD4K",
+  "releaseId": "01a1e7e2-6e23-79cc-93b9-4fd643586532"
+}
