@@ -175,7 +175,7 @@ export default function App() {
 
       <footer className="shrink-0 border-t border-border/60 py-6">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10 2xl:text-xs">
-          <p>PhotoMate AI · 摄影指数是辅助评估，并非官方气象预报。</p>
+          <p>PhotoMate AI · 摄影指数用于比较天气与光线条件。</p>
           <p className="flex items-center gap-1.5"><Compass className="size-3.5" />天气数据来自和风天气、OpenWeather、Open-Meteo、MET Norway 等已标注来源；地图来自高德，太阳位置由本地算法计算。</p>
         </div>
       </footer>

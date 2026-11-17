@@ -145,7 +145,7 @@ export function FireCloudCard({
           </p>
         )}
         <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-          可能性为环境条件分级，不是出现概率。
+          可能性为环境条件分级。
         </p>
       </div>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
@@ -157,7 +157,7 @@ export function FireCloudCard({
         </span>
         <span
           className="shrink-0 rounded-full bg-muted px-2 py-1 font-medium text-muted-foreground"
-          title="置信度反映数据完整性与新鲜度，不是火烧云出现概率"
+          title="置信度反映数据完整性与时效性"
         >
           置信度 {confidenceLabels[data.confidenceLevel]}
         </span>
@@ -201,7 +201,7 @@ export function FireCloudCard({
             </p>
           )}
           <p className="text-[11px] leading-4 text-muted-foreground">
-            火烧云需要中高云适量、低云不挡光且空气通透。分数是环境潜力，不是出现概率；缺少分层或气溶胶数据时评分会自动降级。
+            中高云适量、低云不挡光、空气通透时更有利于火烧云；缺少分层或气溶胶数据时评分会自动降级。
           </p>
         </div>
       </details>

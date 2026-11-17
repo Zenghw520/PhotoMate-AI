@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock3,
   Compass,
-  Lightbulb,
   LoaderCircle,
   MapPin,
   Sparkles,
@@ -136,7 +135,7 @@ export function CustomPlanPanel({
           <div>
             <h3 className="font-semibold">按题材生成拍摄方案</h3>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              输入想拍的内容。AI 只使用所选日期的真实天气、太阳方位与光线窗口，不编造现场信息。
+              输入想拍的内容。AI 会结合所选日期的天气、太阳方位与光线窗口生成方案。
             </p>
           </div>
         </div>
@@ -216,7 +215,7 @@ export function CustomPlanPanel({
             : <><Sparkles className="size-4" />生成拍摄方案</>}
         </button>
         <p className="mt-3 text-[11px] leading-4 text-muted-foreground">
-          当前将结合 {data.date} · {data.location.name} 的天气与太阳窗口；具体机位、遮挡与通行条件仍需现场确认。
+          当前将结合 {data.date} · {data.location.name} 的天气与太阳窗口；到场后按实际机位调整。
         </p>
       </form>
 
@@ -306,22 +305,10 @@ export function CustomPlanPanel({
                   </p>
                   <p className="mt-1 text-sm leading-6">{plan.composition}</p>
                 </div>
-                <div>
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <Camera className="size-3.5 text-primary" />相机参数
-                  </p>
-                  <p className="mt-1 text-sm leading-6">{plan.cameraSettings}</p>
-                </div>
-                <div>
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <Lightbulb className="size-3.5 text-primary" />光线分析
-                  </p>
-                  <p className="mt-1 text-sm leading-6">{plan.lightAnalysis}</p>
-                </div>
               </div>
               <div className="mt-4 rounded-xl border border-border/70 bg-muted/25 p-4">
                 <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Camera className="size-3.5 text-primary" />相机参数参考
+                  <Camera className="size-3.5 text-primary" />拍摄参数
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
@@ -329,9 +316,6 @@ export function CustomPlanPanel({
                     ["光圈", plan.cameraParameters.aperture],
                     ["快门", plan.cameraParameters.shutter],
                     ["焦距", plan.cameraParameters.focalLength],
-                    ["曝光补偿", plan.cameraParameters.exposureBias],
-                    ["白平衡", plan.cameraParameters.whiteBalance],
-                    ["对焦", plan.cameraParameters.focusMode],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <p className="text-[10px] text-muted-foreground">{label}</p>
@@ -339,9 +323,20 @@ export function CustomPlanPanel({
                     </div>
                   ))}
                 </div>
-                <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-                  参考值需按现场测光、设备与题材调整。
-                </p>
+                <details className="mt-3 border-t border-border/60 pt-2">
+                  <summary className="cursor-pointer text-[11px] font-medium text-primary">
+                    光线与更多参数
+                  </summary>
+                  <div className="mt-2 space-y-2 text-[11px] leading-5 text-muted-foreground">
+                    <p>光线：{plan.lightAnalysis}</p>
+                    <p>范围：{plan.cameraSettings}</p>
+                    <p>
+                      曝光补偿 {plan.cameraParameters.exposureBias} · 白平衡{" "}
+                      {plan.cameraParameters.whiteBalance} · 对焦{" "}
+                      {plan.cameraParameters.focusMode}
+                    </p>
+                  </div>
+                </details>
               </div>
 
               <div className="mt-4">

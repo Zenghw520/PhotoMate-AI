@@ -343,17 +343,17 @@ export async function getTodayPhotography(
     !weather.hourly.some((entry) => entry.time.slice(0, 10) === date)
   ) {
     warnings.push(
-      "所选日期的逐小时预报覆盖不足，霞光评分暂不可用；天文时间仍可参考。",
+      "所选日期的逐小时预报覆盖不足，霞光评分暂停；天文时间仍可参考。",
     );
   }
   if (location.precision === "DISTRICT") {
     warnings.push(
-      "搜索结果为区县行政中心近似位置，具体机位、遮挡和通行条件需现场确认。",
+      "搜索结果为区县中心，具体机位与遮挡以现场为准。",
     );
   }
   if (location.precision === "GPS") {
     warnings.push(
-      "GPS 定位为设备坐标，可能存在偏移，具体机位、遮挡和通行条件需现场确认。",
+      "GPS 为设备坐标，具体机位与遮挡以现场为准。",
     );
   }
   if (plans.aiStatus === "DISABLED" && rulePlans.length) {

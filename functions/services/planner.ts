@@ -20,12 +20,12 @@ function locationNote(location: LocationResult): string {
     location.longitude.toFixed(4)
   }`;
   if (location.precision === "GPS") {
-    return `${location.name}，GPS坐标（${coordinates}）；坐标不等于已核实机位，仍需现场确认通行与遮挡`;
+    return `${location.name}，GPS坐标（${coordinates}）。具体机位以现场为准`;
   }
   if (location.precision === "MANUAL") {
-    return `${location.name}，手动选择位置（${coordinates}）；精度取决于输入，需现场核对拍摄位置`;
+    return `${location.name}，手动选择位置（${coordinates}）。具体机位以现场为准`;
   }
-  return `${location.name}，区县行政中心近似位置（${coordinates}）；不能据此推断具体机位或视线无遮挡`;
+  return `${location.name}，区县行政中心近似位置（${coordinates}）。具体机位与视线以现场为准`;
 }
 
 function compass(azimuth: number): string {
@@ -36,19 +36,19 @@ function compass(azimuth: number): string {
 function viewpoint(theme: ThemeId): string {
   switch (theme) {
     case "PORTRAIT":
-      return "在允许拍摄的区域选择背景简洁的位置，让人物与强光源保持可调整距离，并现场检查杂物和遮挡";
+      return "选择背景简洁、光线可控的位置，让人物与强光源保持可调距离。";
     case "LANDSCAPE":
-      return "在安全、合法可达的位置寻找前景、中景与远景的层次，不预设任何未核实的制高点或开阔视线";
+      return "在安全可达的位置组织前景、中景与远景，保留层次和视线。";
     case "ARCHITECTURE":
-      return "围绕主体建筑现场比较正面与斜侧面机位，预留校正透视和避让人流的空间";
+      return "围绕建筑比较正面与斜侧面机位，预留透视校正和避让人流的空间。";
     case "STREET":
-      return "在不妨碍通行的位置观察街道延伸、路口和光影边界，遵守当地拍摄与隐私要求";
+      return "观察街道延伸、路口和光影边界，选择不妨碍通行的位置。";
     case "FOOD":
-      return "选择可稳定摆放且不妨碍他人的餐桌或摊位位置，现场确认侧光、背景和经营方要求";
+      return "选择稳定、不打扰他人的位置，确认侧光、背景和经营方要求。";
     case "NIGHT":
-      return "选择安全且有稳定支撑的位置，现场评估环境灯、暗部和移动光源，不假设场地夜间开放";
+      return "选择安全、有稳定支撑的位置，评估环境灯与暗部层次。";
     case "TRAVEL":
-      return "在实际行程可达的公共区域寻找能交代环境的前景与背景，不编造景点或专属机位";
+      return "在行程可达的公共区域选择能交代环境的前景与背景。";
   }
 }
 
@@ -128,26 +128,24 @@ function lightAnalysis(item: TimelineItem): string {
   if (elevation >= 6) {
     analysis = `窗口中点太阳高度约${
       elevation.toFixed(1)
-    }°，可能有较强直射光，需现场控制高光与阴影反差`;
+    }°，直射光较强，注意控制高光与阴影反差。`;
   } else if (elevation >= -0.833) {
     analysis = `窗口中点太阳高度约${
       elevation.toFixed(1)
-    }°，低角度光有利于侧光与暖色层次，但持续时间受地形和云层影响`;
+    }°，低角度光利于侧光与暖色层次，持续时间受地形与云层影响。`;
   } else if (elevation >= -6) {
     analysis = `窗口中点太阳高度约${
       elevation.toFixed(1)
-    }°，主要依靠地平线下的天空微光，霞光与颜色并不能保证出现`;
+    }°，以天空微光为主，霞光颜色取决于云层与地平线条件。`;
   } else {
     analysis = `窗口中点太阳高度约${
       elevation.toFixed(1)
-    }°，以环境人工光和天空残余亮度为主，需现场确认暗部与安全`;
+    }°，以环境光和天空余亮为主，确认暗部与安全。`;
   }
   if (item.weather?.cloud !== null && item.weather?.cloud !== undefined) {
-    analysis += `；附近逐小时云量约${
-      item.weather.cloud.toFixed(0)
-    }%，实际光线仍可能快速变化`;
+    analysis += `附近云量约${item.weather.cloud.toFixed(0)}%，按现场光线调整。`;
   } else {
-    analysis += "；缺少可靠云量覆盖，不推断一定有金色阳光或霞光";
+    analysis += "缺少云量数据，现场观察光线变化。";
   }
   return analysis;
 }
@@ -172,10 +170,10 @@ export function buildRulePlans(
     .slice(0, 3)
     .map((item) => {
       const direction = item.kind === "NIGHT" || item.solar.elevation < -6
-        ? "夜间朝向按主体和现场灯光选择；太阳方位仅作天文参考，不代表主体朝向或视线条件"
+        ? "夜间按主体与环境光确定朝向；太阳方位用于判断环境光方向"
         : `窗口中点太阳约在${compass(item.solar.azimuth)}方（${
           item.solar.azimuth.toFixed(0)
-        }°，正北0°顺时针）；据此现场比较顺光、侧光与逆光`;
+        }°，正北0°顺时针）；据此比较顺光、侧光与逆光`;
       return {
         slotId: item.slotId,
         theme,
@@ -191,7 +189,7 @@ export function buildRulePlans(
         risks: [
           ...new Set([
             ...item.risks,
-            "实际机位、通行条件、遮挡和天气需现场核实，建议保留替代构图与安全撤离方案",
+            "现场确认机位、通行与遮挡，准备替代构图。",
           ]),
         ],
         aiEnhanced: false,

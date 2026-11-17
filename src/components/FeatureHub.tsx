@@ -40,28 +40,28 @@ const SECTION_META: Record<
 > = {
   WEATHER: {
     title: "实况天气",
-    intro: "查看真实温度、云量、降水、风、能见度和空气质量，并核对数据来源与缺失字段。",
+    intro: "查看实况、云层、能见度与未来趋势，快速判断今天是否值得出门。",
     icon: CloudSun,
   },
   LIGHT: {
     title: "霞光与光线",
-    intro: "在主界面选择拍摄位置，再用日期切换查看朝霞、晚霞、火烧云与全天光线窗口。",
+    intro: "查看朝霞、晚霞、火烧云与全天光线窗口。",
     icon: Sunrise,
   },
   PLANS: {
     title: "拍摄方案",
-    intro: "自定义题材，结合当天真实天气与太阳窗口，生成时间、方向、构图和参数建议。",
+    intro: "按题材生成时间、方向、构图与参数建议。",
     icon: Sparkles,
   },
   SPOTS: {
     title: "地点推荐",
     intro:
-      "按题材检索周边高德摄影点，结合日出日落方位给出建议窗口与方向；地形遮挡仍需现场确认。",
+      "按题材查找周边摄影点，结合日出日落方位安排窗口。",
     icon: MapPin,
   },
   PHOTO: {
     title: "照片分析",
-    intro: "上传照片，先根据画面特征推断题材，再结合 EXIF 与画质统计给出针对性建议；原始照片不上传。",
+    intro: "上传照片，按题材、EXIF 与画质给出改进建议。",
     icon: Camera,
   },
 };
@@ -79,69 +79,65 @@ const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = 
     {
       id: "current",
       label: "实况与逐小时",
-      intro: "当前观测与未来逐小时变化均来自真实天气服务。",
+      intro: "实况观测与未来逐小时预报。",
     },
     {
       id: "indices",
       label: "摄影指数",
-      intro:
-        "综合与分题材摄影指数、全天评分趋势；每个指数都由当天真实天气和天文窗口计算。",
+      intro: "七个题材的独立评分与因子依据。",
     },
     {
       id: "sources",
       label: "来源与完整性",
-      intro: "核对数据来源、观测时间与缺失字段，缺失时不会补造数值。",
+      intro: "来源、更新时间与缺失字段。",
     },
   ],
   LIGHT: [
     {
       id: "glow",
       label: "霞光与火烧云",
-      intro:
-        "朝霞、晚霞与火烧云合并在同一页；火烧云可能性与鲜艳度依据窗口附近的真实总云量、能见度与湿度判断。",
+      intro: "朝霞、晚霞与火烧云的环境评分、方向与最佳时间。",
     },
     {
       id: "solar",
       label: "太阳轨迹",
-      intro:
-        "拖动时间轴查看太阳全天轨迹、方位角与高度角，并核对晨昏蒙影、黄金与蓝调时刻。",
+      intro: "太阳全天轨迹、方位角、高度角与晨昏时刻。",
     },
     {
       id: "timeline",
       label: "时间轴",
-      intro: "按太阳高度角查看全天光线窗口，可继续筛选清晨、傍晚和夜间。",
+      intro: "按太阳高度角筛选清晨、傍晚与夜间窗口。",
     },
   ],
   PLANS: [
     {
       id: "custom",
       label: "自定义题材",
-      intro: "每个方案都标注太阳方位、高度和对应时段的真实天气，便于现场核对。",
+      intro: "方案包含时间、方向、天气与拍摄参数。",
     },
   ],
   SPOTS: [
     {
       id: "spots",
       label: "摄影点推荐",
-      intro:
-        "按题材检索高德 POI，并结合当天日出日落方位给出建议窗口；不包含地形遮挡与开放状态。",
+      intro: "周边摄影点与日出日落方向。",
     },
   ],
   PHOTO: [
     {
       id: "upload",
       label: "上传分析",
-      intro: "先在本地推断题材，再结合 EXIF 与画质统计，生成贴合题材的技术建议。",
+      intro: "本地推断题材，结合 EXIF 与画质统计给出技术建议。",
     },
     {
       id: "records",
       label: "拍摄记录",
-      intro: "查看保存在当前浏览器的拍摄方案与分析记录；原始照片不会上传。",
+      intro: "当前浏览器保存的方案与分析记录。",
     },
     {
       id: "method",
       label: "分析依据",
-      intro: "了解题材推断、EXIF 与画质指标的含义与边界，以及照片隐私处理方式。",
+      intro: "题材推断、EXIF 与画质指标说明。",
     },
   ],
 };
@@ -345,7 +341,7 @@ function TodayOverview({ data }: { data: TodayResponse }) {
           </p>
         </div>
         <span className="text-[11px] text-muted-foreground">
-          由真实天气与本地天文计算
+          天气与太阳位置实时计算
         </span>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -631,7 +627,7 @@ function SectionDetail({
                   );
                 })}
                 <p className="rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
-                  预测思路参考公开火烧云研究：中高云适量、低云不挡光、空气通透时更有利。可能性与鲜艳度依据窗口云量、高/中/低云分层与气溶胶数据判断，仍只表示环境条件，不能替代卫星云图与现场判断。
+                  中高云适量、低云不挡光、空气通透时更有利于火烧云。评分依据窗口云量、分层云与气溶胶数据，现场观察仍是最终判断。
                 </p>
               </div>
             )}
@@ -766,7 +762,7 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
         ))}
       </dl>
       <p className="mt-4 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
-        天气与空气质量必须来自真实服务。未配置或缺失时，页面会明确标注并暂停相关评分，不会用推测值补齐。
+        天气和空气质量来自真实服务；缺失字段会标注并暂停相关评分。
       </p>
       {weather.status === "STALE" && (
         <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs leading-5 text-muted-foreground">
@@ -776,7 +772,7 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
       {weather.missingFields.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3">
           <p className="text-[11px] leading-5 text-muted-foreground">
-            部分字段暂缺，可能来自短时服务波动；可重新获取真实数据，仍缺失时不会补造。
+            部分字段暂缺；重新获取后仍缺失时会明确标注。
           </p>
           <button
             type="button"
@@ -793,7 +789,7 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
         </p>
       )}
       <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
-        和风天气提供实况、天气现象与空气质量；OpenWeather、Open-Meteo 与 MET Norway 提供数值与逐小时预报；高/中/低云分层与气溶胶来自 Open-Meteo 或 MET Norway（CC BY 4.0）。来源名称与更新时间均由后端随响应返回。
+        和风天气提供实况与空气质量；OpenWeather、Open-Meteo、MET Norway 提供预报与分层云量；更新时间随响应返回。
       </p>
       {weather.sources.includes("Open-Meteo") && (
         <p className="mt-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">

@@ -108,8 +108,8 @@ Deno.test("photo: rules combine EXIF and image statistics with honest limits", a
   assert(result.issues.some((item) => item.includes("高光溢出")));
   assert(result.issues.some((item) => item.includes("暗部死黑")));
   assert(result.suggestions.length > 0);
-  assert(result.disclaimer.includes("未上传"));
-  assert(result.disclaimer.includes("不识别具体人物或物体"));
+  assert(result.disclaimer.includes("保留在浏览器本地"));
+  assert(result.disclaimer.includes("像素统计推断"));
   assert(result.summary.includes("题材未明确"));
   assertEquals(result.scene.subject, "GENERAL");
 });

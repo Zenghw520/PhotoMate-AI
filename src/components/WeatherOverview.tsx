@@ -92,7 +92,7 @@ export function WeatherOverview({
             <div>
               <h2 className="font-semibold">此刻天气</h2>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                实况观测数据，与逐小时预报分开标注
+                实况观测与逐小时预报分开展示
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ export function WeatherOverview({
               </span>
               {missing.length > 0 && (
                 <span className="text-amber-700 dark:text-amber-400">
-                  缺失：{missing.join("、")}；未补造数值
+                  缺失：{missing.join("、")}（按可用数据计算）
                 </span>
               )}
             </div>
@@ -232,7 +232,7 @@ export function WeatherOverview({
           </ul>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">
-            所选日期暂无明显异常天气变化；仍请留意现场云量与光线。
+            天气变化平稳，按计划拍摄并留意现场光线。
           </p>
         )}
       </section>
@@ -270,7 +270,7 @@ export function WeatherOverview({
             />
           </div>
           <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-            高云与中云承接低角度光，低云过多会遮挡太阳；分层数据来自 MET Norway（CC BY 4.0），Open-Meteo 可用时也会参与合并；总云量为多源合并后的逐小时值。
+            高云和中云承接低角度光，低云过多会遮挡太阳。分层云量来自 MET Norway，总云量为多源合并后的逐小时值。
           </p>
         </section>
       )}
@@ -297,7 +297,7 @@ export function WeatherOverview({
           />
         ) : (
           <p className="mt-3 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
-            所选日期超出逐小时预报覆盖范围，未用其他日期数据代替。
+            所选日期超出逐小时预报范围，按实际可用时段展示。
           </p>
         )}
       </section>

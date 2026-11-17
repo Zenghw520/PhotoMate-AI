@@ -79,10 +79,10 @@ export async function recommendSpots(
     : context.solar.sunriseAzimuth;
   const sunName = usingSunset ? "日落" : "日出";
   const sunNote = sunAzimuth === null
-    ? "该方向太阳方位数据不足，请现场确认。"
+    ? "太阳方位数据不足，按现场光线判断。"
     : `拍摄时面朝${sunName}方位 ${directionName(sunAzimuth)}（${
       Math.round(sunAzimuth)
-    }°）；该方位仅表示太阳方向，未计入地形遮挡。`;
+    }°）；具体遮挡以现场为准。`;
   const current = context.weather.current;
   const firstWeather = context.timeline[0]?.weather ?? null;
   const weatherSummary = current

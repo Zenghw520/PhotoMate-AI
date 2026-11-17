@@ -31,7 +31,7 @@ export function PhotoRecords() {
           <div>
             <h3 className="font-semibold">本地拍摄记录</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              保存生成的拍摄方案与照片分析结果；仅存储文字与参数，原始照片不会保存或上传。
+              保存生成的拍摄方案与照片分析结果，仅存储文字与参数。
             </p>
           </div>
           {records.length > 0 && (
@@ -46,7 +46,7 @@ export function PhotoRecords() {
         </div>
         <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          记录保存在当前浏览器 localStorage，不会同步到服务器；更换设备或清理浏览器后会丢失。
+          记录保存在当前浏览器 localStorage，更换设备或清理浏览器后会丢失。
         </p>
       </section>
 

@@ -65,7 +65,7 @@ function exifChips(exif: PhotoExif) {
   if (exif.dateTimeOriginal) {
     chips.push({ label: "时间", value: exif.dateTimeOriginal });
   }
-  if (exif.hasGps) chips.push({ label: "位置", value: "含 GPS（未上传）" });
+  if (exif.hasGps) chips.push({ label: "位置", value: "含 GPS（仅本地）" });
   return chips;
 }
 
@@ -114,9 +114,19 @@ function FindingList({
       </h4>
       <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
         {items.length
-          ? items.map((item) => <li key={item}>· {item}</li>)
+          ? items.slice(0, 3).map((item) => <li key={item}>· {item}</li>)
           : <li>暂无。</li>}
       </ul>
+      {items.length > 3 && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-[11px] font-medium text-primary">
+            其余 {items.length - 3} 条
+          </summary>
+          <ul className="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
+            {items.slice(3).map((item) => <li key={item}>· {item}</li>)}
+          </ul>
+        </details>
+      )}
     </section>
   );
 }
@@ -129,9 +139,9 @@ function confidenceText(confidence: PhotoScene["confidence"]) {
 
 function aiLabel(status: PhotoAnalysisResponse["aiStatus"]) {
   if (status === "SUCCESS") return "DeepSeek 摘要";
-  if (status === "LIMIT_REACHED") return "规则摘要 · AI 额度已用完";
-  if (status === "DISABLED") return "规则摘要 · AI 未启用";
-  return "规则摘要 · AI 暂不可用";
+  if (status === "LIMIT_REACHED") return "规则摘要 · 额度已用完";
+  if (status === "DISABLED") return "规则摘要";
+  return "规则摘要";
 }
 
 export function PhotoAnalysis() {
@@ -267,7 +277,7 @@ export function PhotoAnalysis() {
           <div>
             <h3 className="font-semibold">上传照片获取改进建议</h3>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              支持 JPEG / PNG / WebP 与主流 RAW（NEF、ARW、CR2、CR3、DNG、RAF、ORF、RW2 等），最大 150MB。照片只在浏览器本地解析，原始图像不会上传。
+              支持 JPEG / PNG / WebP 与主流 RAW，最大 150MB；原始图像只在浏览器本地解析。
             </p>
           </div>
         </div>
@@ -307,7 +317,7 @@ export function PhotoAnalysis() {
         </div>
         <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-4 text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          RAW 在浏览器内通过 LibRaw WASM 解码；EXIF 中的 GPS 坐标不会发送到服务器，分析请求只包含相机参数、画质统计与题材推断结果。
+          RAW 在浏览器内通过 LibRaw WASM 解码；分析请求只包含相机参数、画质统计与题材推断结果。
         </p>
       </section>
 
@@ -380,7 +390,7 @@ export function PhotoAnalysis() {
                 ))}
               </ul>
               <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-                题材由本地像素统计推断；开始分析后由 DeepSeek 基于同一组特征复核，不识别具体人物或物体。
+                题材由本地像素统计推断，DeepSeek 基于同一组特征复核。
               </p>
             </section>
             <section className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
@@ -441,17 +451,19 @@ export function PhotoAnalysis() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
-            <FindingList title="可保持的方面" items={analysis.strengths} tone="good" />
-            <FindingList title="需要关注" items={analysis.issues} tone="warn" />
-            <FindingList title="改进建议" items={analysis.suggestions} tone="tip" />
+            <FindingList title="可保持" items={analysis.strengths} tone="good" />
+            <FindingList title="关注" items={analysis.issues} tone="warn" />
+            <FindingList title="建议" items={analysis.suggestions} tone="tip" />
           </div>
 
-          <section className="rounded-2xl border border-border bg-card p-4">
-            <h4 className="text-sm font-semibold">EXIF 摘要</h4>
+          <details className="rounded-2xl border border-border bg-card p-4">
+            <summary className="cursor-pointer text-sm font-semibold">
+              EXIF 摘要（{analysis.exifSummary.length}）
+            </summary>
             <ul className="mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
               {analysis.exifSummary.map((item) => <li key={item}>· {item}</li>)}
             </ul>
-          </section>
+          </details>
 
           <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" />{analysis.disclaimer}
@@ -494,7 +506,7 @@ export function PhotoMethod() {
         </h3>
         <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
           <li>· 在浏览器内把图像缩放到固定尺寸，统计亮度、对比、饱和度与高光/暗部截断比例。</li>
-          <li>· “相对清晰度”来自拉普拉斯方差，只能横向比较，不代表艺术意义上的锐度。</li>
+          <li>· “相对清晰度”来自拉普拉斯方差，用于比较同组照片的清晰度差异。</li>
           <li>· 统计结果受缩图、主体纹理与后期影响，建议仅作为技术参考。</li>
         </ul>
       </section>
@@ -505,7 +517,7 @@ export function PhotoMethod() {
         <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
           <li>· 根据亮度分布、肤色像素比例、天空与植被占比、边缘密度和中心/边缘清晰度差异，推断最可能的题材。</li>
           <li>· 题材只用于切换评价侧重点，例如人像关注景深与手持快门，风光关注景深与高光细节。</li>
-          <li>· 本地先做像素统计推断，DeepSeek 再依据同一组特征复核；两者都不是对象识别，具体人物、物体和构图问题仍需自行判断。</li>
+          <li>· 本地像素统计先推断题材，DeepSeek 再依据同一组特征复核，给出技术建议；人物、物体与构图结合现场判断。</li>
         </ul>
       </section>
       <section className="rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm">

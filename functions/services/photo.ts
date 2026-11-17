@@ -457,6 +457,6 @@ export async function analyzePhoto(
     confidenceLevel: exif ? "MEDIUM" : "LOW",
     aiStatus,
     disclaimer:
-      "照片原始图像未上传；题材与画质指标由浏览器本地像素统计推断，不识别具体人物或物体。评价会按推断题材选择规则侧重点，清晰度为相对指标，结论仍需结合现场与拍摄意图判断。",
+      "原始图像保留在浏览器本地；题材与画质指标由像素统计推断，建议按推断题材给出，清晰度为相对指标。",
   };
 }

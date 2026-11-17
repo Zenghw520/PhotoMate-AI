@@ -168,9 +168,9 @@ export async function generateCustomPlanResponse(
           input.equipment,
         ),
         subjectApproach:
-          `先确认「${input.subject}」在画面中的位置与可用前景，不预设未核实的机位；结合现场环境调整主体与背景关系。`,
+          `先确认「${input.subject}」在画面中的位置与可用前景，再结合现场环境调整主体与背景关系。`,
         composition:
-          "利用现场可用的线条、前景或重复元素组织画面，保持主体与背景的层次；最终构图需结合现场确认。",
+          "利用现场可用的线条、前景或重复元素组织画面，保持主体与背景的层次。",
         cameraSettings:
           "先从 f/5.6、1/125s、自动白平衡开始，按现场测光与主体运动调整。",
         lightAnalysis: `该窗口太阳方位约 ${
@@ -180,34 +180,32 @@ export async function generateCustomPlanResponse(
             ? `天气 ${slot.weather.condition}，云量 ${
               slot.weather.cloud ?? "—"
             }%。`
-            : "该窗口缺少逐小时天气，光线判断以现场为准。"
+            : "该窗口缺少逐小时天气，按现场光线判断。"
         }`,
-        risks: slot.risks.length
-          ? slot.risks
-          : ["具体机位、遮挡与通行条件需现场确认"],
+        risks: slot.risks.length ? slot.risks : ["现场确认机位与通行条件"],
         solar: slot.solar,
         weather: slot.weather,
       };
     });
     if (!summary) {
       summary = aiStatus === "LIMIT_REACHED"
-        ? "今日 AI 体验额度已用完，以下为结合真实天气与太阳窗口的规则建议。"
-        : "AI 暂不可用，以下为结合真实天气与太阳窗口的规则建议。";
+        ? "今日体验额度已用完，以下为结合天气与太阳窗口的规则建议。"
+        : "以下为结合天气与太阳窗口的规则建议。";
     }
   }
 
   const warnings: string[] = [];
   if (context.weather.status === "UNCONFIGURED") {
-    warnings.push("天气服务尚未配置，自定义方案只依据太阳窗口生成。");
+    warnings.push("天气服务尚未配置，方案依据太阳窗口生成。");
   }
   if (context.weather.status === "UNAVAILABLE") {
-    warnings.push("真实天气暂不可用，自定义方案只依据太阳窗口生成。");
+    warnings.push("天气暂不可用，方案依据太阳窗口生成。");
   }
   if (context.location.precision === "DISTRICT") {
-    warnings.push("位置为区县行政中心近似坐标，具体机位需现场确认。");
+    warnings.push("位置为区县中心，具体机位以现场为准。");
   }
   if (aiStatus !== "SUCCESS") {
-    warnings.push("AI 未生成自定义方案，已回退为规则建议。");
+    warnings.push("当前使用规则建议。");
   }
 
   return {

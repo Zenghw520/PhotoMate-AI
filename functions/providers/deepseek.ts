@@ -45,7 +45,7 @@ const SYSTEM_PROMPT =
 只优化每个方案的 composition、viewpoint、cameraAngle、lightAnalysis 中文文案，不得创造或修改时间、天气、太阳方位、评分、风险、cameraSettings、locationNote、direction 或其他事实。
 严格只输出一个 JSON 对象，不要 Markdown 或解释，格式为：
 {"plans":[{"slotId":"输入中已存在的 slotId","composition":"...","viewpoint":"...","cameraAngle":"...","lightAnalysis":"..."}]}
-必须覆盖每个输入方案且仅一次，五个字段都必须存在，不得增加字段。文案应具体、简洁，并严格依据输入事实。`;
+必须覆盖每个输入方案且仅一次，五个字段都必须存在，不得增加字段。文案具体、简洁：先给结论，再给动作，每段 1–2 句；避免重复、免责声明和“不是……而是……”式表达。`;
 
 function record(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -198,8 +198,8 @@ export interface PhotoSummaryResult {
 
 const PHOTO_SUMMARY_PROMPT =
   `你是摄影技术编辑。输入是浏览器从照片中提取的 EXIF、亮度/对比/饱和/清晰度统计、题材推断（含依据与置信度），以及规则引擎发现的问题与建议。
-只输出 JSON：{"summary":"两到三句中文改进摘要"}。
-题材是像素统计推断而非语义识别：不得声称看到了照片画面、具体人物、物体、天空或构图；可表述为“按推断的XX题材”；不得新增输入中不存在的 EXIF 数值或事实；只依据输入做技术性归纳。`;
+只输出 JSON：{"summary":"一到两句中文改进摘要，先给最重要的建议"}。
+按推断的题材表述；只使用输入中的 EXIF、统计与规则结论，不新增数值。文案直接、自然，不写免责声明或对比句。`;
 
 export async function summarizePhotoAnalysis(
   input: PhotoSummaryInput,
@@ -333,7 +333,7 @@ const CUSTOM_PLANS_PROMPT =
 只能使用输入中的时间、天气、太阳位置与窗口事实，不得编造或修改这些数据；不得声称已经看到现场。
 只输出 JSON：
 {"summary":"两到三句总体拍摄思路","plans":[{"slotId":"输入中已存在的 slotId","title":"...","subjectApproach":"...","composition":"...","cameraSettings":"...","cameraParameters":{"iso":"...","aperture":"...","shutter":"...","focalLength":"...","exposureBias":"...","whiteBalance":"...","focusMode":"..."},"lightAnalysis":"...","risks":["..."]}]}
-要求：plans 为 2 到 3 个，slotId 必须来自输入且不重复；若输入可用窗口少于 2 个，则只输出 1 个方案。每个方案说明如何围绕用户题材拍摄，构图与参数需具体但以现场测光为准；cameraParameters 的七个字段都必须给出简短范围，并与 cameraSettings 保持一致；若输入提供 equipment 或 preferences，必须在题材切入或参数建议中体现，但不得因此修改天气、时间或太阳事实；risks 为 0 到 3 条。`;
+要求：plans 为 2 到 3 个，slotId 必须来自输入且不重复；可用窗口少于 2 个时只输出 1 个方案。summary 一到两句；每个字段先结论后动作，1–2 句；构图与参数具体、简洁，以现场测光为准。cameraParameters 的七个字段给出简短范围，并与 cameraSettings 保持一致；结合 equipment 与 preferences；risks 为 0 到 2 条，每条一句话。避免重复、免责声明和“不是……而是……”式表达。`;
 
 function validShort(value: unknown, max = 1_000): value is string {
   return typeof value === "string" && value.trim().length > 0 &&

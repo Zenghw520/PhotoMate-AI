@@ -44,7 +44,7 @@ export function PhotoIndices({
               <Sparkles className="size-4 text-primary" />今日综合摄影指数
             </h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              七个题材各自使用独立权重，全部由当天真实逐小时天气与太阳窗口计算。
+              七个题材独立评分，基于当天逐小时天气与太阳窗口。
             </p>
           </div>
           <div
@@ -150,7 +150,7 @@ export function PhotoIndices({
         </ul>
         <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
           <Info className="mt-0.5 size-3.5 shrink-0" />
-          指数是辅助决策，不是气象部门预报；缺少真实天气的题材不评分，部分缺失的题材按剩余权重归一化并标注。
+          指数用于比较题材与时段；缺少真实天气的题材不评分，部分缺失的题材按剩余权重归一化并标注。
         </p>
       </section>
     </div>

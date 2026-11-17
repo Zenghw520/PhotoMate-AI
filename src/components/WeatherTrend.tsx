@@ -271,7 +271,7 @@ export function WeatherTrend({
         <span className="text-[10px] text-muted-foreground">
           {hours.length < 72
             ? `上游仅覆盖未来 ${hours.length} 小时`
-            : "预报缺口以断线显示，不补造数值"}
+            : "缺口以断线显示，按实际预报范围查看"}
         </span>
       </div>
 
@@ -483,7 +483,7 @@ export function WeatherTrend({
       </div>
 
       <p className="text-[10px] text-muted-foreground">
-        悬停或长按拖动查看逐小时详情；图表为预报数据，实况以“此刻天气”观测时间为准。
+        悬停或长按查看逐小时详情；趋势为预报，实况以观测时间为准。
       </p>
     </div>
   );

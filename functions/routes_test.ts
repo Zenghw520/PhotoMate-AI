@@ -260,7 +260,7 @@ Deno.test("routes: photo analysis validates metadata and returns rule findings",
     assert(body.issues.length > 0);
     assertEquals(body.scene.label, "夜景 / 弱光");
     assertEquals(body.scene.subject, "NIGHT");
-    assert(body.disclaimer.includes("未上传"));
+    assert(body.disclaimer.includes("保留在浏览器本地"));
 
     const invalid = await handler(
       new Request("https://example.test/functions/v1/app/photo/analyze", {

@@ -75,7 +75,7 @@ export function PotentialCard({
           {data.forecastWindow ? formatRange(data.forecastWindow.start, data.forecastWindow.end) : "对应预报窗口不可用"}
           {isPastWindow && <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">窗口已过{score !== null ? " · 回算" : ""}</span>}
         </span>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-1 font-medium text-muted-foreground" title="置信度反映数据完整性与新鲜度，不是霞光出现概率">置信度 {confidenceLabels[data.confidenceLevel]}</span>
+        <span className="shrink-0 rounded-full bg-muted px-2 py-1 font-medium text-muted-foreground" title="置信度反映数据完整性与时效性">置信度 {confidenceLabels[data.confidenceLevel]}</span>
       </div>
       <details className="group/detail mt-3">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">查看预测依据<ChevronDown className="size-3.5 transition group-open/detail:rotate-180" /></summary>
@@ -100,10 +100,10 @@ export function PotentialCard({
             <span>窗口锚定日出/日落时刻</span>
           </div>
           <p className="text-[11px] leading-4 text-muted-foreground">
-            太阳高度角与方位角用于锁定拍摄窗口和推荐方向，不参与气象权重；地形遮挡仍需现场确认。
+            太阳角度用于锁定拍摄窗口和推荐方向；地形遮挡以现场为准。
           </p>
           {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400"><CloudSun className="mt-0.5 size-3.5 shrink-0" />缺少：{data.missingFields.map(missingFieldLabel).join("、")}。评分已按可用数据降级。</p>}
-          <p className="text-[11px] leading-4 text-muted-foreground">这是摄影环境评估，不是气象部门官方预报；置信度不代表霞光出现概率。</p>
+          <p className="text-[11px] leading-4 text-muted-foreground">环境评分用于安排拍摄；置信度反映数据完整性与时效性。</p>
         </div>
       </details>
     </article>

@@ -124,8 +124,7 @@ export function SpotRecommendations({
           ))}
         </div>
         <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-          依据「{location.name}」周边高德 POI 与当天太阳方位筛选；地图打开需要外部应用，
-          页面不内嵌地图。
+          依据「{location.name}」周边高德 POI 与当天太阳方位筛选；点击地点可在高德应用中打开地图。
         </p>
       </section>
 
@@ -228,8 +227,7 @@ export function SpotRecommendations({
 
       <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        地点排序基于 POI 距离与题材关键词，不代表现场机位质量；未接入高德 JS API Key，
-        因此不内嵌地图。出发前请核对开放时间、通行与地形遮挡。
+        地点按距离与题材关键词排序；出发前核对开放时间、现场通行与地形遮挡。
       </p>
     </div>
   );

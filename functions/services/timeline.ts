@@ -236,7 +236,7 @@ function weatherRisks(weather: TimelineWeather | null): string[] {
   }
   const risks: string[] = [];
   if ((weather.precipitationProbability ?? 0) >= 50) {
-    risks.push("降水概率较高，需准备防雨并关注临场变化");
+    risks.push("降水概率较高，准备防雨并关注临场变化");
   }
   if ((weather.windSpeed ?? 0) >= 8) {
     risks.push("风速较高，注意脚架稳定与拍摄安全");
@@ -297,7 +297,7 @@ export function buildTimeline(
       `窗口中点太阳高度约${position.elevation.toFixed(1)}°，方位约${
         position.azimuth.toFixed(0)
       }°`,
-      `主题适配分为${themeScore}分，分数用于窗口排序，不是出片概率`,
+      `题材适配 ${themeScore} 分，用于比较窗口光线`,
     ];
     if (hasWeatherScore) {
       reasons.push(
@@ -308,7 +308,7 @@ export function buildTimeline(
       }
     } else {
       reasons.push(
-        "窗口前后90分钟内无可用云量与天气覆盖，评分仅依据太阳时段和主题适配",
+        "窗口附近缺少逐小时天气，评分仅依据太阳时段与题材适配",
       );
     }
     const slotDate = candidate.start.slice(0, 10);
