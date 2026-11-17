@@ -303,7 +303,7 @@ export async function getTodayPhotography(
     urban: buildTimeline(location, solar, scoringHourly, "STREET", now),
     night: buildTimeline(location, solar, scoringHourly, "NIGHT", now),
     potential,
-    weather,
+    weather: { ...weather, hourly: scoringHourly },
   });
   const rulePlans = buildRulePlans(timeline, theme, location);
   const plans = await plansWithEnhancement(
