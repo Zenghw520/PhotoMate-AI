@@ -224,6 +224,21 @@ Deno.test("天气不可用或窗口无逐小时数据时不输出摄影天气分
   assertEquals(indices.confidence, "LOW");
 });
 
+Deno.test("题材评分的因子贡献可加总回总分", () => {
+  const indices = buildPhotographyIndices(input());
+  for (const entry of indices.entries) {
+    if (
+      entry.id === "DAWN" || entry.id === "DUSK" || entry.score === null ||
+      entry.status === "UNAVAILABLE"
+    ) continue;
+    const total = entry.basis.reduce(
+      (sum, item) => sum + (item.contribution ?? 0),
+      0,
+    );
+    assertEquals(Math.abs(total - entry.score) <= 0.5, true);
+  }
+});
+
 Deno.test("缺失分层云量时按剩余权重归一化并标注字段", () => {
   const sparse = hourly("2026-01-02T21:00:00+08:00", {
     cloudHigh: null,

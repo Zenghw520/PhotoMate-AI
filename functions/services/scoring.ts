@@ -52,15 +52,6 @@ const WEIGHT_PROFILES: Record<"dawn" | "dusk", Record<WeatherField, number>> = {
   },
 };
 
-const CORE_FIELDS = [
-  "cloud",
-  "precipitationProbability",
-  "precipitation",
-  "visibility",
-  "humidity",
-  "windSpeed",
-] as const;
-
 type Metric = (value: number) => number;
 
 const METRICS: Record<WeatherField, Metric> = {
@@ -218,7 +209,7 @@ export function scoreTwilight(
     );
   }
 
-  const missingFields: string[] = CORE_FIELDS.filter((field) =>
+  const missingFields: string[] = FIELD_ORDER.filter((field) =>
     values[field] === null
   );
   const basis: ScoreBasis[] = FIELD_ORDER.map((field) => ({
@@ -286,7 +277,11 @@ export function scoreTwilight(
     : ageHours <= 24
     ? 0.65
     : 0.4;
-  const completeness = availableWeight / 100;
+  const totalWeight = FIELD_ORDER.reduce(
+    (sum, field) => sum + weights[field],
+    0,
+  );
+  const completeness = availableWeight / totalWeight;
   const confidence = round(
     Math.min(
       0.74,
@@ -337,12 +332,10 @@ export function scoreTwilight(
     notes.push("气溶胶偏高，评分已下调");
   }
   const summary =
-    `${eventName}潜力评分为${score}分，基于窗口前后90分钟内的${records.length}条逐小时数据；` +
-    `${
-      partial ? "部分基础字段缺失，已按剩余权重归一化；" : "基础天气字段完整；"
-    }${
+    `${eventName}环境评分 ${score} 分，窗口前后 90 分钟共 ${records.length} 条逐小时数据。` +
+    `${partial ? "部分字段缺失，评分已按可用数据归一化。" : "天气字段完整。"}${
       notes.join("；")
-    }，置信度仅表示数据完整性、窗口覆盖与时效性，不是${eventName}出现概率。`;
+    }。置信度反映数据完整性与时效性。`;
 
   return {
     status: "OK",

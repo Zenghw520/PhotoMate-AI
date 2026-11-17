@@ -456,11 +456,15 @@ export function scoreFireCloud(
     : ageHours <= 24
     ? 0.65
     : 0.4;
-  const completeness = availableWeight / 100;
+  const totalWeight = (Object.keys(WEIGHTS) as WeatherField[]).reduce(
+    (sum, field) => sum + WEIGHTS[field],
+    0,
+  );
+  const completeness = availableWeight / totalWeight;
   const confidence = round(
     Math.min(
       0.66,
-      0.44 * completeness * freshness * (0.8 + 0.2 * windowCoverage),
+      0.55 * completeness * freshness * (0.8 + 0.2 * windowCoverage),
     ),
     2,
   );
@@ -489,8 +493,8 @@ export function scoreFireCloud(
     notes.push("气溶胶偏高，评分已下调");
   }
   const summary =
-    `${eventName}火烧云环境潜力为${score}分，基于窗口前后约1小时的${records.length}条逐小时数据；` +
-    `${notes.join("；")}，分数只表示环境条件，不代表火烧云出现概率。`;
+    `${eventName}火烧云环境评分 ${score} 分，窗口前后约 1 小时共 ${records.length} 条逐小时数据。` +
+    `${notes.join("；")}。`;
 
   return {
     status: "OK",

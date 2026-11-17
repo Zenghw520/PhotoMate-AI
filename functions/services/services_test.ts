@@ -56,7 +56,7 @@ Deno.test("暮光评分只使用窗口前后90分钟内的真实逐小时数据"
     FETCHED_AT,
   );
   assert.equal(result.status, "OK");
-  assert.equal(result.scoreMode, "FULL");
+  assert.equal(result.scoreMode, "PARTIAL");
   assert.equal(result.basis.find((item) => item.code === "cloud")?.value, 40);
   assert.ok(result.score !== null && result.score > 75);
   assert.equal(
@@ -66,7 +66,7 @@ Deno.test("暮光评分只使用窗口前后90分钟内的真实逐小时数据"
   assert.match(result.summary, /缺少高中低云分层/);
   assert.ok(result.confidence <= 0.74);
   assert.equal(result.confidenceLevel, "MEDIUM");
-  assert.match(result.summary, /不是朝霞出现概率/);
+  assert.match(result.summary, /置信度反映数据完整性与时效性/);
 });
 
 Deno.test("缺字段按剩余权重归一化并降低置信度，云量全缺则不评分", () => {
@@ -275,7 +275,7 @@ Deno.test("规则计划选择未来最多三个窗口且不依赖AI或虚构机�
     assert.deepEqual(plan.timeWindow, { start: source.start, end: source.end });
     assert.match(plan.locationNote, /区县行政中心近似位置/);
     assert.match(plan.cameraSettings, /起步范围/);
-    assert.match(plan.viewpoint, /现场|实际/);
+    assert.match(plan.viewpoint, /可达|环境/);
     assert.doesNotMatch(
       JSON.stringify(plan),
       /保证出片|精准曝光|已确认无遮挡|AI生成/,
@@ -347,7 +347,7 @@ Deno.test("火烧云评分偏好适中云量并诚实标注云层与气溶胶缺
   assert.ok(result.missingFields.includes("aerosolOpticalDepth"));
   assert.ok(result.confidence <= 0.44);
   assert.equal(result.confidenceLevel, "LOW");
-  assert.match(result.summary, /不代表火烧云出现概率/);
+  assert.match(result.summary, /火烧云环境评分/);
   assert.equal(result.outlook.possibility, "HIGH");
   assert.equal(result.outlook.possibilityLabel, "较高");
   assert.equal(result.outlook.cloudCover, 50);
