@@ -443,6 +443,12 @@ export interface PhotoSignals {
   edgeDensity: number;
   centerSharpness: number;
   borderSharpness: number;
+  /** 近乎无纹理的像素占比（%）。 */
+  flatness?: number;
+  /** 出现最多的量化颜色占比（%）。 */
+  dominantColor?: number;
+  /** 截图、文档或纯色界面图像的可信度（0–100）。 */
+  screenLike?: number;
 }
 
 export interface PhotoScene {
@@ -461,6 +467,8 @@ export interface PhotoAnalysisRequest {
   stats: PhotoStats;
   scene?: PhotoScene;
   signals?: PhotoSignals;
+  /** 用户手动指定题材时跳过 AI 复核，避免覆盖用户选择。 */
+  manualScene?: boolean;
 }
 
 export interface PhotoAnalysisResponse {

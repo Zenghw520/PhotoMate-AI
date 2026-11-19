@@ -28,7 +28,9 @@ export function describeFailure(
         return {
           kind: "network",
           title: "网络连接异常",
-          message: "暂时无法连接摄影服务，请检查网络后重试。",
+          message: context === "location"
+            ? "暂时无法连接地点服务，请检查网络后重试，或改用手动坐标。"
+            : "暂时无法连接摄影服务，请检查网络后重试。",
           retryable: true,
         };
       case "LOCATION_UNAVAILABLE":
@@ -63,6 +65,22 @@ export function describeFailure(
           retryable: false,
         };
       case "INVALID_RESPONSE":
+        if (context === "photo") {
+          return {
+            kind: "photo",
+            title: "照片分析失败",
+            message: "云端分析返回异常，可仅重试分析，本地统计结果会保留。",
+            retryable: true,
+          };
+        }
+        if (context === "location") {
+          return {
+            kind: "service",
+            title: "地点服务暂时不可用",
+            message: "请重试，或改用手动坐标。",
+            retryable: true,
+          };
+        }
         return {
           kind: "service",
           title: "数据服务返回异常",
@@ -78,19 +96,28 @@ export function describeFailure(
         };
       case "INTERNAL_ERROR":
       default:
-        return context === "photo"
-          ? {
+        if (context === "photo") {
+          return {
             kind: "photo",
             title: "照片分析失败",
             message: error.message || "云端分析暂时不可用，可仅重试分析。",
             retryable: true,
-          }
-          : {
+          };
+        }
+        if (context === "location") {
+          return {
             kind: "service",
-            title: "数据服务暂时不可用",
-            message: "已保留当前位置和输入，请稍后重试。",
+            title: "地点服务暂时不可用",
+            message: "请重试，或改用手动坐标。",
             retryable: error.retryable,
           };
+        }
+        return {
+          kind: "service",
+          title: "数据服务暂时不可用",
+          message: "已保留当前位置和输入，请稍后重试。",
+          retryable: error.retryable,
+        };
     }
   }
 

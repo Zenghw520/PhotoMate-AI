@@ -4,6 +4,7 @@ import type {
   PhotoAnalysisResponse,
   PhotoExif,
   PhotoScene,
+  PhotoSignals,
   PhotoStats,
 } from "../shared/contracts.ts";
 import { secretValue } from "../shared/env.ts";
@@ -252,6 +253,51 @@ function sceneRules(
   }
 }
 
+function guardScene(
+  scene: PhotoScene,
+  signals: PhotoSignals,
+  exif: PhotoExif | null,
+): PhotoScene {
+  if (
+    scene.subject !== "GENERAL" &&
+    (signals.screenLike ?? 0) >= 60 &&
+    signals.skin < 6 &&
+    signals.green < 10
+  ) {
+    return {
+      subject: "GENERAL",
+      label: PHOTO_SUBJECT_LABELS.GENERAL,
+      confidence: "LOW",
+      basis: [
+        "画面疑似截图、文档或纯色界面",
+        "题材判断仅供参考，可按实际拍摄题材修改",
+      ],
+      source: scene.source,
+    };
+  }
+  if (scene.subject === "GENERAL" && scene.confidence !== "LOW") {
+    return { ...scene, confidence: "LOW" };
+  }
+  if (scene.subject === "LANDSCAPE" && scene.confidence === "HIGH") {
+    const focal = exif?.focalLength35 ?? exif?.focalLength ?? null;
+    const aperture = exif?.fNumber ?? null;
+    const supported = signals.green >= 8 ||
+      (focal !== null && focal <= 35) ||
+      (aperture !== null && aperture >= 5.6);
+    if (!supported) {
+      return {
+        ...scene,
+        confidence: "MEDIUM",
+        basis: [
+          ...scene.basis.slice(0, 2),
+          "仅有上部亮部占比，缺少植被或镜头参数佐证",
+        ],
+      };
+    }
+  }
+  return scene;
+}
+
 export async function analyzePhoto(
   input: PhotoAnalysisRequest,
   db?: DatabaseClient,
@@ -279,7 +325,7 @@ export async function analyzePhoto(
       aiStatus = "LIMIT_REACHED";
     } else {
       aiClaimed = true;
-      if (input.signals) {
+      if (input.signals && !input.manualScene) {
         const classification = await classifyPhotoScene({
           heuristic: localScene,
           signals: input.signals,
@@ -289,7 +335,9 @@ export async function analyzePhoto(
         if (classification.status === "SUCCESS" && classification.scene) {
           const keepLocal = localScene.confidence === "HIGH" &&
             classification.scene.confidence === "LOW";
-          if (!keepLocal) scene = classification.scene;
+          if (!keepLocal) {
+            scene = guardScene(classification.scene, input.signals, exif);
+          }
         }
       }
     }
@@ -417,7 +465,9 @@ export async function analyzePhoto(
 
   const sceneNote = scene.subject === "GENERAL"
     ? "题材未明确，按通用技术指标评价"
-    : `按「${scene.label}」题材评价`;
+    : scene.confidence === "HIGH"
+    ? `按「${scene.label}」题材评价`
+    : `按可能为「${scene.label}」的题材评价`;
   const baseSummary = exif
     ? `${sceneNote}，结合 EXIF 与画面统计生成 ${issues.length} 项问题和 ${suggestions.length} 条建议；题材来自像素统计，不识别具体人物或物体。`
     : `未检测到 EXIF，${sceneNote}，仅基于画面统计；题材来自像素统计，不识别具体人物或物体。`;

@@ -25,6 +25,7 @@ function measureSignals(
 ): PhotoSignals {
   const total = width * height;
   const luminance = new Float32Array(total);
+  const colorBuckets = new Uint32Array(32768);
   let skin = 0;
   let green = 0;
   let warm = 0;
@@ -43,6 +44,7 @@ function measureSignals(
       const blue = pixels[at + 2];
       const value = 0.299 * red + 0.587 * greenChannel + 0.114 * blue;
       luminance[index] = value;
+      colorBuckets[((red >> 3) << 10) | ((greenChannel >> 3) << 5) | (blue >> 3)]++;
 
       if (value < 45) dark++;
       if (value > 225) bright++;
@@ -72,6 +74,7 @@ function measureSignals(
 
   let edgeCount = 0;
   let interior = 0;
+  let flat = 0;
   let centerSum = 0;
   let centerSquares = 0;
   let centerCount = 0;
@@ -83,11 +86,20 @@ function measureSignals(
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const index = y * width + x;
+      const at = index * 4;
       const laplacian = luminance[index] * 4 - luminance[index - 1] -
         luminance[index + 1] - luminance[index - width] -
         luminance[index + width];
       interior++;
       if (Math.abs(laplacian) > 30) edgeCount++;
+      const neighborDiff =
+        Math.abs(pixels[at] - pixels[at - 4]) +
+        Math.abs(pixels[at + 1] - pixels[at - 3]) +
+        Math.abs(pixels[at + 2] - pixels[at - 2]) +
+        Math.abs(pixels[at] - pixels[at - width * 4]) +
+        Math.abs(pixels[at + 1] - pixels[at - width * 4 + 1]) +
+        Math.abs(pixels[at + 2] - pixels[at - width * 4 + 2]);
+      if (neighborDiff < 12) flat++;
       const inCenter = Math.abs(x - width / 2) <= centerHalfWidth &&
         Math.abs(y - height / 2) <= centerHalfHeight;
       if (inCenter) {
@@ -102,7 +114,12 @@ function measureSignals(
     }
   }
 
-  return {
+  let dominantCount = 0;
+  for (const count of colorBuckets) {
+    if (count > dominantCount) dominantCount = count;
+  }
+
+  const signals: PhotoSignals = {
     skin: percent(skin, total),
     sky: percent(sky, upperTotal),
     green: percent(green, total),
@@ -112,7 +129,26 @@ function measureSignals(
     edgeDensity: percent(edgeCount, interior),
     centerSharpness: sharpnessScore(centerSum, centerSquares, centerCount),
     borderSharpness: sharpnessScore(borderSum, borderSquares, borderCount),
+    flatness: percent(flat, interior),
+    dominantColor: percent(dominantCount, total),
   };
+  return { ...signals, screenLike: screenLikeness(signals) };
+}
+
+function screenLikeness(signals: PhotoSignals) {
+  const flatness = signals.flatness ?? 0;
+  const dominant = signals.dominantColor ?? 0;
+  let score = 0;
+  if (flatness >= 70 && dominant >= 45) score += 40;
+  else if (flatness >= 55 && dominant >= 30) score += 24;
+  if (signals.bright >= 25 && signals.dark < 20) score += 20;
+  if (signals.edgeDensity >= 12 && flatness >= 55) score += 15;
+  if (signals.dark >= 40 && signals.bright >= 3 && flatness >= 60 && dominant >= 35) {
+    score += 25;
+  }
+  if (signals.skin < 2 && signals.green < 4) score += 5;
+  if (signals.dark >= 45 && signals.bright < 18) score = Math.min(score, 25);
+  return Math.min(100, score);
 }
 
 function exifHour(exif: PhotoExif | null) {
@@ -132,6 +168,24 @@ export function sceneFromImageData(
   exif: PhotoExif | null,
 ): { scene: PhotoScene; signals: PhotoSignals } {
   const signals = measureSignals(width, height, pixels);
+  const screenLike = signals.screenLike ?? 0;
+  if (screenLike >= 60 && signals.skin < 6 && signals.green < 10) {
+    return {
+      scene: {
+        subject: "GENERAL",
+        label: PHOTO_SUBJECT_LABELS.GENERAL,
+        confidence: "LOW",
+        basis: [
+          `疑似截图、文档或纯色界面（低纹理区域约 ${
+            formatNumber(signals.flatness ?? 0)
+          }%）`,
+          `单一主色占比约 ${formatNumber(signals.dominantColor ?? 0)}%`,
+        ],
+        source: "HEURISTIC",
+      },
+      signals,
+    };
+  }
   const focal = exif?.focalLength35 ?? exif?.focalLength ?? null;
   const aperture = exif?.fNumber ?? null;
   const iso = exif?.iso ?? null;
@@ -202,13 +256,20 @@ export function sceneFromImageData(
   const [best, bestScore] = ranked[0];
   const margin = bestScore - ranked[1][1];
   const subject: PhotoSubject = bestScore < 42 ? "GENERAL" : best;
-  const confidence: PhotoScene["confidence"] = subject === "GENERAL"
+  const skyOnlyLandscape = subject === "LANDSCAPE" &&
+    signals.green < 8 &&
+    !(focal !== null && focal <= 35) &&
+    !(aperture !== null && aperture >= 5.6);
+  let confidence: PhotoScene["confidence"] = subject === "GENERAL"
     ? "LOW"
     : margin >= 18
     ? "HIGH"
     : margin >= 8
     ? "MEDIUM"
     : "LOW";
+  if (subject === "LANDSCAPE" && skyOnlyLandscape && confidence === "HIGH") {
+    confidence = "MEDIUM";
+  }
 
   return {
     scene: {
@@ -245,7 +306,15 @@ function sceneBasis(
     if (signals.green > 8) {
       basis.push(`绿色植被约占 ${formatNumber(signals.green)}%`);
     }
-    if (focal !== null) basis.push(`等效焦距约 ${Math.round(focal)}mm`);
+    if (
+      signals.green <= 8 && !(focal !== null && focal <= 35) &&
+      !(aperture !== null && aperture >= 5.6)
+    ) {
+      basis.push("仅有上部亮部占比，缺少植被或镜头参数佐证");
+    }
+    if (focal !== null && basis.length < 3) {
+      basis.push(`等效焦距约 ${Math.round(focal)}mm`);
+    }
     if (basis.length < 3 && aperture !== null) {
       basis.push(`光圈 f/${formatNumber(aperture)}`);
     }

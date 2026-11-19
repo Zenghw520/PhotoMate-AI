@@ -123,7 +123,7 @@ export function SpotRecommendations({
             </button>
           ))}
         </div>
-        <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-3 text-xs leading-5 text-muted-foreground">
           依据「{location.name}」周边高德 POI 与当天太阳方位筛选；点击地点可在高德应用中打开地图。
         </p>
       </section>
@@ -143,7 +143,7 @@ export function SpotRecommendations({
       {result && (
         <>
           <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
-            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
                 <Sun className="size-3" />建议窗口{" "}
                 {result.recommendedWindow
@@ -173,7 +173,7 @@ export function SpotRecommendations({
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
               天气：{result.weatherSummary}
             </p>
-            <ul className="mt-2 space-y-1 text-[11px] leading-4 text-muted-foreground">
+            <ul className="mt-2 space-y-1 text-xs leading-4 text-muted-foreground">
               {result.warnings.map((warning) => <li key={warning}>· {warning}</li>)}
             </ul>
           </section>
@@ -189,7 +189,7 @@ export function SpotRecommendations({
               <article key={spot.id} className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-primary">
+                    <p className="text-xs font-medium text-primary">
                       #{index + 1} · {distanceText(spot.distanceMeters)} ·{" "}
                       {spot.direction}方向
                     </p>
@@ -202,10 +202,10 @@ export function SpotRecommendations({
                     <Navigation className="size-4" />
                   </span>
                 </div>
-                <p className="mt-3 rounded-xl bg-muted/45 p-2.5 text-[11px] leading-4 text-muted-foreground">
+                <p className="mt-3 rounded-xl bg-muted/45 p-2.5 text-xs leading-4 text-muted-foreground">
                   {spot.sunNote}
                 </p>
-                <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+                <div className="mt-3 flex items-center justify-between gap-2 text-xs">
                   <span className="inline-flex items-center gap-1 text-muted-foreground">
                     <Compass className="size-3.5" />{spot.latitude.toFixed(4)},{" "}
                     {spot.longitude.toFixed(4)}
@@ -225,7 +225,7 @@ export function SpotRecommendations({
         </>
       )}
 
-      <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+      <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
         地点按距离与题材关键词排序；出发前核对开放时间、现场通行与地形遮挡。
       </p>

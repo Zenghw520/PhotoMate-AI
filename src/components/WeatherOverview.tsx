@@ -91,7 +91,7 @@ export function WeatherOverview({
             <CloudSun className="size-5 text-primary" />
             <div>
               <h2 className="font-semibold">此刻天气</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 实况观测与逐小时预报分开展示
               </p>
             </div>
@@ -173,7 +173,7 @@ export function WeatherOverview({
                 · {weather.sources.join(" / ") || "来源未知"}
               </span>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-5 py-2.5 text-[11px] text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-5 py-2.5 text-xs text-muted-foreground">
               <span>
                 {current.airQuality
                   ? `空气质量 ${current.airQuality.aqi ?? "—"} ${
@@ -207,7 +207,7 @@ export function WeatherOverview({
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             <AlertTriangle className="size-4 text-amber-500" />摄影天气提醒
           </h3>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             根据所选日期真实逐小时变化生成
           </span>
         </div>
@@ -220,11 +220,11 @@ export function WeatherOverview({
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold">{alert.title}</p>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                  <span className="shrink-0 text-xs text-muted-foreground">
                     {alert.time ? formatTime(alert.time) : "全天"}
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {alert.detail}
                 </p>
               </li>
@@ -269,7 +269,7 @@ export function WeatherOverview({
               tone="bg-stone-400/70"
             />
           </div>
-          <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
             高云和中云承接低角度光，低云过多会遮挡太阳。分层云量来自 MET Norway，总云量为多源合并后的逐小时值。
           </p>
         </section>
@@ -279,11 +279,11 @@ export function WeatherOverview({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-semibold">天气变化趋势</h3>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               预报数据，支持 24 / 48 / 72 小时与五项指标切换。
             </p>
           </div>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {forecastHours.length
               ? `覆盖未来 ${forecastHours.length} 小时`
               : "所选日期暂无逐时预报"}
@@ -320,13 +320,13 @@ export function WeatherOverview({
                 <p className="mt-2 text-sm font-semibold">
                   {metric(hour.temperature, "°")}
                 </p>
-                <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                <p className="mt-1 truncate text-xs text-muted-foreground">
                   {hour.condition || "—"}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   云 {metric(hour.cloud, "%")}
                 </p>
-                <p className="mt-1 text-[11px] text-sky-600 dark:text-sky-400">
+                <p className="mt-1 text-xs text-sky-600 dark:text-sky-400">
                   {hour.precipitationProbability === null
                     ? "降水 —"
                     : `降水 ${Math.round(hour.precipitationProbability)}%`}
@@ -351,7 +351,7 @@ function CloudLayer({
 }) {
   return (
     <div className="rounded-xl bg-muted/45 p-3">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold tabular-nums">
         {value === null ? "—" : `${Math.round(value)}%`}
       </p>
@@ -376,7 +376,7 @@ function Metric({
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
         <Icon className="size-3.5" />
         {label}
       </div>

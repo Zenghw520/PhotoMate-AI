@@ -7,25 +7,83 @@ import {
   Info,
   Lightbulb,
   LoaderCircle,
+  Pencil,
   RefreshCw,
+  RotateCcw,
   ScanSearch,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
+import {
+  PHOTO_SUBJECTS,
+  PHOTO_SUBJECT_LABELS,
+} from "@/functions/shared/contracts";
 import type {
   PhotoAnalysisResponse,
   PhotoExif,
   PhotoScene,
   PhotoSignals,
   PhotoStats,
+  PhotoSubject,
 } from "@/functions/shared/contracts";
 import { analyzePhoto } from "@/src/lib/api";
+import { ErrorNotice } from "@/src/components/CapabilityNotice";
+import { describeFailure, type Failure } from "@/src/lib/errors";
 import { parseJpegExif } from "@/src/lib/exif";
 import { measurePhoto } from "@/src/lib/photo";
 import { decodeRaw, isRawFile, RAW_ACCEPT } from "@/src/lib/raw";
 import { addRecord } from "@/src/lib/records";
 
 const MAX_BYTES = 150 * 1024 * 1024;
+const RAW_MEMORY_WARN_BYTES = 60 * 1024 * 1024;
+const SUBJECT_OPTIONS = PHOTO_SUBJECTS.map((subject) => ({
+  subject,
+  label: PHOTO_SUBJECT_LABELS[subject],
+}));
+
+function nextFrame() {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(finish);
+    }
+    window.setTimeout(finish, 50);
+  });
+}
+
+function sceneTitle(scene: PhotoScene | null, manual: PhotoScene | null) {
+  if (!scene) return "题材未知";
+  if (manual) return scene.label;
+  if (scene.subject === "GENERAL") return scene.label;
+  return scene.confidence === "HIGH" ? scene.label : `可能为${scene.label}`;
+}
+
+function readFailure(reason: unknown): Failure {
+  const message = reason instanceof Error ? reason.message : "";
+  if (
+    reason instanceof RangeError ||
+    /memory|allocation|out of memory|array buffer/i.test(message)
+  ) {
+    return {
+      kind: "photo",
+      title: "浏览器内存不足",
+      message: "请先关闭其他标签页，或改用尺寸更小的照片后重试。",
+      retryable: false,
+    };
+  }
+  return {
+    kind: "photo",
+    title: "照片无法解析",
+    message: message || "请尝试 JPEG、PNG、WebP 或带内嵌预览的 RAW。",
+    retryable: false,
+  };
+}
 
 function shutterText(seconds: number) {
   return seconds >= 1
@@ -84,7 +142,7 @@ function StatsGrid({ stats }: { stats: PhotoStats }) {
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {items.map((item) => (
         <div key={item.label} className="rounded-xl border border-border/60 bg-card px-3 py-2.5">
-          <p className="text-[11px] text-muted-foreground">{item.label}</p>
+          <p className="text-xs text-muted-foreground">{item.label}</p>
           <p className="mt-1 text-sm font-medium tabular-nums">{item.value}</p>
         </div>
       ))}
@@ -119,7 +177,7 @@ function FindingList({
       </ul>
       {items.length > 3 && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-primary">
+          <summary className="cursor-pointer text-xs font-medium text-primary">
             其余 {items.length - 3} 条
           </summary>
           <ul className="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
@@ -156,8 +214,13 @@ export function PhotoAnalysis() {
   const [source, setSource] = useState("");
   const [reading, setReading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [error, setError] = useState("");
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
+  const [manualScene, setManualScene] = useState<PhotoScene | null>(null);
+  const [subjectOpen, setSubjectOpen] = useState(false);
   const [savedRecord, setSavedRecord] = useState(false);
+  const jobRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   function saveAnalysis() {
     if (!analysis || !file) return;
@@ -182,7 +245,12 @@ export function PhotoAnalysis() {
 
   async function prepare(selected: File) {
     if (selected.size > MAX_BYTES) {
-      setError("照片不能超过 150MB。");
+      setFailure({
+        kind: "photo",
+        title: "文件过大",
+        message: "照片不能超过 150MB，请压缩或改用较小的文件。",
+        retryable: false,
+      });
       return;
     }
     const rawFile = isRawFile(selected.name);
@@ -191,13 +259,31 @@ export function PhotoAnalysis() {
       /^image\/(jpeg|png|webp)$/.test(selected.type) ||
       /\.(jpe?g|png|webp)$/i.test(selected.name);
     if (!accepted || (!rawFile && !/^image\/(jpeg|png|webp)$/.test(mime))) {
-      setError("仅支持 JPEG、PNG、WebP 或主流 RAW 照片。");
+      setFailure({
+        kind: "photo",
+        title: "暂不支持这种文件",
+        message: "请选择 JPEG、PNG、WebP 或主流 RAW 照片。",
+        retryable: false,
+      });
       return;
     }
-    setError("");
+
+    abortRef.current?.abort();
+    const job = ++jobRef.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const isCurrent = () => job === jobRef.current && !controller.signal.aborted;
+    const update = (label: string, percent: number) => {
+      if (isCurrent()) setProgress({ label, percent });
+    };
+
+    setFailure(null);
     setReading(true);
+    setProgress({ label: "准备读取照片…", percent: 2 });
     setAnalysis(null);
     setSavedRecord(false);
+    setManualScene(null);
+    setSubjectOpen(false);
     setExif(null);
     setStats(null);
     setScene(null);
@@ -208,9 +294,22 @@ export function PhotoAnalysis() {
       return null;
     });
     setFile({ name: selected.name, size: selected.size, mime });
+
     try {
+      await nextFrame();
+      if (!isCurrent()) return;
       if (rawFile) {
-        const decoded = await decodeRaw(selected);
+        update("正在读取 RAW 文件…", 10);
+        const decoded = await decodeRaw(selected, {
+          signal: controller.signal,
+          onProgress: (value) =>
+            update(
+              value < 100 ? `正在本地解码 RAW（${value}%）` : "正在生成缩略图…",
+              15 + Math.round(value * 0.75),
+            ),
+        });
+        if (!isCurrent()) return;
+        update("正在整理画质统计…", 96);
         setExif(decoded.exif);
         setStats(decoded.stats);
         setScene(decoded.scene);
@@ -218,16 +317,24 @@ export function PhotoAnalysis() {
         setSource(decoded.source);
         setPreview(URL.createObjectURL(decoded.preview));
       } else {
-        setPreview(URL.createObjectURL(selected));
+        update("正在读取照片信息…", 15);
         let parsedExif: PhotoExif | null = null;
         if (mime === "image/jpeg") {
           try {
-            parsedExif = parseJpegExif(await selected.arrayBuffer());
+            parsedExif = parseJpegExif(
+              await selected.slice(0, 512 * 1024).arrayBuffer(),
+            );
           } catch {
             parsedExif = null;
           }
         }
+        if (!isCurrent()) return;
+        setPreview(URL.createObjectURL(selected));
+        update("正在生成缩略图与画质统计…", 45);
+        await nextFrame();
+        if (!isCurrent()) return;
         const measurement = await measurePhoto(selected, parsedExif);
+        if (!isCurrent()) return;
         setExif(parsedExif);
         setStats(measurement.stats);
         setScene(measurement.scene);
@@ -235,16 +342,54 @@ export function PhotoAnalysis() {
         setSource("标准图像");
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "照片无法解析，请尝试 JPEG、PNG 或 DNG。");
+      if (!isCurrent() || (reason instanceof DOMException && reason.name === "AbortError")) {
+        return;
+      }
+      setFailure(readFailure(reason));
     } finally {
-      setReading(false);
+      if (job === jobRef.current) {
+        abortRef.current = null;
+        setReading(false);
+        setProgress(null);
+      }
     }
   }
 
-  async function startAnalysis() {
+  function cancelReading() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    jobRef.current++;
+    setReading(false);
+    setProgress(null);
+    setFile(null);
+    setPreview((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return null;
+    });
+    setExif(null);
+    setStats(null);
+    setScene(null);
+    setSignals(null);
+    setSource("");
+    setManualScene(null);
+    setSubjectOpen(false);
+    setFailure({
+      kind: "photo",
+      title: "已取消读取",
+      message: "未完成的照片不会参与分析，可以重新选择。",
+      retryable: false,
+    });
+  }
+
+  async function startAnalysis(
+    overrideScene?: PhotoScene,
+    manual = Boolean(manualScene),
+  ) {
     if (!file || !stats || !scene || !signals) return;
+    const targetScene = overrideScene ?? manualScene ?? scene;
     setAnalyzing(true);
-    setError("");
+    setFailure(null);
+    setAnalysis(null);
     setSavedRecord(false);
     try {
       const result = await analyzePhoto({
@@ -253,19 +398,44 @@ export function PhotoAnalysis() {
         mimeType: file.mime,
         exif,
         stats,
-        scene,
+        scene: targetScene,
         signals,
+        ...(manual ? { manualScene: true } : {}),
       });
       setAnalysis(result);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "照片分析暂不可用，请稍后重试。");
+      setFailure(describeFailure(reason, "photo"));
     } finally {
       setAnalyzing(false);
     }
   }
 
+  function applySubject(subject: PhotoSubject) {
+    const next: PhotoScene = {
+      subject,
+      label: PHOTO_SUBJECT_LABELS[subject],
+      confidence: "MEDIUM",
+      basis: [`已手动指定题材为「${PHOTO_SUBJECT_LABELS[subject]}」`],
+      source: "HEURISTIC",
+    };
+    setManualScene(next);
+    setSubjectOpen(false);
+    setAnalysis(null);
+    if (stats && scene && signals) void startAnalysis(next, true);
+  }
+
+  function resetSubject() {
+    setManualScene(null);
+    setSubjectOpen(false);
+    setAnalysis(null);
+    if (stats && scene && signals) void startAnalysis(scene, false);
+  }
+
   const chips = exif ? exifChips(exif) : [];
-  const displayScene = analysis?.scene ?? scene;
+  const displayScene = analysis?.scene ?? manualScene ?? scene;
+  const screenLike = signals?.screenLike ?? 0;
+  const largeRaw = file?.mime === "image/x-raw" &&
+    file.size > RAW_MEMORY_WARN_BYTES;
 
   return (
     <div className="space-y-4">
@@ -314,26 +484,66 @@ export function PhotoAnalysis() {
               {file.name} · {(file.size / 1024 / 1024).toFixed(1)}MB
             </p>
           )}
+          {largeRaw && (
+            <p className="mt-2 rounded-lg bg-amber-500/10 px-2.5 py-2 text-xs leading-5 text-amber-700 dark:text-amber-400">
+              该 RAW 较大，手机浏览器可能需要更多内存和较长的解码时间，请保持页面在前台。
+            </p>
+          )}
         </div>
-        <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-4 text-muted-foreground">
+        <p className="mt-3 flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           RAW 在浏览器内通过 LibRaw WASM 解码；分析请求只包含相机参数、画质统计与题材推断结果。
         </p>
       </section>
 
-      {error && (
-        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <span>{error}</span>
-        </div>
+      {failure && (
+        <ErrorNotice
+          failure={failure}
+          onRetry={failure.retryable && stats
+            ? () => void startAnalysis()
+            : undefined}
+          retryLabel="仅重试分析"
+          secondary={{
+            label: "重新选择照片",
+            onClick: () => inputRef.current?.click(),
+          }}
+        />
       )}
 
-      {reading && (
-        <div className="flex items-center gap-2 text-xs font-medium text-primary" role="status">
-          <LoaderCircle className="size-4 animate-spin" />
-          {file?.mime === "image/x-raw"
-            ? "正在本地解码 RAW 并计算画质统计…"
-            : "正在本地读取照片元数据与画质统计…"}
+      {reading && progress && (
+        <div
+          className="rounded-2xl border border-primary/20 bg-primary/[0.05] p-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center justify-between gap-3 text-xs font-medium text-primary">
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <LoaderCircle className="size-4 shrink-0 animate-spin" />
+              <span className="truncate">{progress.label}</span>
+            </span>
+            <span className="shrink-0 tabular-nums">{progress.percent}%</span>
+          </div>
+          <div
+            className="mt-2 h-1.5 overflow-hidden rounded-full bg-primary/15"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress.percent}
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-300"
+              style={{ width: `${progress.percent}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={cancelReading}
+              className="inline-flex min-h-9 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" />取消读取
+            </button>
+          </div>
         </div>
       )}
 
@@ -353,7 +563,7 @@ export function PhotoAnalysis() {
                   <Camera className="size-4 text-primary" />照片参数
                 </h4>
                 {source && (
-                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
                     {source}
                   </span>
                 )}
@@ -378,10 +588,13 @@ export function PhotoAnalysis() {
                 <h4 className="flex items-center gap-2 text-sm font-semibold">
                   <ScanSearch className="size-4 text-primary" />识别题材
                 </h4>
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
-                  {displayScene?.label} · 置信度{" "}
-                  {confidenceText(displayScene?.confidence ?? "LOW")}
-                  {displayScene?.source === "DEEPSEEK" && " · DeepSeek 复核"}
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                  {sceneTitle(displayScene, manualScene)}
+                  {manualScene
+                    ? " · 手动指定"
+                    : ` · 置信度 ${confidenceText(displayScene?.confidence ?? "LOW")}`}
+                  {displayScene?.source === "DEEPSEEK" && !manualScene &&
+                    " · DeepSeek 复核"}
                 </span>
               </div>
               <ul className="mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
@@ -389,8 +602,56 @@ export function PhotoAnalysis() {
                   <li key={item}>· {item}</li>
                 ))}
               </ul>
-              <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-                题材由本地像素统计推断，DeepSeek 基于同一组特征复核。
+              {screenLike >= 60 && !manualScene && (
+                <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2 text-xs leading-5 text-muted-foreground">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  检测到截图、文档或纯色界面特征（低纹理区域约 {Math.round(signals?.flatness ?? 0)}%），题材判断可能不适用，可修改题材。
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSubjectOpen((value) => !value)}
+                  aria-expanded={subjectOpen}
+                  className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-medium transition hover:bg-muted"
+                >
+                  <Pencil className="size-3.5" />修改题材
+                </button>
+                {manualScene && (
+                  <button
+                    type="button"
+                    onClick={resetSubject}
+                    className="inline-flex min-h-9 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  >
+                    <RotateCcw className="size-3.5" />恢复自动判断
+                  </button>
+                )}
+              </div>
+              {subjectOpen && (
+                <div
+                  role="group"
+                  aria-label="选择拍摄题材"
+                  className="mt-2 flex flex-wrap gap-1.5"
+                >
+                  {SUBJECT_OPTIONS.map((item) => (
+                    <button
+                      key={item.subject}
+                      type="button"
+                      aria-pressed={displayScene?.subject === item.subject}
+                      onClick={() => applySubject(item.subject)}
+                      className={`min-h-9 rounded-full px-3 text-xs font-medium transition ${
+                        displayScene?.subject === item.subject
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                题材由本地像素统计推断，DeepSeek 基于同一组特征复核；截图或纯色图会优先标为通用。
               </p>
             </section>
             <section className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
@@ -404,7 +665,7 @@ export function PhotoAnalysis() {
       {stats && (
         <button
           type="button"
-          onClick={startAnalysis}
+          onClick={() => void startAnalysis()}
           disabled={analyzing}
           className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60 sm:w-auto"
         >
@@ -412,6 +673,8 @@ export function PhotoAnalysis() {
             ? <><LoaderCircle className="size-4 animate-spin" />正在分析…</>
             : analysis
             ? <><RefreshCw className="size-4" />重新分析</>
+            : manualScene
+            ? <><Sparkles className="size-4" />按手动题材分析</>
             : <><Sparkles className="size-4" />开始分析</>}
         </button>
       )}
@@ -420,13 +683,13 @@ export function PhotoAnalysis() {
         <div className="space-y-3">
           <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
                 <Sparkles className="size-3" />{aiLabel(analysis.aiStatus)}
               </span>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
-                按「{analysis.scene.label}」评价
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                评价题材：{sceneTitle(analysis.scene, manualScene)}
               </span>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
                 依据完整度{" "}
                 {analysis.confidenceLevel === "HIGH"
                   ? "较高"
@@ -465,7 +728,7 @@ export function PhotoAnalysis() {
             </ul>
           </details>
 
-          <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+          <p className="flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" />{analysis.disclaimer}
           </p>
         </div>
@@ -484,9 +747,9 @@ export function PhotoMethod() {
         <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
           <li>· NEF、ARW、CR2、CR3、DNG、RAF、ORF、RW2 等通过 LibRaw WASM 在浏览器内解码。</li>
           <li>· 若完整解码失败，会自动回退到相机内嵌 JPEG 预览，并在“照片参数”处标注来源。</li>
-          <li>· 大文件可能解码数秒并占用较多内存；原始 RAW 不会上传。</li>
+          <li>· 读取与解码期间会显示进度并可取消；大文件可能解码数秒并占用较多内存，原始 RAW 不会上传。</li>
         </ul>
-        <p className="mt-3 border-t border-border/60 pt-3 text-[11px] leading-4 text-muted-foreground">
+        <p className="mt-3 border-t border-border/60 pt-3 text-xs leading-4 text-muted-foreground">
           RAW 解码基于 LibRaw（LGPL-2.1 / CDDL）与 libraw-wasm（ISC）。
         </p>
       </section>
@@ -517,6 +780,7 @@ export function PhotoMethod() {
         <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
           <li>· 根据亮度分布、肤色像素比例、天空与植被占比、边缘密度和中心/边缘清晰度差异，推断最可能的题材。</li>
           <li>· 题材只用于切换评价侧重点，例如人像关注景深与手持快门，风光关注景深与高光细节。</li>
+          <li>· 截图、文档、纯色界面或大面积低纹理画面会优先标为“通用”，题材判断仅供参考，可手动修改。</li>
           <li>· 本地像素统计先推断题材，DeepSeek 再依据同一组特征复核，给出技术建议；人物、物体与构图结合现场判断。</li>
         </ul>
       </section>

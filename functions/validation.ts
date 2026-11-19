@@ -239,6 +239,10 @@ function photoSignals(value: unknown): PhotoSignals | undefined {
     throw new HttpError(400, "INVALID_PHOTO", "照片画面特征格式无效。");
   }
   const source = value as Record<string, unknown>;
+  const optionalSignal = (input: unknown) =>
+    input === undefined || input === null
+      ? undefined
+      : requiredNumber(input, 0, 100);
   return {
     skin: requiredNumber(source.skin, 0, 100),
     sky: requiredNumber(source.sky, 0, 100),
@@ -249,6 +253,15 @@ function photoSignals(value: unknown): PhotoSignals | undefined {
     edgeDensity: requiredNumber(source.edgeDensity, 0, 100),
     centerSharpness: requiredNumber(source.centerSharpness, 0, 100),
     borderSharpness: requiredNumber(source.borderSharpness, 0, 100),
+    ...(optionalSignal(source.flatness) === undefined
+      ? {}
+      : { flatness: optionalSignal(source.flatness) }),
+    ...(optionalSignal(source.dominantColor) === undefined
+      ? {}
+      : { dominantColor: optionalSignal(source.dominantColor) }),
+    ...(optionalSignal(source.screenLike) === undefined
+      ? {}
+      : { screenLike: optionalSignal(source.screenLike) }),
   };
 }
 
@@ -371,5 +384,6 @@ export function photoAnalysisRequest(body: unknown): PhotoAnalysisRequest {
     },
     scene: photoScene(value.scene),
     signals: photoSignals(value.signals),
+    manualScene: value.manualScene === true,
   };
 }

@@ -44,7 +44,7 @@ export function PhotoRecords() {
             </button>
           )}
         </div>
-        <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           记录保存在当前浏览器 localStorage，更换设备或清理浏览器后会丢失。
         </p>
@@ -61,7 +61,7 @@ export function PhotoRecords() {
           <article key={record.id} className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
                   {record.kind === "plan"
                     ? <><ClipboardList className="size-3.5" />拍摄方案</>
                     : <><Camera className="size-3.5" />照片分析</>}
@@ -73,7 +73,7 @@ export function PhotoRecords() {
                   {record.kind === "plan" ? record.title : record.fileName}
                 </h4>
                 {record.kind === "plan" && (
-                  <p className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <MapPin className="size-3" />{record.locationName}
                     </span>
@@ -86,7 +86,7 @@ export function PhotoRecords() {
                   </p>
                 )}
                 {record.kind === "analysis" && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     题材：{record.sceneLabel} · 依据完整度 {record.confidence}
                   </p>
                 )}
@@ -106,7 +106,7 @@ export function PhotoRecords() {
                 <summary className="cursor-pointer text-xs font-medium text-primary">
                   查看参数与流程
                 </summary>
-                <div className="mt-2 grid gap-2 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground sm:grid-cols-2">
+                <div className="mt-2 grid gap-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
                   <p>ISO {record.cameraParameters.iso}</p>
                   <p>光圈 {record.cameraParameters.aperture}</p>
                   <p>快门 {record.cameraParameters.shutter}</p>
@@ -128,7 +128,7 @@ export function PhotoRecords() {
                 <summary className="cursor-pointer text-xs font-medium text-primary">
                   查看分析摘要
                 </summary>
-                <div className="mt-2 space-y-2 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+                <div className="mt-2 space-y-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
                   <p>{record.summary}</p>
                   {record.issues.length > 0 && (
                     <p>关注：{record.issues.join("；")}</p>

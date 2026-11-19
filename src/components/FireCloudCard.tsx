@@ -56,7 +56,7 @@ export function FireCloudCard({
             >
               <Icon className="size-5" />
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
               <Flame className="size-3" />环境潜力
             </span>
           </div>
@@ -87,15 +87,15 @@ export function FireCloudCard({
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">可能性</p>
+          <p className="text-xs text-muted-foreground">可能性</p>
           <p className="mt-0.5 font-semibold">{data.outlook.possibilityLabel}</p>
         </div>
         <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">鲜艳度</p>
+          <p className="text-xs text-muted-foreground">鲜艳度</p>
           <p className="mt-0.5 font-semibold">
             {data.outlook.vividnessLabel}
             {data.outlook.vividness !== null && (
-              <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
                 {data.outlook.vividness}/100
               </span>
             )}
@@ -104,27 +104,27 @@ export function FireCloudCard({
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">太阳方位</p>
+          <p className="text-xs text-muted-foreground">太阳方位</p>
           <p className="mt-0.5 font-semibold">{direction}</p>
         </div>
         <div className="rounded-xl bg-muted/45 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">太阳高度角</p>
+          <p className="text-xs text-muted-foreground">太阳高度角</p>
           <p className="mt-0.5 font-semibold">
             {elevation === null ? "—" : `${elevation.toFixed(1)}°`}
           </p>
         </div>
       </div>
       {data.forecastWindow && (
-        <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">
           推荐 {formatTime(data.forecastWindow.start)} 拍摄；建议 {arrival} 前到达，面向
           {azimuth === null ? direction : compass(azimuth)} 寻找可被低角度光照亮的云层。
         </p>
       )}
       <div className="mt-2 rounded-xl border border-border/60 p-3">
-        <p className="flex items-center gap-1.5 text-[11px] font-medium">
+        <p className="flex items-center gap-1.5 text-xs font-medium">
           <Cloud className="size-3.5 text-primary" />云量判断
         </p>
-        <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
           {data.outlook.cloudCover !== null &&
             `总云量约 ${Math.round(data.outlook.cloudCover)}%。`}
           {data.outlook.cloudNote}
@@ -132,19 +132,19 @@ export function FireCloudCard({
         {(data.outlook.cloudHigh !== null ||
           data.outlook.cloudMid !== null ||
           data.outlook.cloudLow !== null) && (
-          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             分层：高云 {percent(data.outlook.cloudHigh)} · 中云{" "}
             {percent(data.outlook.cloudMid)} · 低云{" "}
             {percent(data.outlook.cloudLow)}
           </p>
         )}
         {data.outlook.aerosolOpticalDepth !== null && (
-          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             气溶胶光学厚度{" "}
             {data.outlook.aerosolOpticalDepth.toFixed(2)}（越低越通透）
           </p>
         )}
-        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+        <p className="mt-1 text-xs leading-4 text-muted-foreground">
           可能性为环境条件分级。
         </p>
       </div>
@@ -181,7 +181,7 @@ export function FireCloudCard({
               </span>
             </div>
           ))}
-          <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+          <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
             <span>太阳事件 {eventTime ? formatTime(eventTime) : "—"}</span>
             <span>
               太阳方位{" "}
@@ -195,12 +195,12 @@ export function FireCloudCard({
             <span>窗口锚定日出/日落时刻</span>
           </div>
           {data.scoreMode !== "UNAVAILABLE" && data.missingFields.length > 0 && (
-            <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
+            <p className="flex items-start gap-1.5 border-t border-border/60 pt-2 text-xs leading-4 text-amber-700 dark:text-amber-400">
               <Flame className="mt-0.5 size-3.5 shrink-0" />
               缺少：{data.missingFields.map(missingFieldLabel).join("、")}。评分已按可用数据降级。
             </p>
           )}
-          <p className="text-[11px] leading-4 text-muted-foreground">
+          <p className="text-xs leading-4 text-muted-foreground">
             中高云适量、低云不挡光、空气通透时更有利于火烧云；缺少分层或气溶胶数据时评分会自动降级。
           </p>
         </div>

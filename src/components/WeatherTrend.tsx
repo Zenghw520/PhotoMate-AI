@@ -258,7 +258,7 @@ export function WeatherTrend({
                 setRange(item);
                 setActiveIndex(null);
               }}
-              className={`min-h-8 rounded-full px-3 text-[11px] font-medium transition ${
+              className={`min-h-8 rounded-full px-3 text-xs font-medium transition ${
                 range === item
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -268,7 +268,7 @@ export function WeatherTrend({
             </button>
           ))}
         </div>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {hours.length < 72
             ? `上游仅覆盖未来 ${hours.length} 小时`
             : "缺口以断线显示，按实际预报范围查看"}
@@ -289,7 +289,7 @@ export function WeatherTrend({
               setMetricKey(key);
               setActiveIndex(null);
             }}
-            className={`min-h-8 shrink-0 rounded-full border px-3 text-[11px] font-medium transition ${
+            className={`min-h-8 shrink-0 rounded-full border px-3 text-xs font-medium transition ${
               metricKey === key
                 ? "border-primary/25 bg-primary/10 text-primary"
                 : "border-border text-muted-foreground hover:text-foreground"
@@ -311,7 +311,7 @@ export function WeatherTrend({
         onPointerLeave={handlePointerLeave}
         onContextMenu={(event) => event.preventDefault()}
       >
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{config.label}变化</span>
           <span className="tabular-nums">
             {values.length
@@ -429,7 +429,7 @@ export function WeatherTrend({
               }}
             />
             <div
-              className="pointer-events-none absolute top-0 z-10 w-[13rem] rounded-xl border border-border bg-popover/95 p-2.5 text-[11px] leading-4 shadow-lg backdrop-blur"
+              className="pointer-events-none absolute top-0 z-10 w-[13rem] rounded-xl border border-border bg-popover/95 p-2.5 text-xs leading-4 shadow-lg backdrop-blur"
               style={{
                 left: `${tooltipPercent}%`,
                 transform: "translateX(-50%)",
@@ -470,7 +470,7 @@ export function WeatherTrend({
           </>
         )}
 
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>
             {forecastUpdatedAt
               ? `预报获取于 ${formatObservedAt(forecastUpdatedAt)}`
@@ -482,7 +482,7 @@ export function WeatherTrend({
         </div>
       </div>
 
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         悬停或长按查看逐小时详情；趋势为预报，实况以观测时间为准。
       </p>
     </div>

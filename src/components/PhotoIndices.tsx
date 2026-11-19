@@ -62,14 +62,14 @@ export function PhotoIndices({
                 <p className="text-2xl font-semibold tracking-tight">
                   {overall === null ? "—" : Math.round(overall)}
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {overall === null ? "数据不足" : scoreLabel(overall)}
                 </p>
               </div>
             </div>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="rounded-full bg-muted px-2.5 py-1">
             置信度 {confidenceLabels[indices.confidence]}
           </span>
@@ -81,7 +81,7 @@ export function PhotoIndices({
             可展开核对每个因子的数值与贡献
           </span>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           天气预报获取于{" "}
           {forecastUpdatedAt
             ? formatObservedAt(forecastUpdatedAt)
@@ -94,11 +94,11 @@ export function PhotoIndices({
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold">分题材指数</h3>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               每个题材的光线窗口、云层、能见度、降水、风速、湿度与气溶胶权重不同。
             </p>
           </div>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             点击“评分依据”展开
           </span>
         </div>
@@ -130,10 +130,10 @@ export function PhotoIndices({
                       title={`${entry.label} ${Math.round(entry.score ?? 0)} 分`}
                     />
                   </div>
-                  <p className="mt-1 text-center text-[10px] tabular-nums text-muted-foreground">
+                  <p className="mt-1 text-center text-xs tabular-nums text-muted-foreground">
                     {formatTime(entry.time)}
                   </p>
-                  <p className="truncate text-center text-[10px] text-muted-foreground">
+                  <p className="truncate text-center text-xs text-muted-foreground">
                     {entry.label}
                   </p>
                 </div>
@@ -148,7 +148,7 @@ export function PhotoIndices({
         <ul className="mt-3 space-y-2 text-xs leading-5 text-muted-foreground">
           {indices.basis.map((item) => <li key={item}>· {item}</li>)}
         </ul>
-        <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
           <Info className="mt-0.5 size-3.5 shrink-0" />
           指数用于比较题材与时段；缺少真实天气的题材不评分，部分缺失的题材按剩余权重归一化并标注。
         </p>
@@ -163,7 +163,7 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium">{entry.label}</p>
-          <p className="mt-1 text-[10px] text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             {entry.windowLabel}
           </p>
         </div>
@@ -171,7 +171,7 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
           <span className="text-lg font-semibold tabular-nums">
             {entry.score === null ? "—" : Math.round(entry.score)}
           </span>
-          <span className="ml-1 text-[10px] text-muted-foreground">/ 100</span>
+          <span className="ml-1 text-xs text-muted-foreground">/ 100</span>
         </div>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -182,7 +182,7 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
           style={{ width: `${entry.score ?? 0}%` }}
         />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
         <span className="rounded-full bg-muted px-2 py-0.5">
           置信度 {confidenceLabels[entry.confidence]}
         </span>
@@ -190,11 +190,11 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
           {statusLabels[entry.status]}
         </span>
       </div>
-      <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+      <p className="mt-2 text-xs leading-4 text-muted-foreground">
         {entry.note}
       </p>
       <details className="group/detail mt-2">
-        <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between rounded-lg text-[11px] font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
           评分依据
           <ChevronDown className="size-3.5 transition group-open/detail:rotate-180" />
         </summary>
@@ -203,7 +203,7 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
             entry.basis.map((item) => (
               <div
                 key={item.code}
-                className="grid grid-cols-[1fr_auto] items-start gap-2 text-[11px]"
+                className="grid grid-cols-[1fr_auto] items-start gap-2 text-xs"
                 title={item.explanation}
               >
                 <span className="font-medium">{item.label}</span>
@@ -215,12 +215,12 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
               </div>
             ))
           ) : (
-            <p className="text-[11px] leading-4 text-muted-foreground">
+            <p className="text-xs leading-4 text-muted-foreground">
               该题材没有可用的逐项天气数据。
             </p>
           )}
           {entry.missingFields.length > 0 && (
-            <p className="border-t border-border/60 pt-2 text-[10px] leading-4 text-amber-700 dark:text-amber-400">
+            <p className="border-t border-border/60 pt-2 text-xs leading-4 text-amber-700 dark:text-amber-400">
               缺少：{entry.missingFields.map(missingFieldLabel).join("、")}
               ，已按剩余权重归一化。
             </p>

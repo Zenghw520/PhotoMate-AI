@@ -27,7 +27,7 @@ export function SolarTimeline({ solar, timeline, selectedSlotId, onSelectSlot }:
                   <div className="w-[5.7rem] shrink-0 text-xs font-medium tabular-nums text-muted-foreground sm:w-24 sm:text-sm">{formatTime(item.start)}<span className="mx-1 text-border">—</span>{formatTime(item.end)}</div>
                   <span className={`size-2 shrink-0 rounded-full ring-4 ${selected ? "bg-primary ring-primary/10" : "bg-border ring-muted/40"}`} />
                   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.label}{item.isPast && <span className="ml-2 text-xs font-normal text-muted-foreground">已结束</span>}</p><p className="mt-1 truncate text-xs text-muted-foreground">{item.reasons[0] ?? "按天文光线评估"}</p></div>
-                  <div className="shrink-0 text-right"><span className={`text-lg font-semibold ${item.score !== null && item.score >= 70 ? "text-primary" : ""}`}>{item.score === null ? "—" : Math.round(item.score)}</span><span className="block text-[10px] text-muted-foreground">{item.scoreMode === "ASTRO_ONLY" ? "仅天文" : "适合指数"}</span></div>
+                  <div className="shrink-0 text-right"><span className={`text-lg font-semibold ${item.score !== null && item.score >= 70 ? "text-primary" : ""}`}>{item.score === null ? "—" : Math.round(item.score)}</span><span className="block text-xs text-muted-foreground">{item.scoreMode === "ASTRO_ONLY" ? "仅天文" : "适合指数"}</span></div>
                   <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
                 </button>
                 {selected && (

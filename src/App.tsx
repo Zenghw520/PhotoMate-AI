@@ -147,13 +147,13 @@ export default function App() {
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
           <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Aperture className="size-5" /></span>
-            <div><p className="text-sm font-bold tracking-tight">PhotoMate <span className="text-primary">AI</span></p><p className="text-[10px] tracking-[0.16em] text-muted-foreground">智能摄影规划助手</p></div>
+            <div><p className="text-sm font-bold tracking-tight">PhotoMate <span className="text-primary">AI</span></p><p className="text-xs tracking-[0.16em] text-muted-foreground">智能摄影规划助手</p></div>
           </div>
           <ThemeToggle />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-12 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-16 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
         {section === null && (
           <section className="relative py-7 sm:py-10 2xl:py-14">
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-stretch xl:gap-10">
@@ -233,10 +233,21 @@ export default function App() {
         />
       </main>
 
-      <footer className="shrink-0 border-t border-border/60 py-6">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10 2xl:text-xs">
+      <footer className="shrink-0 border-t border-border/60 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-6">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 text-xs leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10 2xl:text-xs">
           <p>PhotoMate AI · 摄影指数用于比较天气与光线条件。</p>
-          <p className="flex items-center gap-1.5"><Compass className="size-3.5" />天气数据来自和风天气、OpenWeather、Open-Meteo、MET Norway 等已标注来源；地图来自高德，太阳位置由本地算法计算。</p>
+          <details className="sm:hidden">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center font-medium text-foreground">
+              数据与算法说明
+            </summary>
+            <p className="mt-1">
+              天气数据来自和风天气、OpenWeather、Open-Meteo、MET Norway 等已标注来源；地图来自高德，太阳位置由本地算法计算。
+            </p>
+          </details>
+          <p className="hidden items-center gap-1.5 sm:flex">
+            <Compass className="size-3.5 shrink-0" />
+            天气数据来自和风天气、OpenWeather、Open-Meteo、MET Norway 等已标注来源；地图来自高德，太阳位置由本地算法计算。
+          </p>
         </div>
       </footer>
     </div>

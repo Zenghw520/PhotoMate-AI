@@ -187,10 +187,16 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
     setOpen(false);
   }
 
-  const showResults = open && results.length > 0 && resultsQuery === query.trim();
+  const showResults = open && !failure && results.length > 0 &&
+    resultsQuery === query.trim();
   const retry = () => {
-    if (query.trim().length >= 2) setRetryToken((value) => value + 1);
-    else inputRef.current?.focus();
+    if (query.trim().length >= 2) {
+      setFailure(null);
+      setSearching(true);
+      setRetryToken((value) => value + 1);
+    } else {
+      inputRef.current?.focus();
+    }
   };
 
   return (

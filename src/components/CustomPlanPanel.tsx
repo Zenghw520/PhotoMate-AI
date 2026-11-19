@@ -41,7 +41,7 @@ function aiLabel(status: CustomPlansResponse["aiStatus"]) {
 
 function PlanFacts({ plan }: { plan: CustomPlan }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+    <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
       <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
         <Compass className="size-3 text-primary" />
         太阳 {compass(plan.solar.azimuth)} {Math.round(plan.solar.azimuth)}° ·
@@ -152,7 +152,7 @@ export function CustomPlanPanel({
           />
         </label>
         <div className="mt-3">
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground">
             常用题材
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -161,13 +161,13 @@ export function CustomPlanPanel({
                 key={idea}
                 type="button"
                 onClick={() => setSubject(idea)}
-                className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+                className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground transition hover:text-foreground"
               >
                 {idea}
               </button>
             ))}
           </div>
-          <p className="mt-2 text-right text-[11px] text-muted-foreground">
+          <p className="mt-2 text-right text-xs text-muted-foreground">
             {subject.length}/200
           </p>
         </div>
@@ -214,7 +214,7 @@ export function CustomPlanPanel({
             ? <><LoaderCircle className="size-4 animate-spin" />生成中…</>
             : <><Sparkles className="size-4" />生成拍摄方案</>}
         </button>
-        <p className="mt-3 text-[11px] leading-4 text-muted-foreground">
+        <p className="mt-3 text-xs leading-4 text-muted-foreground">
           当前将结合 {data.date} · {data.location.name} 的天气与太阳窗口；到场后按实际机位调整。
         </p>
       </form>
@@ -230,10 +230,10 @@ export function CustomPlanPanel({
         <div className="space-y-3">
           <section className="rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
                 <Sparkles className="size-3" />{aiLabel(result.aiStatus)}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
                 <MapPin className="size-3" />{result.date} · {result.location.name}
               </span>
             </div>
@@ -242,7 +242,7 @@ export function CustomPlanPanel({
               当天天气依据：{result.weatherSummary}
             </p>
             {result.warnings.length > 0 && (
-              <ul className="mt-2 space-y-1 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
+              <ul className="mt-2 space-y-1 text-xs leading-4 text-amber-700 dark:text-amber-400">
                 {result.warnings.map((warning) => <li key={warning}>· {warning}</li>)}
               </ul>
             )}
@@ -265,7 +265,7 @@ export function CustomPlanPanel({
                     {plan.title}
                   </h4>
                   <PlanFacts plan={plan} />
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock3 className="size-3 text-primary" />
                     建议 {formatTime(plan.arrivalTime)} 到达，提前完成踩点与构图
                   </p>
@@ -318,16 +318,16 @@ export function CustomPlanPanel({
                     ["焦距", plan.cameraParameters.focalLength],
                   ].map(([label, value]) => (
                     <div key={label}>
-                      <p className="text-[10px] text-muted-foreground">{label}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
                       <p className="mt-0.5 text-xs font-medium leading-5">{value}</p>
                     </div>
                   ))}
                 </div>
                 <details className="mt-3 border-t border-border/60 pt-2">
-                  <summary className="cursor-pointer text-[11px] font-medium text-primary">
+                  <summary className="cursor-pointer text-xs font-medium text-primary">
                     光线与更多参数
                   </summary>
-                  <div className="mt-2 space-y-2 text-[11px] leading-5 text-muted-foreground">
+                  <div className="mt-2 space-y-2 text-xs leading-5 text-muted-foreground">
                     <p>光线：{plan.lightAnalysis}</p>
                     <p>范围：{plan.cameraSettings}</p>
                     <p>

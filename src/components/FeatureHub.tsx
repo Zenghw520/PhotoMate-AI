@@ -599,7 +599,7 @@ function SectionDetail({
             )}
             {section === "LIGHT" && tab === "glow" && (
               <div className="space-y-5">
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-[11px] text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-xs text-muted-foreground">
                   <span>
                     实况观测于{" "}
                     {data.weather.current
@@ -805,13 +805,13 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
       )}
       {weather.missingFields.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3">
-          <p className="text-[11px] leading-5 text-muted-foreground">
+          <p className="text-xs leading-5 text-muted-foreground">
             部分字段暂缺；重新获取后仍缺失时会明确标注。
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="min-h-9 shrink-0 rounded-full bg-background px-3 text-[11px] font-medium text-foreground shadow-sm transition hover:bg-muted"
+            className="min-h-9 shrink-0 rounded-full bg-background px-3 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted"
           >
             重新获取
           </button>
