@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Aperture, CloudSun, Compass } from "lucide-react";
 import type { LocationResult, ThemeId, TodayResponse } from "@/functions/shared/contracts";
 import { getToday } from "@/src/lib/api";
+import { describeFailure, type Failure } from "@/src/lib/errors";
 import { shanghaiDate } from "@/src/lib/format";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { ErrorNotice } from "@/src/components/CapabilityNotice";
 import { FeatureHub, type SectionId } from "@/src/components/FeatureHub";
+import { LocationBar } from "@/src/components/LocationBar";
 import { LocationSearch } from "@/src/components/LocationSearch";
 
 function readSavedLocation(): LocationResult | null {
@@ -39,7 +41,7 @@ export default function App() {
   const theme: ThemeId = "LANDSCAPE";
   const [data, setData] = useState<TodayResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<Failure | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [section, setSection] = useState<SectionId | null>(
     () => sectionFromHash(window.location.hash),
@@ -95,7 +97,7 @@ export default function App() {
     if (!location) return;
     const controller = new AbortController();
     setLoading(true);
-    setError("");
+    setError(null);
     getToday(location, theme, targetDate, controller.signal)
       .then((response) => {
         setData(response);
@@ -105,8 +107,14 @@ export default function App() {
       })
       .catch((reason) => {
         if (reason instanceof DOMException && reason.name === "AbortError") return;
-        setError(reason instanceof Error ? reason.message : "摄影计划暂时无法生成。");
-        setData(null);
+        setError(describeFailure(reason, "data"));
+        setData((previous) =>
+          previous && previous.date === targetDate &&
+            previous.location.latitude === location.latitude &&
+            previous.location.longitude === location.longitude
+            ? previous
+            : null
+        );
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -117,6 +125,7 @@ export default function App() {
     setData(null);
     setSelectedSlotId(null);
     setDayOffset(0);
+    setError(null);
     setLocation(next);
   }, []);
 
@@ -125,6 +134,11 @@ export default function App() {
     input?.scrollIntoView({ behavior: "smooth", block: "center" });
     (input as HTMLElement | null)?.focus({ preventScroll: true });
   }, []);
+
+  const changeLocation = useCallback(() => {
+    navigateToSection(null);
+    window.setTimeout(focusLocation, 120);
+  }, [focusLocation, navigateToSection]);
 
   return (
     <div className="app-shell flex min-h-dvh flex-col">
@@ -152,9 +166,32 @@ export default function App() {
           </section>
         )}
 
-        <div className="space-y-4">
-          {error && <ErrorNotice message={error} onRetry={() => setRefreshKey((value) => value + 1)} />}
-          {loading && <div className="flex items-center gap-2 text-xs font-medium text-primary" role="status"><span className="size-2 animate-pulse rounded-full bg-primary" />正在获取真实环境并重新计算摄影计划…</div>}
+        {section !== null && location && (
+          <LocationBar
+            location={location}
+            loading={loading}
+            onChange={changeLocation}
+          />
+        )}
+
+        <div className="space-y-3" aria-live="polite">
+          {error && (
+            <ErrorNotice
+              failure={error}
+              onRetry={() => setRefreshKey((value) => value + 1)}
+              secondary={location ? { label: "更换位置", onClick: changeLocation } : undefined}
+            />
+          )}
+          {error && data && (
+            <p className="text-xs leading-5 text-muted-foreground">
+              正在显示上一次成功获取的结果；重试成功后会自动更新。
+            </p>
+          )}
+          {loading && (
+            <div className="flex items-center gap-2 text-xs font-medium text-primary" role="status" aria-live="polite">
+              <span className="size-2 animate-pulse rounded-full bg-primary" />正在获取真实环境并重新计算摄影计划…
+            </div>
+          )}
         </div>
 
         <FeatureHub
