@@ -9,6 +9,7 @@ import { ErrorNotice } from "@/src/components/CapabilityNotice";
 import { FeatureHub, type SectionId } from "@/src/components/FeatureHub";
 import { LocationBar } from "@/src/components/LocationBar";
 import { LocationSearch } from "@/src/components/LocationSearch";
+import { ShootingPreview } from "@/src/components/ShootingPreview";
 
 function readSavedLocation(): LocationResult | null {
   try {
@@ -155,13 +156,34 @@ export default function App() {
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-12 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
         {section === null && (
           <section className="relative py-7 sm:py-10 2xl:py-14">
-            <div className="relative max-w-2xl 2xl:max-w-3xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>
-              <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
-              <div className="mt-5 rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur 2xl:p-5">
-                <LocationSearch location={location} onSelect={chooseLocation} autoLocate />
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-stretch xl:gap-10">
+              <div className="max-w-2xl lg:self-center 2xl:max-w-3xl">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>
+                <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.6rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
+                <div className="mt-5 rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur 2xl:p-5">
+                  <LocationSearch location={location} onSelect={chooseLocation} autoLocate />
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => location ? navigateToSection("WEATHER") : focusLocation()}
+                    className="inline-flex min-h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+                  >
+                    {location ? <><CloudSun className="size-4" />查看今日拍摄条件</> : <><Compass className="size-4" />选择拍摄位置</>}
+                  </button>
+                  <span className="text-xs leading-5 text-muted-foreground">无需登录 · 真实天气与太阳方位</span>
+                </div>
               </div>
+              <ShootingPreview
+                data={data}
+                location={location}
+                loading={loading}
+                error={error}
+                onRetry={() => setRefreshKey((value) => value + 1)}
+                onOpen={() => navigateToSection("WEATHER")}
+                onNeedLocation={focusLocation}
+              />
             </div>
           </section>
         )}
@@ -175,7 +197,7 @@ export default function App() {
         )}
 
         <div className="space-y-3" aria-live="polite">
-          {error && (
+          {error && (section !== null || data) && (
             <ErrorNotice
               failure={error}
               onRetry={() => setRefreshKey((value) => value + 1)}
@@ -203,6 +225,7 @@ export default function App() {
           selectedSlotId={selectedSlotId}
           dayOffset={dayOffset}
           targetDate={targetDate}
+          loading={loading}
           onDayChange={setDayOffset}
           onSectionChange={navigateToSection}
           onNeedLocation={focusLocation}

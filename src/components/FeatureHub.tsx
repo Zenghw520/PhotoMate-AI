@@ -18,9 +18,9 @@ import type {
 import {
   formatDate,
   formatObservedAt,
-  formatRange,
   summarizeMissingFields,
 } from "@/src/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherOverview } from "@/src/components/WeatherOverview";
 import { PhotoIndices } from "@/src/components/PhotoIndices";
 import { SpotRecommendations } from "@/src/components/SpotRecommendations";
@@ -66,13 +66,9 @@ const SECTION_META: Record<
   },
 };
 
-const SECTION_ORDER: SectionId[] = [
-  "WEATHER",
-  "LIGHT",
-  "PLANS",
-  "SPOTS",
-  "PHOTO",
-];
+type LocationSectionId = Exclude<SectionId, "PHOTO">;
+
+const LOCATION_SECTIONS: LocationSectionId[] = ["WEATHER", "LIGHT", "PLANS", "SPOTS"];
 
 const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = {
   WEATHER: [
@@ -179,6 +175,7 @@ interface FeatureHubProps {
   selectedSlotId: string | null;
   dayOffset: number;
   targetDate: string;
+  loading: boolean;
   onDayChange: (offset: number) => void;
   onSectionChange: (section: SectionId | null) => void;
   onNeedLocation: () => void;
@@ -194,6 +191,7 @@ export function FeatureHub({
   selectedSlotId,
   dayOffset,
   targetDate,
+  loading,
   onDayChange,
   onSectionChange,
   onNeedLocation,
@@ -205,6 +203,7 @@ export function FeatureHub({
         <FeatureMenu
           data={data}
           location={location}
+          loading={loading}
           dayOffset={dayOffset}
           onSectionChange={onSectionChange}
           onNeedLocation={onNeedLocation}
@@ -223,6 +222,7 @@ export function FeatureHub({
         selectedSlotId={selectedSlotId}
         dayOffset={dayOffset}
         targetDate={targetDate}
+        loading={loading}
         onDayChange={onDayChange}
         onSectionChange={onSectionChange}
         onSelectSlot={onSelectSlot}
@@ -234,44 +234,23 @@ export function FeatureHub({
 function FeatureMenu({
   data,
   location,
+  loading,
   dayOffset,
   onSectionChange,
   onNeedLocation,
 }: {
   data: TodayResponse | null;
   location: LocationResult | null;
+  loading: boolean;
   dayOffset: number;
   onSectionChange: (section: SectionId) => void;
   onNeedLocation: () => void;
 }) {
-  const weather = data?.weather.current;
   const dayLabel = DAY_OPTIONS.find((item) => item.offset === dayOffset)
     ?.label ?? "今天";
-  const summaries: Record<SectionId, string> = {
-    WEATHER: data
-      ? weather
-        ? `${Math.round(weather.temperature ?? 0)}° · ${
-          weather.condition || "天气未知"
-        }`
-        : WEATHER_STATUS[data.weather.status]
-      : "先选择拍摄位置",
-    LIGHT: data
-      ? `${dayLabel} · 朝 ${scoreText(data.potential.dawn.score)} · 晚 ${
-        scoreText(data.potential.dusk.score)
-      }`
-      : location
-      ? "正在获取环境数据"
-      : "进入选择拍摄位置",
-    PLANS: data ? `${dayLabel} · 按题材生成` : "先选择拍摄位置",
-    SPOTS: location
-      ? `${dayLabel} · 周边摄影点`
-      : "先选择拍摄位置",
-    PHOTO: "题材推断 + EXIF + 画质统计",
-  };
 
   return (
     <section className="mt-6" aria-labelledby="feature-menu-title">
-      {data && <TodayOverview data={data} />}
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2
@@ -281,121 +260,163 @@ function FeatureMenu({
             功能导航
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground 2xl:text-sm">
-            天气、霞光与光线、拍摄方案、照片分析分开展示。点击卡片进入对应功能。
+            四个环境功能共用当前拍摄位置；照片分析无需位置。
           </p>
         </div>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:mt-4 2xl:grid-cols-5 2xl:gap-4">
-        {SECTION_ORDER.map((id) => {
-          const meta = SECTION_META[id];
-          const Icon = meta.icon;
-          const needsLocation = !location && id !== "LIGHT" && id !== "PHOTO";
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() =>
-                needsLocation ? onNeedLocation() : onSectionChange(id)}
-              className="group flex min-h-44 flex-col rounded-[var(--radius)] border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 2xl:min-h-48 2xl:p-6"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <span className="grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary 2xl:size-12">
-                  <Icon className="size-5 2xl:size-6" />
+
+      <div className="mt-3 space-y-2.5 sm:space-y-3">
+        <PhotoEntry onOpen={() => onSectionChange("PHOTO")} />
+        <div
+          className="grid grid-cols-2 gap-2.5 sm:gap-3"
+          aria-busy={loading && location !== null && data === null}
+        >
+          {LOCATION_SECTIONS.map((id) => {
+            const meta = SECTION_META[id];
+            const Icon = meta.icon;
+            const state = locationCardState(id, data, location, loading, dayLabel);
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() =>
+                  state.needsLocation ? onNeedLocation() : onSectionChange(id)}
+                className="group flex min-h-[104px] flex-col rounded-[var(--radius)] border border-border bg-card p-3.5 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:p-5 lg:min-h-36"
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-10 sm:rounded-2xl">
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold sm:text-base lg:text-lg">
+                        {meta.title}
+                      </h3>
+                      <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
+                    </div>
+                    <p className="mt-1 hidden text-xs leading-5 text-muted-foreground sm:block lg:text-sm lg:leading-6">
+                      {meta.intro}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 line-clamp-1 text-xs leading-5 text-muted-foreground">
+                  {state.status}
+                </p>
+                <span className="mt-auto pt-2 text-xs font-medium text-primary lg:text-sm">
+                  {state.cta}
                 </span>
-                <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:text-primary 2xl:size-5" />
-              </div>
-              <h3 className="mt-4 font-semibold 2xl:text-lg">{meta.title}</h3>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground 2xl:text-sm 2xl:leading-6">
-                {meta.intro}
-              </p>
-              <p className="mt-auto pt-4 text-xs font-medium text-primary 2xl:text-sm">
-                {summaries[id]}
-              </p>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
 }
 
-function TodayOverview({ data }: { data: TodayResponse }) {
-  const current = data.weather.current;
-  const upcoming = data.timeline
-    .filter((item) => !item.isPast && item.score !== null)
-    .slice(0, 4);
-  const best = [...upcoming].sort((left, right) =>
-    (right.score ?? 0) - (left.score ?? 0)
-  )[0] ?? null;
-  const overall = data.indices.overall;
-  const confidence = { LOW: "较低", MEDIUM: "中等", HIGH: "较高" }[
-    data.indices.confidence
-  ];
+function PhotoEntry({ onOpen }: { onOpen: () => void }) {
   return (
-    <div className="mb-5 rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">今日摄影概览</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {formatDate(data.date)} · {data.location.name} · {confidence}置信度
-          </p>
-        </div>
-        <span className="text-[11px] text-muted-foreground">
-          天气与太阳位置实时计算
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="照片分析，无需位置，上传照片开始分析"
+      className="group flex w-full items-center gap-3 rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-3.5 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:p-4"
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+        <Camera className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold sm:text-base">照片分析</span>
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            无需位置
+          </span>
         </span>
-      </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">综合摄影指数</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
-            {overall === null ? "—" : Math.round(overall)}
-            <span className="ml-1 text-xs font-normal text-muted-foreground">
-              / 100
-            </span>
-          </p>
-        </div>
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">朝霞 / 晚霞</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
-            {scoreText(data.potential.dawn.score)}
-            <span className="mx-1 text-sm font-normal text-muted-foreground">
-              /
-            </span>
-            {scoreText(data.potential.dusk.score)}
-          </p>
-        </div>
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">下一最佳窗口</p>
-          {best ? (
-            <>
-              <p className="mt-1 truncate text-sm font-semibold">{best.label}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {formatRange(best.start, best.end)} ·{" "}
-                {scoreText(best.score)} 分
-              </p>
-            </>
-          ) : (
-            <p className="mt-1 text-sm font-semibold">今日窗口已结束</p>
-          )}
-        </div>
-        <div className="rounded-xl bg-muted/45 p-3">
-          <p className="text-[11px] text-muted-foreground">实况天气</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
-            {current?.temperature === null || current === null
-              ? "—"
-              : `${Math.round(current.temperature)}°`}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {current
-              ? `${current.condition || "天气未知"} · 云量 ${
-                current.cloud === null ? "—" : `${Math.round(current.cloud)}%`
-              }`
-              : WEATHER_STATUS[data.weather.status]}
-          </p>
-        </div>
-      </div>
-    </div>
+        <span className="mt-0.5 block line-clamp-1 text-xs text-muted-foreground">
+          题材推断 · EXIF · 画质统计 · 云端分析摘要
+        </span>
+      </span>
+      <span className="shrink-0 text-xs font-medium text-primary">
+        上传照片 →
+      </span>
+    </button>
   );
+}
+
+function locationCardState(
+  id: LocationSectionId,
+  data: TodayResponse | null,
+  location: LocationResult | null,
+  loading: boolean,
+  dayLabel: string,
+): { status: string; cta: string; needsLocation: boolean } {
+  if (!location) {
+    const copy: Record<LocationSectionId, string> = {
+      WEATHER: "天气、光线与方案都需要先选择位置",
+      LIGHT: "霞光评分与光线窗口需要先选择位置",
+      PLANS: "拍摄方案需要先选择位置",
+      SPOTS: "周边摄影点需要先选择位置",
+    };
+    return { status: copy[id], cta: "选择拍摄位置 →", needsLocation: true };
+  }
+
+  if (id === "WEATHER") {
+    const weather = data?.weather.current;
+    const cta = "查看天气 →";
+    if (weather) {
+      const parts = [
+        weather.temperature === null
+          ? null
+          : `${Math.round(weather.temperature)}°`,
+        weather.condition || null,
+        weather.cloud === null ? null : `云 ${Math.round(weather.cloud)}%`,
+      ].filter((item): item is string => Boolean(item));
+      return {
+        status: parts.join(" · ") || "实况暂不可用",
+        cta,
+        needsLocation: false,
+      };
+    }
+    return {
+      status: !data && loading
+        ? "正在获取实况与逐小时预报"
+        : "数据暂不可用，可重试",
+      cta,
+      needsLocation: false,
+    };
+  }
+
+  if (id === "LIGHT") {
+    return {
+      status: data
+        ? `${dayLabel} · 朝 ${scoreText(data.potential.dawn.score)} · 晚 ${
+          scoreText(data.potential.dusk.score)
+        }`
+        : loading
+        ? "正在计算霞光与光线窗口"
+        : "数据暂不可用，可重试",
+      cta: "查看光线窗口 →",
+      needsLocation: false,
+    };
+  }
+
+  if (id === "PLANS") {
+    return {
+      status: data
+        ? `${dayLabel} · 时间、方向与拍摄参数`
+        : loading
+        ? "正在准备拍摄方案"
+        : "数据暂不可用，可重试",
+      cta: "查看拍摄方案 →",
+      needsLocation: false,
+    };
+  }
+
+  return {
+    status: `${dayLabel} · 周边摄影点与日出日落方位`,
+    cta: "查看摄影点 →",
+    needsLocation: false,
+  };
 }
 
 function SectionDetail({
@@ -406,6 +427,7 @@ function SectionDetail({
   selectedSlotId,
   dayOffset,
   targetDate,
+  loading,
   onDayChange,
   onSectionChange,
   onSelectSlot,
@@ -417,6 +439,7 @@ function SectionDetail({
   selectedSlotId: string | null;
   dayOffset: number;
   targetDate: string;
+  loading: boolean;
   onDayChange: (offset: number) => void;
   onSectionChange: (section: SectionId | null) => void;
   onSelectSlot: (slotId: string) => void;
@@ -529,17 +552,8 @@ function SectionDetail({
           : <LocationPrompt />
       )}
 
-      {!data && section !== "LIGHT" && section !== "PHOTO" &&
-        section !== "SPOTS" && (
-        <LocationPrompt />
-      )}
-
-      {!data && section === "LIGHT" && (
-        <div className="mt-4 rounded-[var(--radius)] border border-dashed border-border bg-card/60 p-5 text-sm leading-6 text-muted-foreground">
-          {location
-            ? "位置已确定，正在获取真实环境并生成霞光评分与光线时间轴。"
-            : "请先在主页面选择拍摄位置，再查看当天的霞光评分与光线时间轴。"}
-        </div>
+      {section !== "PHOTO" && section !== "SPOTS" && !data && (
+        location ? <DataPending loading={loading} /> : <LocationPrompt />
       )}
 
       {section === "PHOTO" && (
@@ -681,6 +695,26 @@ function SectionDetail({
         </>
       )}
     </section>
+  );
+}
+
+function DataPending({ loading }: { loading: boolean }) {
+  if (!loading) {
+    return (
+      <div className="mt-4 rounded-[var(--radius)] border border-dashed border-border bg-card/60 p-5 text-sm leading-6 text-muted-foreground">
+        暂时没有获取到环境数据。可在页面上方重试，或更换拍摄位置。
+      </div>
+    );
+  }
+  return (
+    <div className="mt-4 space-y-3" role="status" aria-live="polite">
+      <span className="sr-only">正在获取环境数据</span>
+      <Skeleton className="h-36 w-full rounded-[var(--radius)]" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Skeleton className="h-28 rounded-[var(--radius)]" />
+        <Skeleton className="h-28 rounded-[var(--radius)]" />
+      </div>
+    </div>
   );
 }
 
