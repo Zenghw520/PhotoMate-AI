@@ -57,9 +57,25 @@ export default function App() {
   useEffect(() => {
     const syncSection = () => {
       const next = sectionFromHash(window.location.hash);
+      if (next) {
+        if (window.location.hash !== sectionHash(next)) {
+          window.history.replaceState(
+            window.history.state,
+            "",
+            sectionHash(next),
+          );
+        }
+      } else if (window.location.hash) {
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
+      }
       setNavDirection(next ? "forward" : "back");
       setSection(next);
     };
+    syncSection();
     window.addEventListener("popstate", syncSection);
     window.addEventListener("hashchange", syncSection);
     return () => {
