@@ -535,8 +535,12 @@ function CloudLayer({
   return (
     <div className="rounded-xl bg-muted/45 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums">
-        {value === null ? "—" : `${Math.round(value)}%`}
+      <p
+        className={`mt-1 font-semibold tabular-nums ${
+          value === null ? "text-xs text-muted-foreground" : "text-lg"
+        }`}
+      >
+        {value === null ? "暂无数据" : `${Math.round(value)}%`}
       </p>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
         <div

@@ -1,6 +1,8 @@
 import { PHOTO_SUBJECTS } from "@/functions/shared/contracts";
 import type {
   ApiErrorBody,
+  CompareRequest,
+  CompareResponse,
   CustomPlanRequest,
   CustomPlansResponse,
   LocationInput,
@@ -190,6 +192,25 @@ export function recommendPhotoSpots(
     body: JSON.stringify(input),
     signal,
   }, isSpotRecommendations);
+}
+
+function isCompareResponse(value: unknown): value is CompareResponse {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<CompareResponse>;
+  return Array.isArray(item.items) && typeof item.reason === "string" &&
+    item.items.every((entry) =>
+      !!entry && typeof entry.label === "string" &&
+      (entry.window === null || (typeof entry.window === "object" &&
+        typeof entry.window.start === "string"))
+    );
+}
+
+export function compareWindows(input: CompareRequest, signal?: AbortSignal) {
+  return request("/windows/compare", {
+    method: "POST",
+    body: JSON.stringify(input),
+    signal,
+  }, isCompareResponse);
 }
 
 export function generateCustomPlans(

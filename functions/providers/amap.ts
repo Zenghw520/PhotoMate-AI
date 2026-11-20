@@ -676,3 +676,94 @@ export async function searchPlaces(
     };
   }
 }
+
+export interface AmapStaticMapResult {
+  status: "OK" | "UNCONFIGURED" | "UNAVAILABLE" | "INVALID";
+  data: Uint8Array | null;
+  contentType: string;
+  message: string | null;
+}
+
+/**
+ * 由服务端代理高德静态图，前端不接触 Key。
+ * 地图为 GCJ-02、正北朝上，机位落针与方位线在前端叠加。
+ */
+export async function getStaticMap(
+  latitude: number,
+  longitude: number,
+  zoom: number,
+): Promise<AmapStaticMapResult> {
+  const apiKey = secretValue("AMAP_API_KEY");
+  if (!apiKey) {
+    return {
+      status: "UNCONFIGURED",
+      data: null,
+      contentType: "",
+      message: "地图服务尚未配置。",
+    };
+  }
+  if (
+    !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+    latitude < 3 || latitude > 54 || longitude < 73 || longitude > 135 ||
+    !Number.isInteger(zoom) || zoom < 10 || zoom > 18
+  ) {
+    return {
+      status: "INVALID",
+      data: null,
+      contentType: "",
+      message: "地图坐标或缩放级别无效。",
+    };
+  }
+  const gcj = wgs84ToGcj02(latitude, longitude);
+  const url = new URL(`${AMAP_BASE_URL}/v3/staticmap`);
+  url.searchParams.set("key", apiKey);
+  url.searchParams.set(
+    "location",
+    `${gcj.longitude.toFixed(6)},${gcj.latitude.toFixed(6)}`,
+  );
+  url.searchParams.set("zoom", String(zoom));
+  url.searchParams.set("size", "640*360");
+  url.searchParams.set("scale", "1");
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(6_000),
+      headers: { Accept: "image/png,image/jpeg" },
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.ok || !contentType.startsWith("image/")) {
+      console.error("amap_static_map_status", response.status, contentType);
+      return {
+        status: "UNAVAILABLE",
+        data: null,
+        contentType: "",
+        message: "地图服务暂不可用。",
+      };
+    }
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength === 0 || buffer.byteLength > 2 * 1024 * 1024) {
+      return {
+        status: "UNAVAILABLE",
+        data: null,
+        contentType: "",
+        message: "地图服务返回异常。",
+      };
+    }
+    return {
+      status: "OK",
+      data: new Uint8Array(buffer),
+      contentType,
+      message: null,
+    };
+  } catch (error) {
+    console.error(
+      "amap_static_map_error",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return {
+      status: "UNAVAILABLE",
+      data: null,
+      contentType: "",
+      message: "地图服务暂不可用。",
+    };
+  }
+}

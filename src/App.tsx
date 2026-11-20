@@ -6,10 +6,10 @@ import { describeFailure, type Failure } from "@/src/lib/errors";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { ErrorNotice } from "@/src/components/CapabilityNotice";
 import { FeatureHub, type SectionId } from "@/src/components/FeatureHub";
-import { LocationBar } from "@/src/components/LocationBar";
 import { LocationSearch } from "@/src/components/LocationSearch";
 import { ShootingPreview } from "@/src/components/ShootingPreview";
 import {
+  DAY_LABELS,
   DEFAULT_SESSION,
   pickSlot,
   readSession,
@@ -277,7 +277,9 @@ export default function App() {
                     onClick={() => location ? navigateToSection("WEATHER") : focusLocation()}
                     className="inline-flex min-h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
                   >
-                    {location ? <><CloudSun className="size-4" />查看今日拍摄条件</> : <><Compass className="size-4" />选择拍摄位置</>}
+                    {location
+                      ? <><CloudSun className="size-4" />查看{DAY_LABELS[session.dayOffset] ?? "今日"}拍摄条件</>
+                      : <><Compass className="size-4" />选择拍摄位置</>}
                   </button>
                   <span className="text-xs leading-5 text-muted-foreground">无需登录 · 真实天气与太阳方位</span>
                 </div>
@@ -285,6 +287,7 @@ export default function App() {
               <ShootingPreview
                 data={data}
                 location={location}
+                dayOffset={session.dayOffset}
                 loading={loading}
                 error={error}
                 onRetry={() => setRefreshKey((value) => value + 1)}
@@ -293,15 +296,6 @@ export default function App() {
               />
             </div>
           </section>
-        )}
-
-        {section !== null && location && session.spot && (
-          <LocationBar
-            location={location}
-            source={session.spot.source}
-            loading={loading}
-            onChange={changeLocation}
-          />
         )}
 
         <div className="space-y-3" aria-live="polite">

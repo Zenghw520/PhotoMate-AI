@@ -167,6 +167,7 @@ const WEATHER_FIELD_LABELS: Record<string, string> = {
   visibility: "能见度",
   humidity: "相对湿度",
   windSpeed: "风速",
+  windGust: "阵风",
   windDirection: "风向",
   windDegree: "风向角",
   temperature: "气温",

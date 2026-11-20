@@ -4,6 +4,7 @@ import {
   THEMES,
 } from "./shared/contracts.ts";
 import type {
+  CompareRequest,
   CustomPlanRequest,
   LocationInput,
   PhotoAnalysisRequest,
@@ -439,5 +440,54 @@ export function spotRequest(body: unknown): SpotRequest {
     ...(scene !== undefined ? { scene } : {}),
     ...(radius !== undefined ? { radiusMeters: radius } : {}),
     ...(slotKindValue(value.slotKind) ? { slotKind: value.slotKind as SlotKind } : {}),
+  };
+}
+
+
+export function compareRequest(body: unknown): CompareRequest {
+  if (!body || typeof body !== "object") {
+    throw new HttpError(400, "INVALID_INPUT", "窗口对比请求格式无效。");
+  }
+  const value = body as Record<string, unknown>;
+  const items = value.items;
+  if (!Array.isArray(items) || items.length < 2 || items.length > 3) {
+    throw new HttpError(
+      400,
+      "INVALID_COMPARE_SIZE",
+      "窗口对比需要 2～3 项。",
+    );
+  }
+  if (!THEMES.includes(value.theme as ThemeId)) {
+    throw new HttpError(400, "INVALID_THEME", "摄影主题无效。");
+  }
+  const parsed = items.map((item) => {
+    if (!item || typeof item !== "object") {
+      throw new HttpError(400, "INVALID_INPUT", "对比项格式无效。");
+    }
+    const entry = item as Record<string, unknown>;
+    const base = todayRequest({
+      location: entry.location,
+      theme: value.theme,
+      ...(entry.date !== undefined ? { date: entry.date } : {}),
+    });
+    let label: string | undefined;
+    if (entry.label !== undefined) {
+      if (typeof entry.label !== "string") {
+        throw new HttpError(400, "INVALID_INPUT", "对比项名称格式无效。");
+      }
+      label = entry.label.trim().slice(0, 40) || undefined;
+    }
+    return {
+      location: base.location,
+      ...(base.date ? { date: base.date } : {}),
+      ...(label ? { label } : {}),
+    };
+  });
+  return {
+    items: parsed,
+    theme: value.theme as ThemeId,
+    ...(slotKindValue(value.slotKind)
+      ? { slotKind: value.slotKind as SlotKind }
+      : {}),
   };
 }

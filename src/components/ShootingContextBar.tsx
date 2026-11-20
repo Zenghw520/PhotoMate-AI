@@ -62,7 +62,7 @@ export function ShootingContextBar({
             <button
               type="button"
               onClick={onChangeLocation}
-              className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full px-2 font-medium text-primary transition hover:bg-primary/10"
+              className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-2 font-medium text-primary transition hover:bg-primary/10"
             >
               <Pencil className="size-3" />更换
             </button>
@@ -87,7 +87,7 @@ export function ShootingContextBar({
                   type="button"
                   aria-pressed={dayOffset === offset}
                   onClick={() => onDayChange(offset)}
-                  className={`min-h-9 rounded-full px-2.5 text-xs font-medium transition ${
+                  className={`min-h-10 rounded-full px-2.5 text-xs font-medium transition ${
                     dayOffset === offset
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -123,7 +123,7 @@ export function ShootingContextBar({
             onChange={(event) =>
               onThemeChange?.(event.target.value as ThemeId)}
             disabled={!onThemeChange}
-            className="min-h-9 rounded-full border border-border bg-card px-2.5 text-xs font-medium text-foreground outline-none transition focus:border-primary/60 disabled:opacity-80"
+            className="min-h-10 rounded-full border border-border bg-card px-2.5 text-xs font-medium text-foreground outline-none transition focus:border-primary/60 disabled:opacity-80"
             aria-label="拍摄题材"
           >
             {THEME_OPTIONS.map((item) => (

@@ -34,6 +34,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShootingContextBar } from "@/src/components/ShootingContextBar";
 import { GlowConclusion } from "@/src/components/GlowConclusion";
+import { SpotPicker } from "@/src/components/SpotPicker";
+import { WindowCompare } from "@/src/components/WindowCompare";
 import { WeatherOverview } from "@/src/components/WeatherOverview";
 import { PhotoIndices } from "@/src/components/PhotoIndices";
 import { SpotRecommendations } from "@/src/components/SpotRecommendations";
@@ -109,13 +111,18 @@ const TABS: Record<SectionId, { id: string; label: string; intro: string }[]> = 
     },
     {
       id: "solar",
-      label: "太阳轨迹",
-      intro: "太阳全天轨迹、方位角、高度角与晨昏时刻。",
+      label: "机位与太阳轨迹",
+      intro: "定位精确机位、查看太阳全天轨迹与当前窗口的相机朝向。",
     },
     {
       id: "timeline",
       label: "时间轴",
       intro: "按太阳高度角筛选清晨、傍晚与夜间窗口。",
+    },
+    {
+      id: "compare",
+      label: "窗口对比",
+      intro: "对比同一机位的不同日期，或同一天的不同机位。",
     },
   ],
   PLANS: [
@@ -246,6 +253,7 @@ export function FeatureHub({
           onSectionChange={onSectionChange}
           onNeedLocation={onNeedLocation}
           onThemeChange={onThemeChange}
+          onDayChange={onDayChange}
         />
       </div>
     );
@@ -291,6 +299,7 @@ function FeatureMenu({
   onSectionChange,
   onNeedLocation,
   onThemeChange,
+  onDayChange,
 }: {
   data: TodayResponse | null;
   location: LocationResult | null;
@@ -303,6 +312,7 @@ function FeatureMenu({
   onSectionChange: (section: SectionId) => void;
   onNeedLocation: () => void;
   onThemeChange: (theme: ThemeId) => void;
+  onDayChange: (offset: number) => void;
 }) {
   const dayLabel = DAY_OPTIONS.find((item) => item.offset === dayOffset)
     ?.label ?? "今天";
@@ -333,7 +343,9 @@ function FeatureMenu({
           slot={data ? pickSlot(data.timeline, slotKind, null) : null}
           theme={theme}
           loading={loading}
+          onChangeLocation={onNeedLocation}
           onThemeChange={onThemeChange}
+          onDayChange={onDayChange}
           compact
         />
       )}
@@ -834,10 +846,29 @@ function SectionDetail({
               </div>
             )}
             {section === "LIGHT" && tab === "solar" && (
-              <SolarPath
-                solar={data.solar}
-                date={targetDate}
-                location={location}
+              <div className="space-y-4">
+                {spot && (
+                  <SpotPicker
+                    spot={spot}
+                    slot={slot}
+                    onChooseSpot={onChooseSpot}
+                    onChangeLocation={onChangeLocation}
+                  />
+                )}
+                <SolarPath
+                  solar={data.solar}
+                  date={targetDate}
+                  location={location}
+                />
+              </div>
+            )}
+            {section === "LIGHT" && tab === "compare" && spot && (
+              <WindowCompare
+                spot={spot}
+                dayOffset={dayOffset}
+                targetDate={targetDate}
+                theme={theme}
+                slot={slot}
               />
             )}
             {section === "LIGHT" && tab === "timeline" && (

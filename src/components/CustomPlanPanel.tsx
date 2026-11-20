@@ -180,7 +180,9 @@ export function CustomPlanPanel({
         theme,
         date: data.date,
         subject: value,
-        ...(composed ? { equipment: composed } : {}),
+        ...(composed && !phone.trim() && !camera.trim() && !lens.trim()
+          ? { equipment: composed }
+          : {}),
         ...(phone.trim() ? { phone: phone.trim() } : {}),
         ...(camera.trim() ? { camera: camera.trim() } : {}),
         ...(lens.trim() ? { lens: lens.trim() } : {}),

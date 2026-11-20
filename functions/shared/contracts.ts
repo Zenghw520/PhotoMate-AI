@@ -427,6 +427,60 @@ export interface SpotRecommendationsResponse {
   warnings: string[];
 }
 
+export interface CompareItemInput {
+  location: LocationInput;
+  date?: string;
+  label?: string;
+}
+
+export interface CompareRequest {
+  items: CompareItemInput[];
+  theme: ThemeId;
+  slotKind?: SlotKind;
+}
+
+export interface CompareWindow {
+  slotId: string;
+  kind: SlotKind;
+  label: string;
+  start: string;
+  end: string;
+  arrivalTime: string;
+  score: number | null;
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  precipitationProbability: number | null;
+  precipitation: number | null;
+  windGust: number | null;
+  visibility: number | null;
+  cloud: number | null;
+  cloudHigh: number | null;
+  cloudMid: number | null;
+  cloudLow: number | null;
+  cameraAzimuth: number | null;
+  cameraDirection: string;
+  coveredHours: number;
+  totalHours: number;
+  partial: boolean;
+}
+
+export interface CompareItemResult {
+  label: string;
+  date: string;
+  location: LocationResult;
+  window: CompareWindow | null;
+  warnings: string[];
+}
+
+export interface CompareResponse {
+  generatedAt: string;
+  theme: ThemeId;
+  slotKind: SlotKind | null;
+  items: CompareItemResult[];
+  bestIndex: number | null;
+  reason: string;
+  warnings: string[];
+}
+
 export interface SearchResponse {
   locations: LocationResult[];
   message?: string;

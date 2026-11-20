@@ -22,6 +22,7 @@ import {
   scoreLabel,
   shanghaiDate,
 } from "@/src/lib/format";
+import { DAY_LABELS } from "@/src/lib/shooting";
 
 const SAMPLE = {
   sunrise: "06:12",
@@ -36,6 +37,7 @@ const SAMPLE = {
 export function ShootingPreview({
   data,
   location,
+  dayOffset = 0,
   loading,
   error,
   onRetry,
@@ -44,6 +46,7 @@ export function ShootingPreview({
 }: {
   data: TodayResponse | null;
   location: LocationResult | null;
+  dayOffset?: number;
   loading: boolean;
   error: Failure | null;
   onRetry: () => void;
@@ -106,7 +109,9 @@ export function ShootingPreview({
     >
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-muted-foreground">今日拍摄条件</p>
+          <p className="text-xs text-muted-foreground">
+            {DAY_LABELS[dayOffset] ?? "今日"}拍摄条件
+          </p>
           <h2 className="mt-1 flex min-w-0 items-center gap-1.5 text-lg font-semibold tracking-tight">
             <MapPin className="size-4 shrink-0 text-primary" />
             <span className="min-w-0 truncate" title={location?.name ?? undefined}>
