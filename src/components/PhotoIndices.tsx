@@ -1,8 +1,10 @@
-import { Activity, ChevronDown, Info, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Activity, Info, Sparkles } from "lucide-react";
 import type {
   PhotographyIndexEntry,
   PhotographyIndices,
 } from "@/functions/shared/contracts";
+import { Disclosure } from "@/src/components/Disclosure";
 import {
   formatObservedAt,
   formatTime,
@@ -102,7 +104,7 @@ export function PhotoIndices({
             点击“评分依据”展开
           </span>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid items-start gap-3 md:grid-cols-2">
           {indices.entries.map((entry) => (
             <IndexCard key={entry.id} entry={entry} />
           ))}
@@ -158,8 +160,15 @@ export function PhotoIndices({
 }
 
 function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
+  const [open, setOpen] = useState(false);
   return (
-    <article className="rounded-xl border border-border/70 p-3">
+    <article
+      className={`flex flex-col rounded-xl border p-3 transition duration-300 ${
+        open
+          ? "border-primary/30 bg-card shadow-sm"
+          : "border-border/70 hover:border-primary/25"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium">{entry.label}</p>
@@ -193,40 +202,42 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
       <p className="mt-2 text-xs leading-4 text-muted-foreground">
         {entry.note}
       </p>
-      <details className="group/detail mt-2">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          评分依据
-          <ChevronDown className="size-3.5 transition group-open/detail:rotate-180" />
-        </summary>
-        <div className="mt-2 space-y-2 rounded-xl bg-muted/45 p-3">
-          {entry.basis.length ? (
-            entry.basis.map((item) => (
-              <div
-                key={item.code}
-                className="grid grid-cols-[1fr_auto] items-start gap-2 text-xs"
-                title={item.explanation}
-              >
-                <span className="font-medium">{item.label}</span>
-                <span className="text-right text-muted-foreground">
-                  {item.value === null ? "缺失" : `${item.value}${item.unit}`}
-                  {item.contribution !== null &&
-                    ` · ${Math.round(item.contribution)} 分`}
-                </span>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs leading-4 text-muted-foreground">
-              该题材没有可用的逐项天气数据。
-            </p>
-          )}
-          {entry.missingFields.length > 0 && (
-            <p className="border-t border-border/60 pt-2 text-xs leading-4 text-amber-700 dark:text-amber-400">
-              缺少：{entry.missingFields.map(missingFieldLabel).join("、")}
-              ，已按剩余权重归一化。
-            </p>
-          )}
-        </div>
-      </details>
+      <Disclosure
+        open={open}
+        onOpenChange={setOpen}
+        label="评分依据"
+        openLabel="收起评分依据"
+        context={entry.label}
+        className="mt-2"
+        panelClassName="mt-2 space-y-2 rounded-xl bg-muted/45 p-3"
+      >
+        {entry.basis.length ? (
+          entry.basis.map((item) => (
+            <div
+              key={item.code}
+              className="grid grid-cols-[1fr_auto] items-start gap-2 text-xs"
+              title={item.explanation}
+            >
+              <span className="font-medium">{item.label}</span>
+              <span className="text-right tabular-nums text-muted-foreground">
+                {item.value === null ? "缺失" : `${item.value}${item.unit}`}
+                {item.contribution !== null &&
+                  ` · ${Math.round(item.contribution)} 分`}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs leading-4 text-muted-foreground">
+            该题材没有可用的逐项天气数据。
+          </p>
+        )}
+        {entry.missingFields.length > 0 && (
+          <p className="border-t border-border/60 pt-2 text-xs leading-4 text-amber-700 dark:text-amber-400">
+            缺少：{entry.missingFields.map(missingFieldLabel).join("、")}
+            ，已按剩余权重归一化。
+          </p>
+        )}
+      </Disclosure>
     </article>
   );
 }

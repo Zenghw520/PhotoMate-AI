@@ -102,11 +102,11 @@ export function PhotoRecords() {
             </div>
 
             {record.kind === "plan" ? (
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs font-medium text-primary">
+              <details className="pm-details mt-3">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center text-xs font-medium text-primary">
                   查看参数与流程
                 </summary>
-                <div className="mt-2 grid gap-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
+                <div className="pm-details-body mt-2 grid gap-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
                   <p>ISO {record.cameraParameters.iso}</p>
                   <p>光圈 {record.cameraParameters.aperture}</p>
                   <p>快门 {record.cameraParameters.shutter}</p>
@@ -124,11 +124,11 @@ export function PhotoRecords() {
                 </div>
               </details>
             ) : (
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs font-medium text-primary">
+              <details className="pm-details mt-3">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center text-xs font-medium text-primary">
                   查看分析摘要
                 </summary>
-                <div className="mt-2 space-y-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
+                <div className="pm-details-body mt-2 space-y-2 rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">
                   <p>{record.summary}</p>
                   {record.issues.length > 0 && (
                     <p>关注：{record.issues.join("；")}</p>

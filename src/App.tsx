@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Aperture, CloudSun, Compass } from "lucide-react";
 import type { LocationResult, ThemeId, TodayResponse } from "@/functions/shared/contracts";
 import { getToday } from "@/src/lib/api";
@@ -53,6 +53,24 @@ export default function App() {
   const [dayOffset, setDayOffset] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const targetDate = useMemo(() => shanghaiDate(dayOffset), [dayOffset]);
+  const menuScrollRef = useRef(0);
+  const previousSectionRef = useRef<SectionId | null>(section);
+
+  // 进入功能页从顶部开始读；返回导航时回到离开前的位置。
+  useEffect(() => {
+    const previous = previousSectionRef.current;
+    if (previous === section) return;
+    previousSectionRef.current = section;
+    if (section === null) {
+      const top = menuScrollRef.current;
+      window.requestAnimationFrame(() =>
+        window.scrollTo({ top, behavior: "auto" })
+      );
+      return;
+    }
+    if (previous === null) menuScrollRef.current = window.scrollY;
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [section]);
 
   useEffect(() => {
     const syncSection = () => {

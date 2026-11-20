@@ -23,15 +23,15 @@ export function SolarTimeline({ solar, timeline, selectedSlotId, onSelectSlot }:
             const selected = item.slotId === selectedSlotId;
             return (
               <div key={item.slotId} className="relative">
-                <button type="button" onClick={() => onSelectSlot(item.slotId)} aria-expanded={selected} className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3.5 text-left transition sm:gap-4 ${selected ? "bg-primary/[0.08]" : "hover:bg-muted/55"} ${item.isPast ? "opacity-55" : ""}`}>
+                <button type="button" onClick={() => onSelectSlot(item.slotId)} aria-expanded={selected} className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3.5 text-left transition sm:gap-4 ${selected ? "bg-primary/[0.08] ring-1 ring-inset ring-primary/15" : "hover:bg-muted/55"} ${item.isPast ? "opacity-55" : ""}`}>
                   <div className="w-[5.7rem] shrink-0 text-xs font-medium tabular-nums text-muted-foreground sm:w-24 sm:text-sm">{formatTime(item.start)}<span className="mx-1 text-border">—</span>{formatTime(item.end)}</div>
                   <span className={`size-2 shrink-0 rounded-full ring-4 ${selected ? "bg-primary ring-primary/10" : "bg-border ring-muted/40"}`} />
                   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.label}{item.isPast && <span className="ml-2 text-xs font-normal text-muted-foreground">已结束</span>}</p><p className="mt-1 truncate text-xs text-muted-foreground">{item.reasons[0] ?? "按天文光线评估"}</p></div>
-                  <div className="shrink-0 text-right"><span className={`text-lg font-semibold ${item.score !== null && item.score >= 70 ? "text-primary" : ""}`}>{item.score === null ? "—" : Math.round(item.score)}</span><span className="block text-xs text-muted-foreground">{item.scoreMode === "ASTRO_ONLY" ? "仅天文" : "适合指数"}</span></div>
+                  <div className="shrink-0 text-right"><span className={`text-lg font-semibold tabular-nums ${item.score !== null && item.score >= 70 ? "text-primary" : ""}`}>{item.score === null ? "—" : Math.round(item.score)}</span><span className="block text-xs text-muted-foreground">{item.scoreMode === "ASTRO_ONLY" ? "仅天文" : "适合指数"}</span></div>
                   <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
                 </button>
                 {selected && (
-                  <div className="mx-3 mb-3 grid gap-3 rounded-2xl border border-primary/15 bg-muted/35 p-4 text-xs sm:grid-cols-2">
+                  <div className="pm-panel mx-3 mb-3 grid gap-3 rounded-2xl border border-primary/15 bg-muted/35 p-4 text-xs sm:grid-cols-2">
                     <div><p className="mb-1.5 font-medium text-foreground">时段分析</p><ul className="space-y-1 leading-5 text-muted-foreground">{item.reasons.map((reason) => <li key={reason}>· {reason}</li>)}</ul></div>
                     <div className="space-y-2 text-muted-foreground">
                       <p className="flex items-center gap-2"><Compass className="size-3.5 text-primary" />太阳 {compass(item.solar.azimuth)} · {Math.round(item.solar.azimuth)}°，高度 {metric(item.solar.elevation, "°", 1)}</p>

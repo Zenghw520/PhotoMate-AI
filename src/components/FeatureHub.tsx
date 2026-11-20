@@ -2,11 +2,13 @@ import { useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
+  CalendarDays,
   Camera,
   CloudSun,
   MapPin,
   Sparkles,
   Sunrise,
+  Sunset,
 } from "lucide-react";
 import type {
   LocationResult,
@@ -16,8 +18,10 @@ import type {
   WeatherData,
 } from "@/functions/shared/contracts";
 import {
+  compass,
   formatDate,
   formatObservedAt,
+  formatTime,
   summarizeMissingFields,
 } from "@/src/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -268,10 +272,10 @@ function FeatureMenu({
       <div className="mt-3 space-y-2.5 sm:space-y-3">
         <PhotoEntry onOpen={() => onSectionChange("PHOTO")} />
         <div
-          className="grid grid-cols-1 gap-2 xs:grid-cols-2 xs:gap-2.5 sm:gap-3"
+          className="pm-stagger grid grid-cols-1 gap-2 xs:grid-cols-2 xs:gap-2.5 sm:gap-3"
           aria-busy={loading && location !== null && data === null}
         >
-          {LOCATION_SECTIONS.map((id) => {
+          {LOCATION_SECTIONS.map((id, index) => {
             const meta = SECTION_META[id];
             const Icon = meta.icon;
             const state = locationCardState(id, data, location, loading, dayLabel);
@@ -279,12 +283,13 @@ function FeatureMenu({
               <button
                 key={id}
                 type="button"
+                style={{ "--pm-index": index + 1 } as React.CSSProperties}
                 onClick={() =>
                   state.needsLocation ? onNeedLocation() : onSectionChange(id)}
-                className="group flex min-h-[72px] flex-row items-center gap-3 rounded-[var(--radius)] border border-border bg-card p-3 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 xs:min-h-[104px] xs:flex-col xs:items-stretch xs:gap-0 xs:p-3.5 sm:p-5 lg:min-h-36"
+                className="group flex min-h-[72px] flex-row items-center gap-3 rounded-[var(--radius)] border border-border bg-card p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 xs:min-h-[104px] xs:flex-col xs:items-stretch xs:gap-0 xs:p-3.5 sm:p-5 lg:min-h-36"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2.5 xs:flex-none xs:flex-col xs:items-stretch xs:gap-0">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-10 sm:rounded-2xl">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-105 sm:size-10 sm:rounded-2xl">
                     <Icon className="size-5" />
                   </span>
                   <div className="min-w-0 flex-1 xs:mt-3">
@@ -326,7 +331,7 @@ function PhotoEntry({ onOpen }: { onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       aria-label="照片分析，无需位置，上传照片开始分析"
-      className="group flex w-full items-center gap-3 rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-3.5 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:p-4"
+      className="pm-rise group flex w-full items-center gap-3 rounded-[var(--radius)] border border-primary/20 bg-primary/[0.05] p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:p-4"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
         <Camera className="size-5" />
@@ -535,11 +540,15 @@ function SectionDetail({
         <ArrowLeft className="size-4" />返回功能导航
       </button>
 
-      <div className="mt-2 flex items-start gap-4 rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm 2xl:p-6">
+      <div className="relative mt-2 flex items-start gap-4 overflow-hidden rounded-[var(--radius)] border border-border bg-card p-5 shadow-sm 2xl:p-6">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-20 size-48 rounded-full bg-primary/[0.07] blur-2xl"
+        />
         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary 2xl:size-12">
           <Icon className="size-5 2xl:size-6" />
         </span>
-        <div>
+        <div className="relative min-w-0">
           <h2
             id="section-title"
             className="text-lg font-semibold tracking-tight 2xl:text-xl"
@@ -553,12 +562,12 @@ function SectionDetail({
       </div>
 
       {section === "LIGHT" && (
-        <div className="mt-4 rounded-[var(--radius)] border border-border bg-card p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-4 rounded-[var(--radius)] border border-border bg-card px-3 py-3 shadow-sm sm:px-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div
               role="group"
               aria-label="查询日期"
-              className="flex gap-2"
+              className="flex gap-1 rounded-full bg-muted p-1"
             >
               {DAY_OPTIONS.map((item) => (
                 <button
@@ -566,17 +575,18 @@ function SectionDetail({
                   type="button"
                   aria-pressed={dayOffset === item.offset}
                   onClick={() => onDayChange(item.offset)}
-                  className={`min-h-11 rounded-full px-3.5 text-xs font-medium transition ${
+                  className={`min-h-11 rounded-full px-4 text-xs font-medium transition ${
                     dayOffset === item.offset
-                      ? "bg-foreground text-background"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {item.label}
                 </button>
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5 pr-1 text-xs tabular-nums text-muted-foreground">
+              <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
               {formatDate(targetDate)}
             </span>
           </div>
@@ -605,7 +615,11 @@ function SectionDetail({
       {section === "PHOTO" && (
         <>
           {tabBar}
-          <div {...panelProps} className="mt-2 focus-visible:outline-none">
+          <div
+            key={tab}
+            {...panelProps}
+            className="pm-panel mt-2 focus-visible:outline-none"
+          >
             <p className="text-xs leading-5 text-muted-foreground">
               {activeTab.intro}
             </p>
@@ -623,7 +637,11 @@ function SectionDetail({
       {section !== "PHOTO" && section !== "SPOTS" && data && (
         <>
           {tabs.length > 1 && tabBar}
-          <div {...panelProps} className="mt-4 focus-visible:outline-none">
+          <div
+            key={tab}
+            {...panelProps}
+            className="pm-panel mt-4 focus-visible:outline-none"
+          >
             <p className="text-xs leading-5 text-muted-foreground">
               {activeTab.intro}
             </p>
@@ -647,7 +665,7 @@ function SectionDetail({
               <WeatherSources weather={data.weather} />
             )}
             {section === "LIGHT" && tab === "glow" && (
-              <div className="space-y-5">
+              <div key={data.date} className="pm-panel space-y-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-xs text-muted-foreground">
                   <span>
                     实况观测于{" "}
@@ -665,12 +683,34 @@ function SectionDetail({
                 </div>
                 {(["dawn", "dusk"] as const).map((type) => {
                   const context = solarEventContext(data.solar, type);
+                  const EventIcon = type === "dawn" ? Sunrise : Sunset;
                   return (
-                    <div key={type}>
-                      <h3 className="text-sm font-semibold">
-                        {type === "dawn" ? "朝霞" : "晚霞"}
-                      </h3>
-                      <div className="mt-3 grid gap-4 xl:grid-cols-2">
+                    <section key={type} aria-labelledby={`glow-${type}-title`}>
+                      <div className="flex items-center gap-3">
+                        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <EventIcon className="size-3.5" />
+                        </span>
+                        <h3
+                          id={`glow-${type}-title`}
+                          className="shrink-0 text-sm font-semibold"
+                        >
+                          {type === "dawn" ? "朝霞" : "晚霞"}
+                        </h3>
+                        <span
+                          aria-hidden="true"
+                          className="h-px min-w-6 flex-1 bg-border"
+                        />
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                          {type === "dawn" ? "日出" : "日落"}{" "}
+                          {context.eventTime ? formatTime(context.eventTime) : "—"}
+                          {context.azimuth !== null &&
+                            ` · ${compass(context.azimuth)} ${
+                              Math.round(context.azimuth)
+                            }°`}
+                        </span>
+                      </div>
+                      {/* items-start：两张卡片各自按内容高度收放，展开时不再把另一张拉长留白 */}
+                      <div className="mt-3 grid items-start gap-4 xl:grid-cols-2">
                         <PotentialCard
                           type={type}
                           data={data.potential[type]}
@@ -686,7 +726,7 @@ function SectionDetail({
                           elevation={context.elevation}
                         />
                       </div>
-                    </div>
+                    </section>
                   );
                 })}
                 <p className="rounded-xl bg-muted/45 p-3 text-xs leading-5 text-muted-foreground">

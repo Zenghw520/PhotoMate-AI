@@ -303,12 +303,12 @@ export function WeatherOverview({
       </section>
 
       {hours.length > 0 && (
-        <details className="group rounded-[var(--radius)] border border-border bg-card px-5 py-4 shadow-sm">
+        <details className="pm-details group rounded-[var(--radius)] border border-border bg-card px-5 py-4 shadow-sm">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-medium text-muted-foreground">
             逐小时明细（{hours.length} 小时）
             <ChevronDown className="size-4 transition group-open:rotate-180" />
           </summary>
-          <div className="scrollbar-none mt-3 flex gap-2 overflow-x-auto pb-1">
+          <div className="pm-details-body scrollbar-none mt-3 flex gap-2 overflow-x-auto pb-1">
             {hours.map((hour) => (
               <div
                 key={hour.time}

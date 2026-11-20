@@ -182,11 +182,11 @@ function FindingList({
           : <li>暂无。</li>}
       </ul>
       {items.length > 3 && (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-xs font-medium text-primary">
+        <details className="pm-details mt-2">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center text-xs font-medium text-primary">
             其余 {items.length - 3} 条
           </summary>
-          <ul className="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
+          <ul className="pm-details-body mt-1 space-y-2 text-sm leading-6 text-muted-foreground">
             {items.slice(3).map((item) => <li key={item}>· {item}</li>)}
           </ul>
         </details>
@@ -755,11 +755,11 @@ export function PhotoAnalysis() {
             <FindingList title="建议" items={analysis.suggestions} tone="tip" />
           </div>
 
-          <details className="rounded-2xl border border-border bg-card p-4">
-            <summary className="cursor-pointer text-sm font-semibold">
+          <details className="pm-details rounded-2xl border border-border bg-card p-4">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-semibold">
               EXIF 摘要（{analysis.exifSummary.length}）
             </summary>
-            <ul className="mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
+            <ul className="pm-details-body mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
               {analysis.exifSummary.map((item) => <li key={item}>· {item}</li>)}
             </ul>
           </details>

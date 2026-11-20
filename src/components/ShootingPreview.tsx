@@ -256,11 +256,11 @@ export function ShootingPreview({
             )}
           </div>
 
-          <details className="mt-1 border-t border-border/60">
+          <details className="pm-details mt-1 border-t border-border/60">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Info className="size-3.5" />评分说明
             </summary>
-            <div className="pb-1 text-xs leading-5 text-muted-foreground">
+            <div className="pm-details-body pb-1 text-xs leading-5 text-muted-foreground">
               <p>
                 摄影指数用于比较云量、降水、能见度与太阳方位；晚霞评分还会参考分层层云与气溶胶。指数用于比较条件，不是精确预报。
               </p>

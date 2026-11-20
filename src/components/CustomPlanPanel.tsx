@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Camera,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Compass,
   LoaderCircle,
@@ -333,11 +334,12 @@ export function CustomPlanPanel({
                     </div>
                   ))}
                 </div>
-                <details className="mt-3 border-t border-border/60 pt-2">
-                  <summary className="cursor-pointer text-xs font-medium text-primary">
+                <details className="pm-details group mt-3 border-t border-border/60 pt-2">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-xs font-medium text-primary">
                     光线与更多参数
+                    <ChevronDown className="size-3.5 shrink-0 transition group-open:rotate-180" />
                   </summary>
-                  <div className="mt-2 space-y-2 text-xs leading-5 text-muted-foreground">
+                  <div className="pm-details-body mt-1 space-y-2 text-xs leading-5 text-muted-foreground">
                     <p>光线：{plan.lightAnalysis}</p>
                     <p>范围：{plan.cameraSettings}</p>
                     <p>
