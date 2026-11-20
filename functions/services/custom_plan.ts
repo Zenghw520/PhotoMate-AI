@@ -56,12 +56,14 @@ export async function generateCustomPlanResponse(
     input.date,
     true,
   );
-  const equipment = [...new Set([
-    input.phone ? `手机 ${input.phone}` : "",
-    input.camera ? `相机 ${input.camera}` : "",
-    input.lens ? `镜头 ${input.lens}` : "",
-    input.equipment ?? "",
-  ])].filter(Boolean).join(" · ") || undefined;
+  const equipment = [
+    ...new Set([
+      input.phone ? `手机 ${input.phone}` : "",
+      input.camera ? `相机 ${input.camera}` : "",
+      input.lens ? `镜头 ${input.lens}` : "",
+      input.equipment ?? "",
+    ]),
+  ].filter(Boolean).join(" · ") || undefined;
   const future = context.timeline.filter((slot) => !slot.isPast);
   const preferred = input.slotKind
     ? future.filter((slot) => slot.kind === input.slotKind)
@@ -75,9 +77,9 @@ export async function generateCustomPlanResponse(
       current.temperature === null ? "—" : Math.round(current.temperature)
     }°C · 云量 ${
       current.cloud === null ? "—" : `${Math.round(current.cloud)}%`
-    } · 能见度 ${
-      visibilityText(current.visibility)
-    } · ${current.windDirection || ""} ${current.windSpeed ?? "—"}km/h`
+    } · 能见度 ${visibilityText(current.visibility)} · ${
+      current.windDirection || ""
+    } ${current.windSpeed ?? "—"}km/h`
     : firstWeather
     ? `所选日期逐小时天气：${firstWeather.condition} · 云量 ${
       firstWeather.cloud === null ? "—" : `${Math.round(firstWeather.cloud)}%`
@@ -248,9 +250,10 @@ export async function generateCustomPlanResponse(
     plans,
     aiStatus,
     warnings,
-    slotKind: plans[0] ? (context.timeline.find((slot) =>
-      slot.slotId === plans[0].slotId
-    )?.kind ?? input.slotKind ?? null) : input.slotKind ?? null,
+    slotKind: plans[0]
+      ? (context.timeline.find((slot) => slot.slotId === plans[0].slotId)
+        ?.kind ?? input.slotKind ?? null)
+      : input.slotKind ?? null,
     equipment: equipment ?? null,
   };
 }

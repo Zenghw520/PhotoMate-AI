@@ -5,8 +5,8 @@ import type {
   SpotRequest,
   SpotScene,
   ThemeId,
-  TimeWindow,
   TimelineItem,
+  TimeWindow,
 } from "../shared/contracts.ts";
 import { gcj02ToWgs84, searchPhotoSpots } from "../providers/amap.ts";
 import type { DatabaseClient } from "./cache.ts";

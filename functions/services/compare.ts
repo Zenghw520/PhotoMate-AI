@@ -1,14 +1,14 @@
 import type {
   CompareItemInput,
-  HourlyWeather,
   CompareItemResult,
   CompareRequest,
   CompareResponse,
   CompareWindow,
+  HourlyWeather,
   LocationResult,
   SlotKind,
-  TimeWindow,
   TimelineItem,
+  TimeWindow,
 } from "../shared/contracts.ts";
 import type { DatabaseClient } from "./cache.ts";
 import { getTodayPhotography } from "./today.ts";
@@ -198,7 +198,11 @@ export async function compareWindows(
       if (
         (other.precipitationProbability ?? 0) >
           (window.precipitationProbability ?? 0)
-      ) differences.push(`降水概率更高（${Math.round(other.precipitationProbability ?? 0)}%）`);
+      ) {
+        differences.push(
+          `降水概率更高（${Math.round(other.precipitationProbability ?? 0)}%）`,
+        );
+      }
       if ((other.windGust ?? 0) > (window.windGust ?? 0)) {
         differences.push(`阵风更大（${(other.windGust ?? 0).toFixed(1)} m/s）`);
       }
@@ -208,7 +212,9 @@ export async function compareWindows(
       if (other.confidence === "LOW" && window.confidence !== "LOW") {
         differences.push("置信度更低");
       }
-      return `${item.label}${differences.length ? `：${differences.join("、")}` : "：条件接近"}`;
+      return `${item.label}${
+        differences.length ? `：${differences.join("、")}` : "：条件接近"
+      }`;
     });
     reason = `${best.item.label} 更合适：${window.label} 评分 ${
       window.score === null ? "—" : Math.round(window.score)
@@ -217,7 +223,9 @@ export async function compareWindows(
         ? "暂无数据"
         : `${Math.round(window.precipitationProbability)}%`
     }，阵风 ${
-      window.windGust === null ? "暂无数据" : `${window.windGust.toFixed(1)} m/s`
+      window.windGust === null
+        ? "暂无数据"
+        : `${window.windGust.toFixed(1)} m/s`
     }${comparison.length ? `；${comparison.join("；")}` : ""}。`;
   }
   const warnings = [

@@ -439,10 +439,11 @@ export function spotRequest(body: unknown): SpotRequest {
     ...base,
     ...(scene !== undefined ? { scene } : {}),
     ...(radius !== undefined ? { radiusMeters: radius } : {}),
-    ...(slotKindValue(value.slotKind) ? { slotKind: value.slotKind as SlotKind } : {}),
+    ...(slotKindValue(value.slotKind)
+      ? { slotKind: value.slotKind as SlotKind }
+      : {}),
   };
 }
-
 
 export function compareRequest(body: unknown): CompareRequest {
   if (!body || typeof body !== "object") {

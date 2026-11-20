@@ -369,9 +369,21 @@ function buildImprovements(
     });
   }
   const fillers = [
-    { title: "先固定一项变量", evidence: "当前未发现明显技术异常", adjustment: "下次只调整曝光或构图中的一项，便于对比效果。" },
-    { title: "保留 EXIF", evidence: "有参数记录才能复核快门、光圈与 ISO", adjustment: "导出照片时保留 EXIF，方便下次按同组参数复拍。" },
-    { title: "补拍一张保险", evidence: "单张照片难以判断最佳曝光", adjustment: "同一构图连拍 ±0.3 EV 两张，回看时再选。" },
+    {
+      title: "先固定一项变量",
+      evidence: "当前未发现明显技术异常",
+      adjustment: "下次只调整曝光或构图中的一项，便于对比效果。",
+    },
+    {
+      title: "保留 EXIF",
+      evidence: "有参数记录才能复核快门、光圈与 ISO",
+      adjustment: "导出照片时保留 EXIF，方便下次按同组参数复拍。",
+    },
+    {
+      title: "补拍一张保险",
+      evidence: "单张照片难以判断最佳曝光",
+      adjustment: "同一构图连拍 ±0.3 EV 两张，回看时再选。",
+    },
   ];
   for (const filler of fillers) {
     if (items.length >= 3) break;
