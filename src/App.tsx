@@ -189,7 +189,7 @@ export default function App() {
 
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-16 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
         {section === null && (
-          <section className="relative py-7 sm:py-10 2xl:py-14">
+          <section className="relative pb-4 pt-7 sm:pb-5 sm:pt-10 2xl:pb-6 2xl:pt-14">
             <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-stretch xl:gap-10">
               <div className="min-w-0 max-w-2xl lg:self-center 2xl:max-w-3xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>

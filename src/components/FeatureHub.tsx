@@ -254,7 +254,7 @@ function FeatureMenu({
     ?.label ?? "今天";
 
   return (
-    <section className="mt-6" aria-labelledby="feature-menu-title">
+    <section className="mt-5" aria-labelledby="feature-menu-title">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2
