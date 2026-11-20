@@ -56,12 +56,12 @@ export async function generateCustomPlanResponse(
     input.date,
     true,
   );
-  const equipment = [
+  const equipment = [...new Set([
     input.phone ? `手机 ${input.phone}` : "",
     input.camera ? `相机 ${input.camera}` : "",
     input.lens ? `镜头 ${input.lens}` : "",
     input.equipment ?? "",
-  ].filter(Boolean).join(" · ") || undefined;
+  ])].filter(Boolean).join(" · ") || undefined;
   const future = context.timeline.filter((slot) => !slot.isPast);
   const preferred = input.slotKind
     ? future.filter((slot) => slot.kind === input.slotKind)
@@ -206,8 +206,10 @@ export async function generateCustomPlanResponse(
         }°，高度约 ${slot.solar.elevation.toFixed(1)}°；${
           slot.weather
             ? `天气 ${slot.weather.condition}，云量 ${
-              slot.weather.cloud ?? "—"
-            }%。`
+              slot.weather.cloud === null
+                ? "—"
+                : `${Math.round(slot.weather.cloud)}%`
+            }。`
             : "该窗口缺少逐小时天气，按现场光线判断。"
         }`,
         risks: slot.risks.length ? slot.risks : ["现场确认机位与通行条件"],

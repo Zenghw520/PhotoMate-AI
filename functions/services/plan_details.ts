@@ -185,10 +185,12 @@ export function buildPlanSchedule(
   const gear = equipment ?? "";
   const tripod = /三脚架|脚架|tripod/i.test(gear);
   const weather = slot.weather;
+  const percent = (value: number | null) =>
+    value === null ? "—" : `${Math.round(value)}%`;
   const weatherNote = weather
-    ? `${weather.condition}，云量 ${weather.cloud ?? "—"}%，降水概率 ${
-      weather.precipitationProbability ?? "—"
-    }%`
+    ? `${weather.condition}，云量 ${percent(weather.cloud)}，降水概率 ${
+      percent(weather.precipitationProbability)
+    }`
     : "该窗口缺少逐小时天气，以现场观察为准";
   const start = slot.start;
   const end = slot.end;

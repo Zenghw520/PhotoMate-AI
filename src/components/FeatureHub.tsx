@@ -622,7 +622,7 @@ function SectionDetail({
       role="tablist"
       aria-label={`${meta.title}二级菜单`}
       aria-orientation="horizontal"
-      className="scrollbar-none mt-4 flex gap-2 overflow-x-auto pb-1"
+      className="mt-4 flex flex-wrap gap-2 pb-1"
     >
       {tabs.map((item, index) => (
         <button
