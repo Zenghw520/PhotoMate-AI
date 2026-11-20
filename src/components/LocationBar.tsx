@@ -1,13 +1,16 @@
 import { LoaderCircle, MapPin, Pencil } from "lucide-react";
 import type { LocationResult } from "@/functions/shared/contracts";
-import { compactLocationName, precisionLabel } from "@/src/lib/format";
+import { compactLocationName } from "@/src/lib/format";
+import { spotSourceLabel, type SpotSource } from "@/src/lib/shooting";
 
 export function LocationBar({
   location,
+  source,
   loading = false,
   onChange,
 }: {
   location: LocationResult;
+  source?: SpotSource;
   loading?: boolean;
   onChange: () => void;
 }) {
@@ -21,7 +24,7 @@ export function LocationBar({
           <span className="hidden sm:inline">{location.name}</span>
         </strong>
         <span className="shrink-0 text-muted-foreground">
-          · {precisionLabel(location.precision)}
+          · {spotSourceLabel(source ?? "DISTRICT")}
         </span>
         {loading && (
           <span

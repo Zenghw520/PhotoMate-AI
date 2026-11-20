@@ -11,7 +11,13 @@ import {
 import type { DatabaseClient } from "./cache.ts";
 import { getTodayPhotography } from "./today.ts";
 import { claimAiUsage } from "./usage.ts";
-import { buildCameraParameters, buildPlanSchedule } from "./plan_details.ts";
+import {
+  buildBackup,
+  buildCameraDirection,
+  buildCameraParameters,
+  buildExposureStart,
+  buildPlanSchedule,
+} from "./plan_details.ts";
 
 function shanghaiDate(now: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -50,21 +56,36 @@ export async function generateCustomPlanResponse(
     input.date,
     true,
   );
+  const equipment = [
+    input.phone ? `手机 ${input.phone}` : "",
+    input.camera ? `相机 ${input.camera}` : "",
+    input.lens ? `镜头 ${input.lens}` : "",
+    input.equipment ?? "",
+  ].filter(Boolean).join(" · ") || undefined;
   const future = context.timeline.filter((slot) => !slot.isPast);
-  const candidates = future.slice(0, 8);
+  const preferred = input.slotKind
+    ? future.filter((slot) => slot.kind === input.slotKind)
+    : [];
+  const candidates = (preferred.length ? preferred : future).slice(0, 8);
   const current = context.weather.current;
   const isToday = context.date === shanghaiDate(now);
   const firstWeather = candidates[0]?.weather ?? null;
   const weatherSummary = isToday && current
     ? `${current.condition || "天气未知"} ${
-      current.temperature ?? "—"
-    }°C · 云量 ${current.cloud ?? "—"}% · 能见度 ${
+      current.temperature === null ? "—" : Math.round(current.temperature)
+    }°C · 云量 ${
+      current.cloud === null ? "—" : `${Math.round(current.cloud)}%`
+    } · 能见度 ${
       visibilityText(current.visibility)
     } · ${current.windDirection || ""} ${current.windSpeed ?? "—"}km/h`
     : firstWeather
     ? `所选日期逐小时天气：${firstWeather.condition} · 云量 ${
-      firstWeather.cloud ?? "—"
-    }% · 降水概率 ${firstWeather.precipitationProbability ?? "—"}%`
+      firstWeather.cloud === null ? "—" : `${Math.round(firstWeather.cloud)}%`
+    } · 降水概率 ${
+      firstWeather.precipitationProbability === null
+        ? "—"
+        : `${Math.round(firstWeather.precipitationProbability)}%`
+    }`
     : "所选日期暂无可用逐小时天气。";
 
   const weatherForAi = isToday && current
@@ -81,7 +102,7 @@ export async function generateCustomPlanResponse(
 
   const aiInput: CustomPlansInput = {
     subject: input.subject,
-    equipment: input.equipment ?? null,
+    equipment: equipment ?? null,
     preferences: input.preferences ?? null,
     theme: input.theme,
     location: {
@@ -127,24 +148,26 @@ export async function generateCustomPlanResponse(
   let plans: CustomPlan[] = aiPlans.flatMap((plan) => {
     const slot = slotMap.get(plan.slotId);
     if (!slot) return [];
-    const details = buildPlanSchedule(input.subject, slot, input.equipment);
+    const details = buildPlanSchedule(input.subject, slot, equipment);
+    const parameters = plan.cameraParameters ??
+      buildCameraParameters(input.subject, slot, equipment);
+    const direction = buildCameraDirection(slot);
     return [{
       slotId: plan.slotId,
       title: plan.title,
       timeWindow: { start: slot.start, end: slot.end },
       arrivalTime: details.arrivalTime,
       schedule: details.schedule,
-      cameraParameters: plan.cameraParameters ??
-        buildCameraParameters(
-          input.subject,
-          slot,
-          input.equipment,
-        ),
+      cameraParameters: parameters,
+      cameraDirection: direction.label,
+      cameraAzimuth: direction.azimuth,
+      exposureStart: buildExposureStart(parameters),
       subjectApproach: plan.subjectApproach,
       composition: plan.composition,
       cameraSettings: plan.cameraSettings,
       lightAnalysis: plan.lightAnalysis,
       risks: plan.risks,
+      backup: buildBackup(input.subject, slot, candidates),
       solar: slot.solar,
       weather: slot.weather,
     }];
@@ -155,18 +178,23 @@ export async function generateCustomPlanResponse(
       .sort((left, right) => (right.score ?? -1) - (left.score ?? -1))
       .slice(0, 2);
     plans = fallbackSlots.map((slot) => {
-      const details = buildPlanSchedule(input.subject, slot, input.equipment);
+      const details = buildPlanSchedule(input.subject, slot, equipment);
+      const parameters = buildCameraParameters(
+        input.subject,
+        slot,
+        equipment,
+      );
+      const direction = buildCameraDirection(slot);
       return {
         slotId: slot.slotId,
         title: `围绕「${input.subject}」的${slot.label}`,
         timeWindow: { start: slot.start, end: slot.end },
         arrivalTime: details.arrivalTime,
         schedule: details.schedule,
-        cameraParameters: buildCameraParameters(
-          input.subject,
-          slot,
-          input.equipment,
-        ),
+        cameraParameters: parameters,
+        cameraDirection: direction.label,
+        cameraAzimuth: direction.azimuth,
+        exposureStart: buildExposureStart(parameters),
         subjectApproach:
           `先确认「${input.subject}」在画面中的位置与可用前景，再结合现场环境调整主体与背景关系。`,
         composition:
@@ -183,6 +211,7 @@ export async function generateCustomPlanResponse(
             : "该窗口缺少逐小时天气，按现场光线判断。"
         }`,
         risks: slot.risks.length ? slot.risks : ["现场确认机位与通行条件"],
+        backup: buildBackup(input.subject, slot, candidates),
         solar: slot.solar,
         weather: slot.weather,
       };
@@ -217,5 +246,9 @@ export async function generateCustomPlanResponse(
     plans,
     aiStatus,
     warnings,
+    slotKind: plans[0] ? (context.timeline.find((slot) =>
+      slot.slotId === plans[0].slotId
+    )?.kind ?? input.slotKind ?? null) : input.slotKind ?? null,
+    equipment: equipment ?? null,
   };
 }

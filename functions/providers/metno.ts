@@ -93,6 +93,7 @@ function mapHourly(value: unknown): HourlyWeather | null {
     precipitationProbability: null,
     precipitation: numberValue(next?.precipitation_amount),
     windSpeed: numberValue(details.wind_speed),
+    windGust: numberValue(details.wind_speed_of_gust),
     windDirection: windDirection(windDegree),
     visibility: null,
   };

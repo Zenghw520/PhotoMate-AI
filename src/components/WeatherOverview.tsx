@@ -12,16 +12,20 @@ import {
 } from "lucide-react";
 import type {
   HourlyWeather,
+  TimelineItem,
   WeatherAlert,
   WeatherData,
 } from "@/functions/shared/contracts";
 import {
+  formatDate,
   formatObservedAt,
+  formatRange,
   formatTime,
   metric,
   shanghaiDate,
   summarizeMissingFields,
 } from "@/src/lib/format";
+import { windowGroupLabel } from "@/src/lib/shooting";
 import { WeatherTrend } from "@/src/components/WeatherTrend";
 
 const statusLabels = {
@@ -70,10 +74,12 @@ export function WeatherOverview({
   weather,
   targetDate,
   alerts,
+  slot,
 }: {
   weather: WeatherData;
   targetDate: string;
   alerts: WeatherAlert[];
+  slot: TimelineItem | null;
 }) {
   const current = weather.current;
   const hours = hoursForDate(weather.hourly, targetDate);
@@ -85,6 +91,14 @@ export function WeatherOverview({
       reference.cloudLow !== undefined);
   return (
     <div className="space-y-4">
+      {slot && (
+        <WindowDecision
+          slot={slot}
+          hourly={weather.hourly}
+          targetDate={targetDate}
+        />
+      )}
+
       <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-5 py-4">
           <div className="flex items-center gap-2.5">
@@ -92,7 +106,9 @@ export function WeatherOverview({
             <div>
               <h2 className="font-semibold">此刻天气</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                实况观测与逐小时预报分开展示
+                {targetDate === shanghaiDate(0)
+                  ? "实况观测与逐小时预报分开展示"
+                  : `实况为当前观测；${formatDate(targetDate)}的预报见窗口指标与趋势`}
               </p>
             </div>
           </div>
@@ -338,6 +354,173 @@ export function WeatherOverview({
       )}
     </div>
   );
+}
+
+function WindowDecision({
+  slot,
+  hourly,
+  targetDate,
+}: {
+  slot: TimelineItem;
+  hourly: HourlyWeather[];
+  targetDate: string;
+}) {
+  const scoped = hoursInWindow(hourly, slot);
+  const summary = summarizeWindow(scoped);
+  const past = Date.parse(slot.end) < Date.now();
+  return (
+    <section className="overflow-hidden rounded-[var(--radius)] border border-primary/25 bg-primary/[0.04] shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 px-5 py-4">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">所选拍摄窗口</p>
+          <h2 className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold">
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+              {windowGroupLabel(slot.kind)}
+            </span>
+            {slot.label}
+            <span className="text-sm font-normal tabular-nums text-muted-foreground">
+              {formatRange(slot.start, slot.end)}
+            </span>
+          </h2>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {past ? "窗口已结束 · 按当日留存回算" : `${formatDate(targetDate)} 预报`}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 sm:p-5">
+        <DecisionMetric
+          icon={Umbrella}
+          label="降雨"
+          value={summary.precipitationProbability === null
+            ? "暂无数据"
+            : `${Math.round(summary.precipitationProbability)}%`}
+          hint={summary.precipitation === null
+            ? "降水量暂无数据"
+            : `约 ${summary.precipitation.toFixed(1)} mm`}
+        />
+        <DecisionMetric
+          icon={Wind}
+          label="阵风"
+          value={summary.windGust === null
+            ? "暂无数据"
+            : `${summary.windGust.toFixed(1)} m/s`}
+          hint={summary.windGust === null && summary.windSpeed !== null
+            ? `风速 ${summary.windSpeed.toFixed(1)} m/s`
+            : "取窗口内最大值"}
+        />
+        <DecisionMetric
+          icon={Eye}
+          label="能见度"
+          value={summary.visibility === null
+            ? "暂无数据"
+            : `${(summary.visibility / 1000).toFixed(1)} km`}
+          hint="取窗口内最低值"
+        />
+        <DecisionMetric
+          icon={Cloud}
+          label="总云量"
+          value={summary.cloud === null
+            ? "暂无数据"
+            : `${Math.round(summary.cloud)}%`}
+          hint="窗口内平均"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
+        <CloudLayer label="高云" value={summary.cloudHigh} tone="bg-slate-500/70" />
+        <CloudLayer label="中云" value={summary.cloudMid} tone="bg-zinc-400/70" />
+        <CloudLayer label="低云" value={summary.cloudLow} tone="bg-stone-400/70" />
+      </div>
+
+      <p className="border-t border-primary/15 px-5 py-3 text-xs leading-5 text-muted-foreground">
+        {scoped.length
+          ? `指标来自窗口内 ${scoped.length} 个逐小时预报点；缺测字段显示「暂无数据」，不使用实况或相邻日期代替。`
+          : "所选窗口没有逐小时预报覆盖，窗口指标暂不可用；请参考下方趋势或更换日期。"}
+      </p>
+    </section>
+  );
+}
+
+function DecisionMetric({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Umbrella;
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-xl bg-card/80 px-3 py-2.5">
+      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Icon className="size-3.5" />{label}
+      </p>
+      <p className="mt-1 text-sm font-semibold tabular-nums">{value}</p>
+      <p className="mt-0.5 text-xs leading-4 text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function hoursInWindow(hourly: HourlyWeather[], slot: TimelineItem) {
+  const start = Date.parse(slot.start);
+  const end = Date.parse(slot.end);
+  const midpoint = (start + end) / 2;
+  const scoped = hourly.filter((entry) => {
+    const time = Date.parse(entry.time);
+    return Number.isFinite(time) && time >= start - 15 * 60_000 &&
+      time <= end + 15 * 60_000;
+  });
+  if (scoped.length) return scoped;
+  const nearest = hourly.reduce<HourlyWeather | null>((best, entry) => {
+    if (!best) return entry;
+    return Math.abs(Date.parse(entry.time) - midpoint) <
+        Math.abs(Date.parse(best.time) - midpoint)
+      ? entry
+      : best;
+  }, null);
+  return nearest ? [nearest] : [];
+}
+
+function summarizeWindow(hours: HourlyWeather[]) {
+  const max = (key: "precipitationProbability" | "windGust" | "windSpeed") => {
+    const values = hours
+      .map((entry) => entry[key])
+      .filter((value): value is number => value !== null && value !== undefined);
+    return values.length ? Math.max(...values) : null;
+  };
+  const min = (key: "visibility") => {
+    const values = hours
+      .map((entry) => entry[key])
+      .filter((value): value is number => value !== null);
+    return values.length ? Math.min(...values) : null;
+  };
+  const avg = (key: "cloud" | "cloudHigh" | "cloudMid" | "cloudLow") => {
+    const values = hours
+      .map((entry) => entry[key])
+      .filter((value): value is number => value !== null && value !== undefined);
+    return values.length
+      ? values.reduce((sum, value) => sum + value, 0) / values.length
+      : null;
+  };
+  const precipitation = hours
+    .map((entry) => entry.precipitation)
+    .filter((value): value is number => value !== null);
+  return {
+    precipitationProbability: max("precipitationProbability"),
+    precipitation: precipitation.length
+      ? precipitation.reduce((sum, value) => sum + value, 0)
+      : null,
+    windGust: max("windGust"),
+    windSpeed: max("windSpeed"),
+    visibility: min("visibility"),
+    cloud: avg("cloud"),
+    cloudHigh: avg("cloudHigh"),
+    cloudMid: avg("cloudMid"),
+    cloudLow: avg("cloudLow"),
+  };
 }
 
 function CloudLayer({

@@ -1,5 +1,10 @@
 import { errorResponse, HttpError } from "./errors.ts";
-import { reverseGeocode, searchLocations } from "./providers/amap.ts";
+import {
+  gcj02ToWgs84,
+  reverseGeocode,
+  searchLocations,
+  searchPlaces,
+} from "./providers/amap.ts";
 import { getTerrainTile } from "./providers/geovis.ts";
 import { getTodayPhotography } from "./services/today.ts";
 import { analyzePhoto } from "./services/photo.ts";
@@ -13,6 +18,7 @@ import {
   photoAnalysisRequest,
   readJson,
   searchQuery,
+  spotRequest,
   todayRequest,
 } from "./validation.ts";
 
@@ -144,9 +150,48 @@ export function createHandler(db?: DatabaseClient) {
         });
       }
 
+      if (path === "/locations/place") {
+        requireMethod(request, "GET");
+        const query = url.searchParams.get("q")?.trim() ?? "";
+        if (query.length < 2 || query.length > 40) {
+          throw new HttpError(
+            400,
+            "INVALID_QUERY",
+            "地标名称需为 2～40 个字符。",
+          );
+        }
+        const result = await searchPlaces(query, 8);
+        if (result.status === "UNCONFIGURED") {
+          unavailable("LOCATION_UNCONFIGURED", result.message, false);
+        }
+        if (result.status === "UNAVAILABLE") {
+          unavailable("LOCATION_UNAVAILABLE", result.message, true);
+        }
+        return Response.json({
+          places: result.places.map((place) => {
+            const wgs = gcj02ToWgs84(place.gcj.latitude, place.gcj.longitude);
+            return {
+              id: place.id,
+              name: place.name,
+              address: place.address,
+              type: place.type,
+              region: [place.city, place.district].filter(Boolean).join(" "),
+              latitude: wgs.latitude,
+              longitude: wgs.longitude,
+              mapUrl: `https://uri.amap.com/marker?position=${
+                place.gcj.longitude.toFixed(6)
+              },${place.gcj.latitude.toFixed(6)}&name=${
+                encodeURIComponent(place.name)
+              }&src=photomate&coordinate=gaode&callnative=0`,
+            };
+          }),
+          ...(result.message ? { message: result.message } : {}),
+        }, { headers: { "Cache-Control": "no-store" } });
+      }
+
       if (path === "/locations/spots") {
         requireMethod(request, "POST");
-        const input = todayRequest(await readJson(request));
+        const input = spotRequest(await readJson(request));
         const result = await recommendSpots(input, db);
         return Response.json(result, {
           headers: { "Cache-Control": "no-store" },

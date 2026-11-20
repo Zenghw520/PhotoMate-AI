@@ -61,6 +61,8 @@ export interface HourlyWeather {
   precipitationProbability: number | null;
   precipitation: number | null;
   windSpeed: number | null;
+  /** 阵风（m/s），部分来源提供。 */
+  windGust?: number | null;
   windDirection: string;
   visibility: number | null;
   /** 高云量（%），仅 Open-Meteo 提供。 */
@@ -167,8 +169,12 @@ export interface FireCloudPrediction {
 export interface TimelineWeather {
   condition: string;
   cloud: number | null;
+  cloudHigh?: number | null;
+  cloudMid?: number | null;
+  cloudLow?: number | null;
   precipitationProbability: number | null;
   windSpeed: number | null;
+  windGust?: number | null;
   visibility: number | null;
 }
 
@@ -299,6 +305,12 @@ export interface CustomPlanRequest extends TodayRequest {
   subject: string;
   equipment?: string;
   preferences?: string;
+  /** 结构化设备信息，缺省时退回 equipment 文本。 */
+  phone?: string;
+  camera?: string;
+  lens?: string;
+  /** 指定窗口；缺省时按日期自动挑选。 */
+  slotKind?: SlotKind;
 }
 
 export interface CameraParameters {
@@ -317,6 +329,12 @@ export interface PlanScheduleItem {
   action: string;
 }
 
+export interface PlanBackup {
+  trigger: string;
+  action: string;
+  windowLabel: string;
+}
+
 export interface CustomPlan {
   slotId: string;
   title: string;
@@ -324,11 +342,18 @@ export interface CustomPlan {
   arrivalTime: string;
   schedule: PlanScheduleItem[];
   cameraParameters: CameraParameters;
+  /** 到场后的相机朝向，与去程方向区分。 */
+  cameraDirection: string;
+  cameraAzimuth: number;
+  /** 曝光起点，便于到场后直接试拍。 */
+  exposureStart: string;
   subjectApproach: string;
   composition: string;
   cameraSettings: string;
   lightAnalysis: string;
   risks: string[];
+  /** 条件变差时的备选方案。 */
+  backup: PlanBackup | null;
   solar: SolarPosition;
   weather: TimelineWeather | null;
 }
@@ -342,6 +367,17 @@ export interface CustomPlansResponse {
   plans: CustomPlan[];
   aiStatus: TodayResponse["plans"]["aiStatus"];
   warnings: string[];
+  /** 本次实际使用的窗口类型，便于跨页保持同一选择。 */
+  slotKind: SlotKind | null;
+  equipment: string | null;
+}
+
+export type SpotScene = "SUNRISE" | "SUNSET" | "DAY";
+
+export interface SpotVerification {
+  opening: string;
+  access: string;
+  occlusion: string;
 }
 
 export interface SpotRecommendation {
@@ -352,9 +388,28 @@ export interface SpotRecommendation {
   latitude: number;
   longitude: number;
   distanceMeters: number;
+  /** 从当前拍摄位置去机位的行进方向。 */
   direction: string;
+  /** 到机位后相机朝向（太阳方位）。 */
+  cameraDirection: string;
+  cameraAzimuth: number | null;
+  scene: SpotScene;
+  /** 题材匹配 0–100 与命中说明。 */
+  matchScore: number;
+  matchReason: string;
+  verification: SpotVerification;
+  /** 该机位在此日期的推荐窗口。 */
+  recommendedWindow: TimeWindow | null;
+  windowKind: SlotKind | null;
+  windowLabel: string | null;
   mapUrl: string;
   sunNote: string;
+}
+
+export interface SpotRequest extends TodayRequest {
+  scene?: SpotScene | "ALL";
+  radiusMeters?: number;
+  slotKind?: SlotKind;
 }
 
 export interface SpotRecommendationsResponse {
@@ -364,6 +419,8 @@ export interface SpotRecommendationsResponse {
   theme: ThemeId;
   weatherSummary: string;
   recommendedWindow: TimeWindow | null;
+  recommendedWindowKind: SlotKind | null;
+  recommendedWindowLabel: string | null;
   sunriseAzimuth: number | null;
   sunsetAzimuth: number | null;
   spots: SpotRecommendation[];

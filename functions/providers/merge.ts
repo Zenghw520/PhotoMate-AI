@@ -98,6 +98,7 @@ function mergeHourlyEntry(
     ),
     precipitation: average(items.map((item) => item.precipitation)),
     windSpeed: average(items.map((item) => item.windSpeed)),
+    windGust: average(items.map((item) => item.windGust ?? null)),
     windDirection: firstText(items.map((item) => item.windDirection)),
     visibility: average(items.map((item) => item.visibility)),
     cloudHigh: average(items.map((item) => item.cloudHigh ?? null)),

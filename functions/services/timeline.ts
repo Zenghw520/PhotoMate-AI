@@ -226,6 +226,7 @@ function timelineWeather(entry: HourlyWeather): TimelineWeather {
     cloud: entry.cloud,
     precipitationProbability: entry.precipitationProbability,
     windSpeed: entry.windSpeed,
+    windGust: entry.windGust ?? null,
     visibility: entry.visibility,
   };
 }
@@ -238,7 +239,9 @@ function weatherRisks(weather: TimelineWeather | null): string[] {
   if ((weather.precipitationProbability ?? 0) >= 50) {
     risks.push("降水概率较高，准备防雨并关注临场变化");
   }
-  if ((weather.windSpeed ?? 0) >= 8) {
+  if ((weather.windGust ?? weather.windSpeed ?? 0) >= 10) {
+    risks.push("阵风较强，注意脚架稳定与拍摄安全");
+  } else if ((weather.windSpeed ?? 0) >= 8) {
     risks.push("风速较高，注意脚架稳定与拍摄安全");
   }
   if (weather.visibility !== null && weather.visibility < 5000) {

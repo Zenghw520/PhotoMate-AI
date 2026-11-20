@@ -454,12 +454,19 @@ export interface AmapSpot {
   type: string;
   gcj: Coordinate;
   distanceMeters: number;
+  /** 高德返回的营业时间；多数 POI 为空，需要标记“待核实”。 */
+  openTime: string | null;
 }
 
 export interface AmapSpotResult {
   status: "OK" | "UNCONFIGURED" | "UNAVAILABLE";
   spots: AmapSpot[];
   message: string | null;
+}
+
+export interface AmapSpotOptions {
+  radiusMeters?: number;
+  limit?: number;
 }
 
 function poiText(value: unknown): string {
@@ -475,6 +482,7 @@ export async function searchPhotoSpots(
   latitude: number,
   longitude: number,
   theme: ThemeId,
+  options: AmapSpotOptions = {},
 ): Promise<AmapSpotResult> {
   const apiKey = secretValue("AMAP_API_KEY");
   if (!apiKey) {
@@ -485,6 +493,11 @@ export async function searchPhotoSpots(
     };
   }
   const gcjCenter = wgs84ToGcj02(latitude, longitude);
+  const radius = Math.min(
+    50_000,
+    Math.max(1_000, Math.round(options.radiusMeters ?? 20_000)),
+  );
+  const limit = Math.min(25, Math.max(1, Math.round(options.limit ?? 20)));
   try {
     const payload = await fetchTrustedJson<unknown>({
       baseUrl: AMAP_BASE_URL,
@@ -496,14 +509,14 @@ export async function searchPhotoSpots(
           gcjCenter.latitude.toFixed(6)
         }`,
         keywords: SPOT_KEYWORDS[theme],
-        radius: "20000",
+        radius: String(radius),
         sortrule: "distance",
-        offset: "20",
+        offset: String(limit),
         page: "1",
-        extensions: "base",
+        extensions: "all",
       },
       timeoutMs: 5_000,
-      maxResponseBytes: 256 * 1024,
+      maxResponseBytes: 512 * 1024,
       retries: 1,
     });
     const root = record(payload);
@@ -534,6 +547,7 @@ export async function searchPhotoSpots(
       ) continue;
       seen.add(id);
       const distance = Number(poi.distance);
+      const bizExt = record(poi.biz_ext);
       spots.push({
         id,
         name,
@@ -541,8 +555,9 @@ export async function searchPhotoSpots(
         type: poiText(poi.type),
         gcj,
         distanceMeters: Number.isFinite(distance) ? distance : 0,
+        openTime: poiText(bizExt?.open_time) || null,
       });
-      if (spots.length >= 8) break;
+      if (spots.length >= limit) break;
     }
     return {
       status: "OK",
@@ -558,6 +573,106 @@ export async function searchPhotoSpots(
       status: "UNAVAILABLE",
       spots: [],
       message: "高德地点推荐暂不可用。",
+    };
+  }
+}
+
+export interface AmapPlace {
+  id: string;
+  name: string;
+  address: string;
+  type: string;
+  district: string;
+  city: string;
+  gcj: Coordinate;
+}
+
+export interface AmapPlaceResult {
+  status: "OK" | "UNCONFIGURED" | "UNAVAILABLE";
+  places: AmapPlace[];
+  message: string | null;
+}
+
+/** 按地标或 POI 名称搜索，用于精确机位选择（不走行政区聚合）。 */
+export async function searchPlaces(
+  query: string,
+  limit = 8,
+): Promise<AmapPlaceResult> {
+  const apiKey = secretValue("AMAP_API_KEY");
+  if (!apiKey) {
+    return {
+      status: "UNCONFIGURED",
+      places: [],
+      message: "地点检索服务尚未配置。",
+    };
+  }
+  const count = Math.min(10, Math.max(1, Math.round(limit)));
+  try {
+    const payload = await fetchTrustedJson<unknown>({
+      baseUrl: AMAP_BASE_URL,
+      path: "/v3/place/text",
+      allowedHosts: AMAP_HOSTS,
+      query: {
+        key: apiKey,
+        keywords: query,
+        offset: String(count),
+        page: "1",
+        extensions: "base",
+        citylimit: "true",
+      },
+      timeoutMs: 5_000,
+      maxResponseBytes: 256 * 1024,
+      retries: 1,
+    });
+    const root = record(payload);
+    if (!root || root.status !== "1") {
+      console.error(
+        "amap_places_status",
+        root?.status ?? "invalid",
+        root?.info ?? "",
+      );
+      return {
+        status: "UNAVAILABLE",
+        places: [],
+        message: "高德地点检索暂不可用。",
+      };
+    }
+    const seen = new Set<string>();
+    const places: AmapPlace[] = [];
+    for (const value of Array.isArray(root.pois) ? root.pois : []) {
+      const poi = record(value);
+      if (!poi) continue;
+      const id = text(poi.id);
+      const name = text(poi.name);
+      const gcj = parseGcjLocation(poi.location);
+      if (!id || !name || !gcj || seen.has(id)) continue;
+      if (isOutsideChina(gcj.latitude, gcj.longitude)) continue;
+      seen.add(id);
+      places.push({
+        id,
+        name,
+        address: poiText(poi.address),
+        type: poiText(poi.type),
+        district: text(poi.adname) ?? "",
+        city: text(poi.cityname) ?? "",
+        gcj,
+      });
+      if (places.length >= count) break;
+    }
+    return {
+      status: "OK",
+      places,
+      message: places.length ? null : "没有找到匹配的地标或地点。",
+    };
+  } catch (error) {
+    console.error(
+      "amap_places_error",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return {
+      status: "UNAVAILABLE",
+      places: [],
+      message: "高德地点检索暂不可用。",
     };
   }
 }

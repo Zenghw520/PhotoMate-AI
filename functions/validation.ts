@@ -10,6 +10,8 @@ import type {
   PhotoScene,
   PhotoSignals,
   PhotoSubject,
+  SlotKind,
+  SpotRequest,
   ThemeId,
   TodayRequest,
 } from "./shared/contracts.ts";
@@ -296,6 +298,12 @@ export function customPlanRequest(body: unknown): CustomPlanRequest {
     subject,
     equipment: optional(value.equipment, 80, "摄影设备"),
     preferences: optional(value.preferences, 200, "拍摄偏好"),
+    phone: optional(value.phone, 40, "手机"),
+    camera: optional(value.camera, 60, "相机"),
+    lens: optional(value.lens, 60, "镜头"),
+    ...(slotKindValue(value.slotKind)
+      ? { slotKind: value.slotKind as SlotKind }
+      : {}),
   };
 }
 
@@ -385,5 +393,51 @@ export function photoAnalysisRequest(body: unknown): PhotoAnalysisRequest {
     scene: photoScene(value.scene),
     signals: photoSignals(value.signals),
     manualScene: value.manualScene === true,
+  };
+}
+
+export const SLOT_KINDS: SlotKind[] = [
+  "DAWN",
+  "SUNRISE",
+  "MORNING_GOLDEN",
+  "DAYTIME",
+  "EVENING_GOLDEN",
+  "SUNSET",
+  "DUSK",
+  "BLUE_HOUR",
+  "NIGHT",
+];
+
+export function slotKindValue(value: unknown): SlotKind | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string" || !SLOT_KINDS.includes(value as SlotKind)) {
+    throw new HttpError(400, "INVALID_SLOT", "光线窗口类型无效。");
+  }
+  return value as SlotKind;
+}
+
+export function spotRequest(body: unknown): SpotRequest {
+  const base = todayRequest(body);
+  const value = body as Record<string, unknown>;
+  const scene = value.scene;
+  if (
+    scene !== undefined && scene !== "SUNRISE" && scene !== "SUNSET" &&
+    scene !== "ALL"
+  ) {
+    throw new HttpError(400, "INVALID_SCENE", "场景筛选无效。");
+  }
+  const radius = value.radiusMeters;
+  if (
+    radius !== undefined &&
+    (typeof radius !== "number" || !Number.isFinite(radius) || radius < 1000 ||
+      radius > 50000)
+  ) {
+    throw new HttpError(400, "INVALID_RADIUS", "搜索半径需在 1～50 公里之间。");
+  }
+  return {
+    ...base,
+    ...(scene !== undefined ? { scene } : {}),
+    ...(radius !== undefined ? { radiusMeters: radius } : {}),
+    ...(slotKindValue(value.slotKind) ? { slotKind: value.slotKind as SlotKind } : {}),
   };
 }

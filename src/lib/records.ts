@@ -1,6 +1,8 @@
 import type {
   CameraParameters,
+  PlanBackup,
   PlanScheduleItem,
+  SlotKind,
   SolarPosition,
   TimelineWeather,
 } from "@/functions/shared/contracts";
@@ -8,6 +10,27 @@ import type {
 const STORAGE_KEY = "photomate-records:v1";
 const EVENT = "photomate-records-changed";
 const MAX_RECORDS = 100;
+
+export interface PlanSpotSnapshot {
+  id?: string;
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  source?: string;
+  mapUrl?: string;
+}
+
+export interface ShootReview {
+  createdAt: string;
+  actualWeather: string;
+  actualParams: string;
+  note: string;
+  /** 下次可尝试的一条调整。 */
+  adjustment: string;
+  analysisId?: string;
+  analysisLabel?: string;
+}
 
 export interface PlanRecord {
   id: string;
@@ -23,6 +46,16 @@ export interface PlanRecord {
   schedule: PlanScheduleItem[];
   solar: SolarPosition;
   weather: TimelineWeather | null;
+  /** 以下字段为行程导出与拍后复盘新增，旧记录可缺省。 */
+  spot?: PlanSpotSnapshot;
+  windowKind?: SlotKind | null;
+  windowLabel?: string;
+  equipment?: string;
+  cameraDirection?: string;
+  exposureStart?: string;
+  backup?: PlanBackup | null;
+  checklist?: string[];
+  review?: ShootReview;
 }
 
 export interface AnalysisRecord {
@@ -36,6 +69,8 @@ export interface AnalysisRecord {
   issues: string[];
   suggestions: string[];
   exifSummary: string[];
+  /** 拍后复盘时可关联的方案记录。 */
+  planId?: string;
 }
 
 export type PhotoRecord = PlanRecord | AnalysisRecord;
@@ -83,6 +118,25 @@ export function addRecord(record: NewPhotoRecord): PhotoRecord {
   } as PhotoRecord;
   write([entry, ...read()]);
   return entry;
+}
+
+export function findRecord(id: string): PhotoRecord | null {
+  return read().find((record) => record.id === id) ?? null;
+}
+
+/** 局部更新记录（旧记录缺省字段时自动补上）。 */
+export function updateRecord(
+  id: string,
+  patch: Partial<PlanRecord> | Partial<AnalysisRecord>,
+): PhotoRecord | null {
+  let updated: PhotoRecord | null = null;
+  const next = read().map((record) => {
+    if (record.id !== id) return record;
+    updated = { ...record, ...patch } as PhotoRecord;
+    return updated;
+  });
+  if (updated) write(next);
+  return updated;
 }
 
 export function deleteRecord(id: string) {

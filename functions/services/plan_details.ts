@@ -1,5 +1,6 @@
 import type {
   CameraParameters,
+  PlanBackup,
   PlanScheduleItem,
   TimelineItem,
 } from "../shared/contracts.ts";
@@ -254,5 +255,63 @@ export function buildPlanSchedule(
           : "天空色彩仍可能变化，补拍蓝调或环境光收尾后撤离。",
       },
     ],
+  };
+}
+
+
+export function buildCameraDirection(
+  slot: TimelineItem,
+): { label: string; azimuth: number } {
+  const azimuth = ((slot.solar.azimuth % 360) + 360) % 360;
+  return {
+    label: `面朝${direction(azimuth)} ${Math.round(azimuth)}°`,
+    azimuth,
+  };
+}
+
+/** 到场即可试拍的曝光起点，由规则参数拼成一行。 */
+export function buildExposureStart(parameters: CameraParameters): string {
+  return [
+    `ISO ${parameters.iso}`,
+    parameters.aperture,
+    parameters.shutter,
+    `曝光补偿 ${parameters.exposureBias}`,
+    `白平衡 ${parameters.whiteBalance}`,
+  ].join(" · ");
+}
+
+/** 条件变差时的备选方案；优先使用同一日期里另一个可用窗口。 */
+export function buildBackup(
+  subject: string,
+  slot: TimelineItem,
+  alternatives: TimelineItem[],
+): PlanBackup | null {
+  const weather = slot.weather;
+  const rain = (weather?.precipitationProbability ?? 0) >= 50;
+  const wind = (weather?.windSpeed ?? 0) >= 8;
+  const cloud = (weather?.cloud ?? 0) >= 90;
+  const next = alternatives.find((item) =>
+    item.slotId !== slot.slotId && !item.isPast
+  );
+  const trigger = rain
+    ? "若出现降雨或低云遮挡"
+    : wind
+    ? "若阵风影响稳定"
+    : cloud
+    ? "若云层压住低角度光"
+    : "若现场光线弱于预期";
+  const action = rain
+    ? `先保护器材，改拍${next?.label ?? "蓝调或室内细节"}；雨停后利用地面积水与反光补拍。`
+    : wind
+    ? "改用更高快门并加重脚架，或移动到背风处、贴近地面拍摄。"
+    : cloud
+    ? `保持机位，改拍${next?.label ?? "蓝调"}或城市细节；云缝出现时立即回到原构图。`
+    : subject.includes("人像")
+    ? "先找可用的侧逆光位置，必要时用反光板或补光维持面部层次。"
+    : "先保高光拍一组，再沿亮部方向移动 20–50 米寻找更直接的光线。";
+  return {
+    trigger,
+    action,
+    windowLabel: next?.label ?? "同一窗口内调整",
   };
 }

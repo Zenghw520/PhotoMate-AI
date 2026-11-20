@@ -12,6 +12,7 @@ import { Disclosure } from "@/src/components/Disclosure";
 import {
   compass,
   fireCloudLabel,
+  formatMetricValue,
   formatRange,
   formatTime,
   missingFieldLabel,
@@ -257,7 +258,9 @@ export function FireCloudCard({
             >
               <dt className="font-medium">{item.label}</dt>
               <dd className="shrink-0 text-right tabular-nums text-muted-foreground">
-                {item.value === null ? "缺失" : `${item.value}${item.unit}`}
+                {item.value === null
+                  ? "缺失"
+                  : formatMetricValue(item.value, item.unit)}
                 {item.contribution !== null &&
                   ` · ${Math.round(item.contribution)}分`}
               </dd>

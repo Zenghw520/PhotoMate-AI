@@ -1,26 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Aperture, CloudSun, Compass } from "lucide-react";
-import type { LocationResult, ThemeId, TodayResponse } from "@/functions/shared/contracts";
+import type { LocationResult, SlotKind, TodayResponse } from "@/functions/shared/contracts";
 import { getToday } from "@/src/lib/api";
 import { describeFailure, type Failure } from "@/src/lib/errors";
-import { shanghaiDate } from "@/src/lib/format";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { ErrorNotice } from "@/src/components/CapabilityNotice";
 import { FeatureHub, type SectionId } from "@/src/components/FeatureHub";
 import { LocationBar } from "@/src/components/LocationBar";
 import { LocationSearch } from "@/src/components/LocationSearch";
 import { ShootingPreview } from "@/src/components/ShootingPreview";
-
-function readSavedLocation(): LocationResult | null {
-  try {
-    const value = JSON.parse(localStorage.getItem("photomate-location") ?? "null") as Partial<LocationResult> | null;
-    return value && typeof value.name === "string" && typeof value.latitude === "number" && typeof value.longitude === "number" && (value.precision === "GPS" || value.precision === "MANUAL" || value.precision === "DISTRICT")
-      ? { ...value, timezone: "Asia/Shanghai" } as LocationResult
-      : null;
-  } catch {
-    return null;
-  }
-}
+import {
+  DEFAULT_SESSION,
+  pickSlot,
+  readSession,
+  spotDate,
+  spotFromLocation,
+  toLocationResult,
+  writeSession,
+  type ShootingSession,
+  type ShootingSpot,
+} from "@/src/lib/shooting";
 
 function sectionFromHash(hash: string): SectionId | null {
   const key = hash.replace(/^#/, "").toLowerCase();
@@ -38,23 +37,31 @@ function sectionHash(section: SectionId) {
 }
 
 export default function App() {
-  const [location, setLocation] = useState<LocationResult | null>(readSavedLocation);
-  const theme: ThemeId = "LANDSCAPE";
+  const [session, setSession] = useState<ShootingSession>(readSession);
   const [data, setData] = useState<TodayResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Failure | null>(null);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [section, setSection] = useState<SectionId | null>(
     () => sectionFromHash(window.location.hash),
   );
   const [navDirection, setNavDirection] = useState<"forward" | "back">(
     "forward",
   );
-  const [dayOffset, setDayOffset] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
-  const targetDate = useMemo(() => shanghaiDate(dayOffset), [dayOffset]);
+  const targetDate = useMemo(() => spotDate(session.dayOffset), [
+    session.dayOffset,
+  ]);
+  const location = useMemo(
+    () => (session.spot ? toLocationResult(session.spot) : null),
+    [session.spot],
+  );
   const menuScrollRef = useRef(0);
   const previousSectionRef = useRef<SectionId | null>(section);
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    writeSession(session);
+  }, [session]);
 
   // 进入功能页从顶部开始读；返回导航时回到离开前的位置。
   useEffect(() => {
@@ -131,17 +138,35 @@ export default function App() {
   useEffect(() => {
     if (!location) return;
     const controller = new AbortController();
+    const currentRequest = ++requestId.current;
     setLoading(true);
     setError(null);
-    getToday(location, theme, targetDate, controller.signal)
+    getToday(location, session.theme, targetDate, controller.signal)
       .then((response) => {
+        if (requestId.current !== currentRequest || controller.signal.aborted) {
+          return;
+        }
         setData(response);
-        const nextPlan = response.plans.items[0]?.slotId;
-        const nextSlot = response.timeline.find((item) => !item.isPast)?.slotId;
-        setSelectedSlotId(nextPlan ?? nextSlot ?? response.timeline[0]?.slotId ?? null);
+        const next = pickSlot(
+          response.timeline,
+          session.slotKind,
+          session.slotId,
+        );
+        setSession((previous) => {
+          if (!next) return { ...previous, slotId: null };
+          if (
+            previous.slotId === next.slotId && previous.slotKind === next.kind
+          ) {
+            return previous;
+          }
+          return { ...previous, slotId: next.slotId, slotKind: next.kind };
+        });
       })
       .catch((reason) => {
-        if (reason instanceof DOMException && reason.name === "AbortError") return;
+        if (reason instanceof DOMException && reason.name === "AbortError") {
+          return;
+        }
+        if (requestId.current !== currentRequest) return;
         setError(describeFailure(reason, "weather"));
         setData((previous) =>
           previous && previous.date === targetDate &&
@@ -151,18 +176,35 @@ export default function App() {
             : null
         );
       })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .finally(() => {
+        if (
+          !controller.signal.aborted &&
+          requestId.current === currentRequest
+        ) {
+          setLoading(false);
+        }
+      });
     return () => controller.abort();
-  }, [location, theme, refreshKey, targetDate]);
+  }, [location, session.theme, refreshKey, targetDate]);
+
+  const chooseSpot = useCallback((
+    spot: ShootingSpot,
+    options?: { resetDate?: boolean; slotKind?: SlotKind | null },
+  ) => {
+    setData(null);
+    setError(null);
+    setSession((previous) => ({
+      ...previous,
+      spot,
+      dayOffset: options?.resetDate ? 0 : previous.dayOffset,
+      slotKind: options?.slotKind ?? previous.slotKind,
+      slotId: null,
+    }));
+  }, []);
 
   const chooseLocation = useCallback((next: LocationResult) => {
-    localStorage.setItem("photomate-location", JSON.stringify(next));
-    setData(null);
-    setSelectedSlotId(null);
-    setDayOffset(0);
-    setError(null);
-    setLocation(next);
-  }, []);
+    chooseSpot(spotFromLocation(next), { resetDate: true, slotKind: null });
+  }, [chooseSpot]);
 
   const focusLocation = useCallback(() => {
     const input = document.getElementById("main-location-search");
@@ -174,6 +216,37 @@ export default function App() {
     navigateToSection(null);
     window.setTimeout(focusLocation, 120);
   }, [focusLocation, navigateToSection]);
+
+  const changeDay = useCallback((offset: number) => {
+    setSession((previous) => ({
+      ...previous,
+      dayOffset: offset,
+      slotId: null,
+    }));
+  }, []);
+
+  const selectSlot = useCallback((slotId: string) => {
+    const slot = data?.timeline.find((item) => item.slotId === slotId);
+    setSession((previous) => ({
+      ...previous,
+      slotId,
+      slotKind: slot?.kind ?? previous.slotKind,
+    }));
+  }, [data]);
+
+  const changeTheme = useCallback((theme: ShootingSession["theme"]) => {
+    setSession((previous) => ({ ...previous, theme }));
+  }, []);
+
+  const changeEquipment = useCallback((equipment: string) => {
+    setSession((previous) => ({ ...previous, equipment }));
+  }, []);
+
+  const resetSession = useCallback(() => {
+    setData(null);
+    setError(null);
+    setSession(DEFAULT_SESSION);
+  }, []);
 
   return (
     <div className="app-shell flex min-h-dvh flex-col">
@@ -222,9 +295,10 @@ export default function App() {
           </section>
         )}
 
-        {section !== null && location && (
+        {section !== null && location && session.spot && (
           <LocationBar
             location={location}
+            source={session.spot.source}
             loading={loading}
             onChange={changeLocation}
           />
@@ -253,17 +327,26 @@ export default function App() {
         <FeatureHub
           data={data}
           location={location}
+          spot={session.spot}
           section={section}
           direction={navDirection}
-          theme={theme}
-          selectedSlotId={selectedSlotId}
-          dayOffset={dayOffset}
+          theme={session.theme}
+          dayOffset={session.dayOffset}
           targetDate={targetDate}
+          slotId={session.slotId}
+          slotKind={session.slotKind}
+          equipment={session.equipment}
           loading={loading}
-          onDayChange={setDayOffset}
+          onDayChange={changeDay}
           onSectionChange={navigateToSection}
           onNeedLocation={focusLocation}
-          onSelectSlot={setSelectedSlotId}
+          onSelectSlot={selectSlot}
+          onThemeChange={changeTheme}
+          onEquipmentChange={changeEquipment}
+          onChooseSpot={chooseSpot}
+          onResetSession={resetSession}
+          onRetry={() => setRefreshKey((value) => value + 1)}
+          onChangeLocation={changeLocation}
         />
       </main>
 

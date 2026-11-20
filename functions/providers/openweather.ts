@@ -105,6 +105,7 @@ function mapHourly(
   if (dt === null) return null;
   const windDegree = numberValue(wind.deg) ?? numberValue(item.wind_deg);
   const windSpeed = numberValue(wind.speed) ?? numberValue(item.wind_speed);
+  const windGust = numberValue(wind.gust) ?? numberValue(item.wind_gust);
   const pop = numberValue(item.pop);
   return {
     time: shanghaiIso(dt),
@@ -115,6 +116,7 @@ function mapHourly(
     precipitationProbability: pop === null ? null : pop * 100,
     precipitation: precipitation(item, precipitationSuffix),
     windSpeed,
+    windGust,
     windDirection: windDirection(windDegree),
     visibility: numberValue(item.visibility),
   };

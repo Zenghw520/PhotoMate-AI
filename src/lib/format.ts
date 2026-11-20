@@ -66,6 +66,16 @@ export function metric(value: number | null, unit: string, digits = 0) {
   return value === null ? "—" : `${value.toFixed(digits)}${unit}`;
 }
 
+/** 统一评分依据与指标的单位格式，避免出现 33.333333333333336%。 */
+export function formatMetricValue(value: number, unit: string) {
+  if (unit === "%" || unit === "分") return `${Math.round(value)}${unit}`;
+  if (unit === "mm" || unit === "m/s" || unit === "km/h" || unit === "km") {
+    return `${value.toFixed(1)}${unit}`;
+  }
+  if (unit === "°") return `${value.toFixed(1)}${unit}`;
+  return `${Number.isInteger(value) ? value : value.toFixed(1)}${unit}`;
+}
+
 export function scoreLabel(score: number | null) {
   if (score === null) return "数据不足";
   if (score >= 80) return "很值得等待";

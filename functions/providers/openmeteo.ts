@@ -29,6 +29,7 @@ const HOURLY_FIELDS = [
   "cloud_cover_mid",
   "cloud_cover_high",
   "wind_speed_10m",
+  "wind_gusts_10m",
   "wind_direction_10m",
   "visibility",
 ].join(",");
@@ -231,6 +232,7 @@ function mapHourly(
     const time = localIso(times[index]);
     if (!time) continue;
     const windSpeed = numberAt(source?.wind_speed_10m, index);
+    const windGust = numberAt(source?.wind_gusts_10m, index);
     const windDegree = numberAt(source?.wind_direction_10m, index);
     hourly.push({
       time,
@@ -249,6 +251,7 @@ function mapHourly(
       precipitation: numberAt(source?.precipitation, index),
       // Hourly wind is m/s across providers; this API reports km/h.
       windSpeed: windSpeed === null ? null : windSpeed / 3.6,
+      windGust: windGust === null ? null : windGust / 3.6,
       windDirection: windDirection(windDegree),
       visibility: numberAt(source?.visibility, index),
     });

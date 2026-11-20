@@ -10,6 +10,7 @@ import type {
   PhotoScene,
   SearchResponse,
   SpotRecommendationsResponse,
+  SpotRequest,
   ThemeId,
   TodayRequest,
   TodayResponse,
@@ -81,6 +82,37 @@ export function searchLocations(query: string, signal?: AbortSignal) {
   return request(`/locations/search?q=${encodeURIComponent(query)}&limit=8`, { signal }, isSearchResponse);
 }
 
+export interface PlaceResult {
+  id: string;
+  name: string;
+  address: string;
+  type: string;
+  region: string;
+  latitude: number;
+  longitude: number;
+  mapUrl: string;
+}
+
+function isPlaceResponse(value: unknown): value is { places: PlaceResult[] } {
+  if (!value || typeof value !== "object") return false;
+  const places = (value as { places?: unknown }).places;
+  return Array.isArray(places) && places.every((item) =>
+    !!item && typeof item === "object" &&
+    typeof (item as PlaceResult).name === "string" &&
+    typeof (item as PlaceResult).latitude === "number" &&
+    typeof (item as PlaceResult).longitude === "number"
+  );
+}
+
+/** 按地标 / POI 名称检索精确机位。 */
+export function searchPlaces(query: string, signal?: AbortSignal) {
+  return request(
+    `/locations/place?q=${encodeURIComponent(query)}`,
+    { signal },
+    isPlaceResponse,
+  );
+}
+
 export function reverseLocation(latitude: number, longitude: number, signal?: AbortSignal) {
   return request("/locations/reverse", {
     method: "POST",
@@ -150,7 +182,7 @@ function isSpotRecommendations(
 }
 
 export function recommendPhotoSpots(
-  input: TodayRequest,
+  input: SpotRequest,
   signal?: AbortSignal,
 ) {
   return request("/locations/spots", {

@@ -14,6 +14,7 @@ import type {
   LocationResult,
   SlotKind,
   ThemeId,
+  TimelineItem,
   TodayResponse,
   WeatherData,
 } from "@/functions/shared/contracts";
@@ -21,10 +22,18 @@ import {
   compass,
   formatDate,
   formatObservedAt,
+  formatRange,
   formatTime,
   summarizeMissingFields,
 } from "@/src/lib/format";
+import {
+  pickSlot,
+  windowGroupLabel,
+  type ShootingSpot,
+} from "@/src/lib/shooting";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ShootingContextBar } from "@/src/components/ShootingContextBar";
+import { GlowConclusion } from "@/src/components/GlowConclusion";
 import { WeatherOverview } from "@/src/components/WeatherOverview";
 import { PhotoIndices } from "@/src/components/PhotoIndices";
 import { SpotRecommendations } from "@/src/components/SpotRecommendations";
@@ -173,33 +182,54 @@ const WEATHER_STATUS: Record<WeatherData["status"], string> = {
 interface FeatureHubProps {
   data: TodayResponse | null;
   location: LocationResult | null;
+  spot: ShootingSpot | null;
   section: SectionId | null;
   direction: "forward" | "back";
   theme: ThemeId;
-  selectedSlotId: string | null;
+  slotId: string | null;
+  slotKind: SlotKind | null;
   dayOffset: number;
   targetDate: string;
+  equipment: string;
   loading: boolean;
   onDayChange: (offset: number) => void;
   onSectionChange: (section: SectionId | null) => void;
   onNeedLocation: () => void;
   onSelectSlot: (slotId: string) => void;
+  onThemeChange: (theme: ThemeId) => void;
+  onEquipmentChange: (equipment: string) => void;
+  onChooseSpot: (
+    spot: ShootingSpot,
+    options?: { resetDate?: boolean; slotKind?: SlotKind | null },
+  ) => void;
+  onResetSession: () => void;
+  onRetry: () => void;
+  onChangeLocation: () => void;
 }
 
 export function FeatureHub({
   data,
   location,
+  spot,
   section,
   direction,
   theme,
-  selectedSlotId,
+  slotId,
+  slotKind,
   dayOffset,
   targetDate,
+  equipment,
   loading,
   onDayChange,
   onSectionChange,
   onNeedLocation,
   onSelectSlot,
+  onThemeChange,
+  onEquipmentChange,
+  onChooseSpot,
+  onResetSession,
+  onRetry,
+  onChangeLocation,
 }: FeatureHubProps) {
   if (section === null) {
     return (
@@ -207,10 +237,15 @@ export function FeatureHub({
         <FeatureMenu
           data={data}
           location={location}
+          spot={spot}
           loading={loading}
           dayOffset={dayOffset}
+          targetDate={targetDate}
+          theme={theme}
+          slotKind={slotKind}
           onSectionChange={onSectionChange}
           onNeedLocation={onNeedLocation}
+          onThemeChange={onThemeChange}
         />
       </div>
     );
@@ -221,15 +256,24 @@ export function FeatureHub({
         key={section}
         data={data}
         location={location}
+        spot={spot}
         section={section}
         theme={theme}
-        selectedSlotId={selectedSlotId}
+        slotId={slotId}
+        slotKind={slotKind}
         dayOffset={dayOffset}
         targetDate={targetDate}
+        equipment={equipment}
         loading={loading}
         onDayChange={onDayChange}
         onSectionChange={onSectionChange}
         onSelectSlot={onSelectSlot}
+        onThemeChange={onThemeChange}
+        onEquipmentChange={onEquipmentChange}
+        onChooseSpot={onChooseSpot}
+        onResetSession={onResetSession}
+        onRetry={onRetry}
+        onChangeLocation={onChangeLocation}
       />
     </div>
   );
@@ -238,17 +282,27 @@ export function FeatureHub({
 function FeatureMenu({
   data,
   location,
+  spot,
   loading,
   dayOffset,
+  targetDate,
+  theme,
+  slotKind,
   onSectionChange,
   onNeedLocation,
+  onThemeChange,
 }: {
   data: TodayResponse | null;
   location: LocationResult | null;
+  spot: ShootingSpot | null;
   loading: boolean;
   dayOffset: number;
+  targetDate: string;
+  theme: ThemeId;
+  slotKind: SlotKind | null;
   onSectionChange: (section: SectionId) => void;
   onNeedLocation: () => void;
+  onThemeChange: (theme: ThemeId) => void;
 }) {
   const dayLabel = DAY_OPTIONS.find((item) => item.offset === dayOffset)
     ?.label ?? "今天";
@@ -270,6 +324,19 @@ function FeatureMenu({
           </p>
         </div>
       </div>
+
+      {spot && (
+        <ShootingContextBar
+          spot={spot}
+          dayOffset={dayOffset}
+          targetDate={targetDate}
+          slot={data ? pickSlot(data.timeline, slotKind, null) : null}
+          theme={theme}
+          loading={loading}
+          onThemeChange={onThemeChange}
+          compact
+        />
+      )}
 
       <div className="mt-3 space-y-2.5 sm:space-y-3">
         <PhotoEntry onOpen={() => onSectionChange("PHOTO")} />
@@ -450,33 +517,57 @@ function locationCardState(
 function SectionDetail({
   data,
   location,
+  spot,
   section,
   theme,
-  selectedSlotId,
+  slotId,
+  slotKind,
   dayOffset,
   targetDate,
+  equipment,
   loading,
   onDayChange,
   onSectionChange,
   onSelectSlot,
+  onThemeChange,
+  onEquipmentChange,
+  onChooseSpot,
+  onResetSession,
+  onRetry,
+  onChangeLocation,
 }: {
   data: TodayResponse | null;
   location: LocationResult | null;
+  spot: ShootingSpot | null;
   section: SectionId;
   theme: ThemeId;
-  selectedSlotId: string | null;
+  slotId: string | null;
+  slotKind: SlotKind | null;
   dayOffset: number;
   targetDate: string;
+  equipment: string;
   loading: boolean;
   onDayChange: (offset: number) => void;
   onSectionChange: (section: SectionId | null) => void;
   onSelectSlot: (slotId: string) => void;
+  onThemeChange: (theme: ThemeId) => void;
+  onEquipmentChange: (equipment: string) => void;
+  onChooseSpot: (
+    spot: ShootingSpot,
+    options?: { resetDate?: boolean; slotKind?: SlotKind | null },
+  ) => void;
+  onResetSession: () => void;
+  onRetry: () => void;
+  onChangeLocation: () => void;
 }) {
   const meta = SECTION_META[section];
   const Icon = meta.icon;
   const tabs = TABS[section];
   const [tab, setTab] = useState(tabs[0].id);
   const [period, setPeriod] = useState("all");
+  const slot: TimelineItem | null = data
+    ? pickSlot(data.timeline, slotKind, slotId)
+    : null;
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const activeTab = tabs.find((item) => item.id === tab) ?? tabs[0];
   const sectionKey = section.toLowerCase();
@@ -578,36 +669,18 @@ function SectionDetail({
         </div>
       </div>
 
-      {section === "LIGHT" && (
-        <div className="mt-4 rounded-[var(--radius)] border border-border bg-card px-3 py-3 shadow-sm sm:px-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div
-              role="group"
-              aria-label="查询日期"
-              className="flex gap-1 rounded-full bg-muted p-1"
-            >
-              {DAY_OPTIONS.map((item) => (
-                <button
-                  key={item.offset}
-                  type="button"
-                  aria-pressed={dayOffset === item.offset}
-                  onClick={() => onDayChange(item.offset)}
-                  className={`min-h-11 rounded-full px-4 text-xs font-medium transition ${
-                    dayOffset === item.offset
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <span className="flex items-center gap-1.5 pr-1 text-xs tabular-nums text-muted-foreground">
-              <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
-              {formatDate(targetDate)}
-            </span>
-          </div>
-        </div>
+      {spot && section !== "PHOTO" && (
+        <ShootingContextBar
+          spot={spot}
+          dayOffset={dayOffset}
+          targetDate={targetDate}
+          slot={slot}
+          theme={theme}
+          loading={loading}
+          onChangeLocation={onChangeLocation}
+          onDayChange={onDayChange}
+          onThemeChange={onThemeChange}
+        />
       )}
 
       {section === "SPOTS" && (
@@ -617,16 +690,23 @@ function SectionDetail({
               <SpotRecommendations
                 location={location}
                 date={targetDate}
-                dayOffset={dayOffset}
-                onDayChange={onDayChange}
+                theme={theme}
+                slot={slot}
+                onThemeChange={onThemeChange}
+                onPickSpot={(picked, target, kind) => {
+                  onChooseSpot(picked, { slotKind: kind ?? slotKind });
+                  onSectionChange(target);
+                }}
               />
             </div>
           )
-          : <LocationPrompt />
+          : <LocationPrompt onChangeLocation={onChangeLocation} />
       )}
 
       {section !== "PHOTO" && section !== "SPOTS" && !data && (
-        location ? <DataPending loading={loading} /> : <LocationPrompt />
+        location
+          ? <DataPending loading={loading} />
+          : <LocationPrompt onChangeLocation={onChangeLocation} />
       )}
 
       {section === "PHOTO" && (
@@ -669,6 +749,7 @@ function SectionDetail({
                 weather={data.weather}
                 targetDate={targetDate}
                 alerts={data.alerts}
+                slot={slot}
               />
             )}
             {section === "WEATHER" && tab === "indices" && (
@@ -683,6 +764,7 @@ function SectionDetail({
             )}
             {section === "LIGHT" && tab === "glow" && (
               <div key={data.date} className="pm-panel space-y-5">
+                <GlowConclusion data={data} slot={slot} />
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-xs text-muted-foreground">
                   <span>
                     实况观测于{" "}
@@ -784,18 +866,25 @@ function SectionDetail({
                 <SolarTimeline
                   solar={data.solar}
                   timeline={filteredTimeline}
-                  selectedSlotId={selectedSlotId}
+                  selectedSlotId={slot?.slotId ?? null}
                   onSelectSlot={onSelectSlot}
                 />
               </>
             )}
             {section === "PLANS" && (
-              <CustomPlanPanel
-                data={data}
-                theme={theme}
-                selectedSlotId={selectedSlotId}
-                onSelectSlot={onSelectSlot}
-              />
+              spot
+                ? (
+                  <CustomPlanPanel
+                    data={data}
+                    spot={spot}
+                    theme={theme}
+                    slot={slot}
+                    equipment={equipment}
+                    onSelectSlot={onSelectSlot}
+                    onEquipmentChange={onEquipmentChange}
+                  />
+                )
+                : <LocationPrompt onChangeLocation={onChangeLocation} />
             )}
             </div>
           </div>
@@ -825,15 +914,28 @@ function DataPending({ loading }: { loading: boolean }) {
   );
 }
 
-function LocationPrompt() {
+function LocationPrompt({
+  onChangeLocation,
+}: {
+  onChangeLocation?: () => void;
+}) {
   return (
     <div className="mt-4 grid min-h-52 place-items-center rounded-[var(--radius)] border border-border bg-card p-6 text-center shadow-sm">
       <div className="max-w-md">
         <MapPin className="mx-auto size-8 text-primary" />
         <h3 className="mt-3 text-lg font-semibold">先确定拍摄位置</h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          返回功能导航后，在首屏搜索区县、使用定位或手动输入坐标即可；各功能会自动沿用该位置。
+          搜索区县、使用定位或手动输入坐标即可；天气、光线、地点与方案会自动沿用该位置。
         </p>
+        {onChangeLocation && (
+          <button
+            type="button"
+            onClick={onChangeLocation}
+            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            <MapPin className="size-4" />选择拍摄位置
+          </button>
+        )}
       </div>
     </div>
   );
