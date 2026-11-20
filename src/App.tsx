@@ -58,6 +58,9 @@ export default function App() {
   const menuScrollRef = useRef(0);
   const previousSectionRef = useRef<SectionId | null>(section);
   const requestId = useRef(0);
+  // 请求返回时读取最新的窗口选择，避免旧闭包覆盖用户刚做的选择。
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   useEffect(() => {
     writeSession(session);
@@ -147,10 +150,11 @@ export default function App() {
           return;
         }
         setData(response);
+        const latest = sessionRef.current;
         const next = pickSlot(
           response.timeline,
-          session.slotKind,
-          session.slotId,
+          latest.slotKind,
+          latest.slotId,
         );
         setSession((previous) => {
           if (!next) return { ...previous, slotId: null };
