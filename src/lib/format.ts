@@ -88,6 +88,17 @@ export function precisionLabel(precision: LocationPrecision) {
   return "区县中心";
 }
 
+export function compactLocationName(location: {
+  precision: LocationPrecision;
+  name: string;
+  region?: string;
+}) {
+  if (location.precision !== "GPS" || !location.region) return location.name;
+  const parts = location.region.split(/\s+/).filter(Boolean)
+    .filter((part, index, all) => part !== all[index - 1]);
+  return parts.slice(-3).join("") || location.name;
+}
+
 const WEATHER_FIELD_LABELS: Record<string, string> = {
   cloud: "云量",
   cloudHigh: "高云量",

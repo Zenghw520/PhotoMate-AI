@@ -156,8 +156,8 @@ export default function App() {
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-16 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
         {section === null && (
           <section className="relative py-7 sm:py-10 2xl:py-14">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-stretch xl:gap-10">
-              <div className="max-w-2xl lg:self-center 2xl:max-w-3xl">
+            <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-stretch xl:gap-10">
+              <div className="min-w-0 max-w-2xl lg:self-center 2xl:max-w-3xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>
                 <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.6rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>

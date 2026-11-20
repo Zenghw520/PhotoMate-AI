@@ -1,6 +1,6 @@
 import { LoaderCircle, MapPin, Pencil } from "lucide-react";
 import type { LocationResult } from "@/functions/shared/contracts";
-import { precisionLabel } from "@/src/lib/format";
+import { compactLocationName, precisionLabel } from "@/src/lib/format";
 
 export function LocationBar({
   location,
@@ -12,11 +12,14 @@ export function LocationBar({
   onChange: () => void;
 }) {
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-card/85 px-3.5 py-2.5 text-xs shadow-sm">
-      <span className="flex min-w-0 items-center gap-1.5">
+    <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-card/85 px-3.5 py-2.5 text-xs shadow-sm">
+      <span className="flex min-w-0 flex-1 basis-full items-center gap-1.5 sm:basis-auto">
         <MapPin className="size-4 shrink-0 text-primary" />
         <span className="shrink-0 text-muted-foreground">拍摄位置</span>
-        <strong className="truncate font-medium">{location.name}</strong>
+        <strong className="min-w-0 truncate font-medium" title={location.name}>
+          <span className="sm:hidden">{compactLocationName(location)}</span>
+          <span className="hidden sm:inline">{location.name}</span>
+        </strong>
         <span className="shrink-0 text-muted-foreground">
           · {precisionLabel(location.precision)}
         </span>

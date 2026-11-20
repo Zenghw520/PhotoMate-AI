@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { reverseLocation, searchLocations } from "@/src/lib/api";
 import { describeFailure, geolocationFailure, type Failure } from "@/src/lib/errors";
-import { precisionLabel } from "@/src/lib/format";
+import { compactLocationName, precisionLabel } from "@/src/lib/format";
 import type { LocationResult } from "@/functions/shared/contracts";
 import { ErrorNotice } from "@/src/components/CapabilityNotice";
 
@@ -251,19 +251,25 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
           : ""}
       </p>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-card/70 px-3 py-2 text-xs">
-        <span className="flex min-w-0 items-center gap-1.5">
+      <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-card/70 px-3 py-2 text-xs">
+        <span className="flex min-w-0 flex-1 basis-full items-center gap-1.5 sm:basis-auto">
           <MapPin className="size-4 shrink-0 text-primary" />
           {location ? (
             <>
               <span className="shrink-0 text-muted-foreground">拍摄位置</span>
-              <strong className="truncate font-medium">{location.name}</strong>
+              <strong
+                className="min-w-0 truncate font-medium"
+                title={location.name}
+              >
+                <span className="sm:hidden">{compactLocationName(location)}</span>
+                <span className="hidden sm:inline">{location.name}</span>
+              </strong>
               <span className="shrink-0 text-muted-foreground">
                 · {precisionLabel(location.precision)}
               </span>
             </>
           ) : (
-            <span className="text-muted-foreground">
+            <span className="min-w-0 truncate text-muted-foreground">
               {locating ? "正在使用当前位置…" : "尚未选择拍摄位置"}
             </span>
           )}

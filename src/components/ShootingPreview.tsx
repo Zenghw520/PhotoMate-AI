@@ -13,7 +13,13 @@ import type { LocationResult, TodayResponse } from "@/functions/shared/contracts
 import { ErrorNotice } from "@/src/components/CapabilityNotice";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Failure } from "@/src/lib/errors";
-import { formatDate, formatTime, scoreLabel, shanghaiDate } from "@/src/lib/format";
+import {
+  compactLocationName,
+  formatDate,
+  formatTime,
+  scoreLabel,
+  shanghaiDate,
+} from "@/src/lib/format";
 
 const SAMPLE = {
   sunrise: "06:12",
@@ -93,16 +99,25 @@ export function ShootingPreview({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[var(--radius)] border border-border bg-card/90 p-4 shadow-sm sm:p-5"
+      className="flex h-full min-w-0 flex-col overflow-hidden rounded-[var(--radius)] border border-border bg-card/90 p-4 shadow-sm sm:p-5"
       aria-label="今日拍摄条件预览"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <p className="text-xs text-muted-foreground">今日拍摄条件</p>
-          <h2 className="mt-1 flex items-center gap-1.5 text-lg font-semibold tracking-tight">
+          <h2 className="mt-1 flex min-w-0 items-center gap-1.5 text-lg font-semibold tracking-tight">
             <MapPin className="size-4 shrink-0 text-primary" />
-            <span className="truncate">
-              {location?.name ?? "尚未选择位置"}
+            <span className="min-w-0 truncate" title={location?.name ?? undefined}>
+              {location ? (
+                <>
+                  <span className="sm:hidden">
+                    {compactLocationName(location)}
+                  </span>
+                  <span className="hidden sm:inline">{location.name}</span>
+                </>
+              ) : (
+                "尚未选择位置"
+              )}
             </span>
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
