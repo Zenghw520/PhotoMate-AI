@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
-  CalendarDays,
   Camera,
   CloudSun,
   MapPin,
@@ -22,7 +21,6 @@ import {
   compass,
   formatDate,
   formatObservedAt,
-  formatRange,
   formatTime,
   summarizeMissingFields,
 } from "@/src/lib/format";
