@@ -132,17 +132,31 @@ function measureSignals(
     flatness: percent(flat, interior),
     dominantColor: percent(dominantCount, total),
   };
-  return { ...signals, screenLike: screenLikeness(signals) };
+  return {
+    ...signals,
+    screenLike: screenLikeness(signals, width / Math.max(1, height)),
+  };
 }
 
-function screenLikeness(signals: PhotoSignals) {
+function screenLikeness(signals: PhotoSignals, aspectRatio: number) {
   const flatness = signals.flatness ?? 0;
   const dominant = signals.dominantColor ?? 0;
+  const ratio = Math.max(aspectRatio, 1 / Math.max(aspectRatio, 0.01));
   let score = 0;
   if (flatness >= 70 && dominant >= 45) score += 40;
   else if (flatness >= 55 && dominant >= 30) score += 24;
   if (signals.bright >= 25 && signals.dark < 20) score += 20;
   if (signals.edgeDensity >= 12 && flatness >= 55) score += 15;
+  else if (
+    signals.edgeDensity >= 6 && flatness >= 60 && dominant >= 20
+  ) {
+    score += 12;
+  } else if (
+    signals.edgeDensity >= 3 && flatness >= 80 && dominant >= 35
+  ) {
+    score += 10;
+  }
+  if (ratio >= 1.9) score += 25;
   if (signals.dark >= 40 && signals.bright >= 3 && flatness >= 60 && dominant >= 35) {
     score += 25;
   }
@@ -169,7 +183,12 @@ export function sceneFromImageData(
 ): { scene: PhotoScene; signals: PhotoSignals } {
   const signals = measureSignals(width, height, pixels);
   const screenLike = signals.screenLike ?? 0;
-  if (screenLike >= 60 && signals.skin < 6 && signals.green < 10) {
+  const aspectRatio = width / Math.max(1, height);
+  if (
+    screenLike >= 55 && signals.green < 10 &&
+    (signals.skin < 10 || screenLike >= 75)
+  ) {
+    const longRatio = Math.max(aspectRatio, 1 / Math.max(aspectRatio, 0.01));
     return {
       scene: {
         subject: "GENERAL",
@@ -179,7 +198,13 @@ export function sceneFromImageData(
           `疑似截图、文档或纯色界面（低纹理区域约 ${
             formatNumber(signals.flatness ?? 0)
           }%）`,
-          `单一主色占比约 ${formatNumber(signals.dominantColor ?? 0)}%`,
+          longRatio >= 1.9
+            ? `画面长宽比约 ${longRatio.toFixed(1)}:1，接近手机界面比例`
+            : signals.edgeDensity >= 6
+            ? `规则边缘或文字块较密集（边缘密度约 ${
+              formatNumber(signals.edgeDensity)
+            }%）`
+            : `单一主色占比约 ${formatNumber(signals.dominantColor ?? 0)}%`,
         ],
         source: "HEURISTIC",
       },

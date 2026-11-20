@@ -296,9 +296,9 @@ function guardScene(
 ): PhotoScene {
   if (
     scene.subject !== "GENERAL" &&
-    (signals.screenLike ?? 0) >= 60 &&
-    signals.skin < 6 &&
-    signals.green < 10
+    (signals.screenLike ?? 0) >= 55 &&
+    signals.green < 10 &&
+    (signals.skin < 10 || (signals.screenLike ?? 0) >= 75)
   ) {
     return {
       subject: "GENERAL",

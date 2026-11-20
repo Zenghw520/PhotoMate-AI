@@ -108,7 +108,7 @@ export default function App() {
       })
       .catch((reason) => {
         if (reason instanceof DOMException && reason.name === "AbortError") return;
-        setError(describeFailure(reason, "data"));
+        setError(describeFailure(reason, "weather"));
         setData((previous) =>
           previous && previous.date === targetDate &&
             previous.location.latitude === location.latitude &&

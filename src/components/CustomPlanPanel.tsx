@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  AlertTriangle,
   Camera,
   CheckCircle2,
   Clock3,
@@ -16,6 +15,8 @@ import type {
   TodayResponse,
 } from "@/functions/shared/contracts";
 import { generateCustomPlans } from "@/src/lib/api";
+import { ErrorNotice } from "@/src/components/CapabilityNotice";
+import { describeFailure, type Failure } from "@/src/lib/errors";
 import { compass, formatRange, formatTime, metric } from "@/src/lib/format";
 import { addRecord } from "@/src/lib/records";
 
@@ -73,7 +74,7 @@ export function CustomPlanPanel({
   const [preferences, setPreferences] = useState("");
   const [result, setResult] = useState<CustomPlansResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [savedPlans, setSavedPlans] = useState<Set<string>>(new Set());
 
   function savePlan(plan: CustomPlan) {
@@ -97,15 +98,9 @@ export function CustomPlanPanel({
     setResult(null);
   }, [theme, data.date]);
 
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    const value = subject.trim();
-    if (value.length < 2) {
-      setError("请输入至少 2 个字符的拍摄题材。");
-      return;
-    }
+  async function generate(value: string) {
     setLoading(true);
-    setError("");
+    setFailure(null);
     try {
       const response = await generateCustomPlans({
         location: data.location,
@@ -117,12 +112,25 @@ export function CustomPlanPanel({
       });
       setResult(response);
     } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : "自定义方案暂不可用，请稍后重试。",
-      );
+      setFailure(describeFailure(reason, "plan"));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    const value = subject.trim();
+    if (value.length < 2) {
+      setFailure({
+        kind: "input",
+        title: "请输入拍摄题材",
+        message: "拍摄题材至少需要 2 个字符，已保留当前设备与偏好。",
+        retryable: false,
+      });
+      return;
+    }
+    await generate(value);
   }
 
   return (
@@ -219,11 +227,13 @@ export function CustomPlanPanel({
         </p>
       </form>
 
-      {error && (
-        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <span>{error}</span>
-        </div>
+      {failure && (
+        <ErrorNotice
+          failure={failure}
+          onRetry={failure.retryable && subject.trim().length >= 2
+            ? () => void generate(subject.trim())
+            : undefined}
+        />
       )}
 
       {result && (

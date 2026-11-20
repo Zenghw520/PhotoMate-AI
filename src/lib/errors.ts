@@ -16,7 +16,13 @@ export interface Failure {
   retryable: boolean;
 }
 
-export type FailureContext = "location" | "photo" | "data";
+export type FailureContext =
+  | "location"
+  | "photo"
+  | "data"
+  | "weather"
+  | "spots"
+  | "plan";
 
 export function describeFailure(
   error: unknown,
@@ -34,6 +40,14 @@ export function describeFailure(
           retryable: true,
         };
       case "LOCATION_UNAVAILABLE":
+        if (context === "spots") {
+          return {
+            kind: "service",
+            title: "地点推荐服务暂时不可用",
+            message: "请重试，或更换观看位置。",
+            retryable: true,
+          };
+        }
         return {
           kind: "service",
           title: "地点服务暂时不可用",
@@ -81,6 +95,30 @@ export function describeFailure(
             retryable: true,
           };
         }
+        if (context === "spots") {
+          return {
+            kind: "service",
+            title: "地点推荐失败",
+            message: "已保留当前题材与日期，可以直接重试。",
+            retryable: true,
+          };
+        }
+        if (context === "plan") {
+          return {
+            kind: "service",
+            title: "拍摄方案生成失败",
+            message: "已保留当前题材与条件，可以直接重试。",
+            retryable: true,
+          };
+        }
+        if (context === "weather") {
+          return {
+            kind: "service",
+            title: "天气与光线数据暂时不可用",
+            message: "已保留当前位置和输入，可以直接重试。",
+            retryable: true,
+          };
+        }
         return {
           kind: "service",
           title: "数据服务返回异常",
@@ -112,6 +150,30 @@ export function describeFailure(
             retryable: error.retryable,
           };
         }
+        if (context === "spots") {
+          return {
+            kind: "service",
+            title: "地点推荐失败",
+            message: "已保留当前题材与日期，请稍后重试。",
+            retryable: error.retryable,
+          };
+        }
+        if (context === "plan") {
+          return {
+            kind: "service",
+            title: "拍摄方案生成失败",
+            message: "已保留当前题材与条件，请稍后重试。",
+            retryable: error.retryable,
+          };
+        }
+        if (context === "weather") {
+          return {
+            kind: "service",
+            title: "天气与光线数据暂时不可用",
+            message: "已保留当前位置和输入，请稍后重试。",
+            retryable: error.retryable,
+          };
+        }
         return {
           kind: "service",
           title: "数据服务暂时不可用",
@@ -126,6 +188,36 @@ export function describeFailure(
       kind: "unknown",
       title: "地点搜索失败",
       message: "地点服务暂时不可用，请重试，或改用手动坐标。",
+      retryable: true,
+    };
+  }
+  if (context === "spots") {
+    return {
+      kind: "unknown",
+      title: "地点推荐失败",
+      message: error instanceof Error && error.message
+        ? error.message
+        : "请稍后重试，或更换观看位置。",
+      retryable: true,
+    };
+  }
+  if (context === "plan") {
+    return {
+      kind: "unknown",
+      title: "拍摄方案生成失败",
+      message: error instanceof Error && error.message
+        ? error.message
+        : "请稍后重试，已保留当前题材与条件。",
+      retryable: true,
+    };
+  }
+  if (context === "weather") {
+    return {
+      kind: "unknown",
+      title: "天气与光线数据暂时不可用",
+      message: error instanceof Error && error.message
+        ? error.message
+        : "请稍后重试，已保留当前位置和输入。",
       retryable: true,
     };
   }

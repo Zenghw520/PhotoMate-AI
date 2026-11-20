@@ -224,6 +224,7 @@ export function PhotoAnalysis() {
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
   const [manualScene, setManualScene] = useState<PhotoScene | null>(null);
   const [subjectOpen, setSubjectOpen] = useState(false);
+  const [screenConfirmed, setScreenConfirmed] = useState(false);
   const [savedRecord, setSavedRecord] = useState(false);
   const jobRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -290,6 +291,7 @@ export function PhotoAnalysis() {
     setSavedRecord(false);
     setManualScene(null);
     setSubjectOpen(false);
+    setScreenConfirmed(false);
     setExif(null);
     setStats(null);
     setScene(null);
@@ -379,6 +381,7 @@ export function PhotoAnalysis() {
     setSource("");
     setManualScene(null);
     setSubjectOpen(false);
+    setScreenConfirmed(false);
     setFailure({
       kind: "photo",
       title: "已取消读取",
@@ -440,6 +443,9 @@ export function PhotoAnalysis() {
   const chips = exif ? exifChips(exif) : [];
   const displayScene = analysis?.scene ?? manualScene ?? scene;
   const screenLike = signals?.screenLike ?? 0;
+  const screenshotRatio = stats
+    ? Math.max(stats.aspectRatio, 1 / Math.max(stats.aspectRatio, 0.01))
+    : 1;
   const largeRaw = file?.mime === "image/x-raw" &&
     file.size > RAW_MEMORY_WARN_BYTES;
 
@@ -608,11 +614,35 @@ export function PhotoAnalysis() {
                   <li key={item}>· {item}</li>
                 ))}
               </ul>
-              {screenLike >= 60 && !manualScene && (
-                <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2 text-xs leading-5 text-muted-foreground">
-                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                  检测到截图、文档或纯色界面特征（低纹理区域约 {Math.round(signals?.flatness ?? 0)}%），题材判断可能不适用，可修改题材。
-                </p>
+              {screenLike >= 45 && !manualScene && !screenConfirmed && (
+                <div className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2.5">
+                  <p className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <span>
+                      {screenLike >= 55
+                        ? "检测到截图、文档或纯色界面特征"
+                        : "画面具有部分截图或界面特征"}
+                      （低纹理约 {Math.round(signals?.flatness ?? 0)}%，长宽比约{" "}
+                      {screenshotRatio.toFixed(1)}:1），题材判断可能不适用，请确认。
+                    </span>
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setScreenConfirmed(true)}
+                      className="inline-flex min-h-11 items-center rounded-full border border-border bg-background px-3 text-xs font-medium transition hover:bg-muted"
+                    >
+                      确认是照片
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applySubject("GENERAL")}
+                      className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-medium text-primary transition hover:bg-primary/10"
+                    >
+                      改为通用
+                    </button>
+                  </div>
+                </div>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button

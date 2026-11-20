@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  AlertTriangle,
   ArrowUpRight,
   Compass,
   Info,
@@ -16,6 +15,8 @@ import type {
   ThemeId,
 } from "@/functions/shared/contracts";
 import { recommendPhotoSpots } from "@/src/lib/api";
+import { ErrorNotice } from "@/src/components/CapabilityNotice";
+import { describeFailure, type Failure } from "@/src/lib/errors";
 import { compass, formatDate, formatRange } from "@/src/lib/format";
 
 const THEMES: Array<{ id: ThemeId; label: string }> = [
@@ -54,28 +55,27 @@ export function SpotRecommendations({
     null,
   );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    setError("");
+    setFailure(null);
     recommendPhotoSpots({ location, theme, date }, controller.signal)
       .then(setResult)
       .catch((reason) => {
         if (reason instanceof DOMException && reason.name === "AbortError") {
           return;
         }
-        setError(
-          reason instanceof Error ? reason.message : "地点推荐暂不可用。",
-        );
+        setFailure(describeFailure(reason, "spots"));
         setResult(null);
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [location, theme, date]);
+  }, [location, theme, date, retryToken]);
 
   return (
     <div className="space-y-4">
@@ -129,15 +129,15 @@ export function SpotRecommendations({
       </section>
 
       {loading && (
-        <div className="flex items-center gap-2 text-xs font-medium text-primary" role="status">
+        <div className="flex items-center gap-2 text-xs font-medium text-primary" role="status" aria-live="polite">
           <LoaderCircle className="size-4 animate-spin" />正在检索周边摄影点…
         </div>
       )}
-      {error && (
-        <div className="flex items-start gap-2 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 text-sm" role="alert">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <span>{error}</span>
-        </div>
+      {failure && (
+        <ErrorNotice
+          failure={failure}
+          onRetry={() => setRetryToken((value) => value + 1)}
+        />
       )}
 
       {result && (
