@@ -7,12 +7,15 @@ export function ErrorNotice({
   retryLabel = "重试",
   secondary,
   compact = false,
+  emphasis = false,
 }: {
   failure: Failure;
   onRetry?: () => void;
   retryLabel?: string;
   secondary?: { label: string; onClick: () => void };
   compact?: boolean;
+  /** 让重试成为错误块里的主操作，用于用户唯一能继续的地方。 */
+  emphasis?: boolean;
 }) {
   return (
     <div
@@ -34,7 +37,11 @@ export function ErrorNotice({
               <button
                 type="button"
                 onClick={onRetry}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-background px-3 text-xs font-medium shadow-sm transition hover:bg-muted"
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-medium shadow-sm transition ${
+                  emphasis
+                    ? "bg-primary text-primary-foreground hover:opacity-90"
+                    : "bg-background hover:bg-muted"
+                }`}
               >
                 <RotateCw className="size-3.5" />{retryLabel}
               </button>

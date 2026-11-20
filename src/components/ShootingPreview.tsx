@@ -124,7 +124,7 @@ export function ShootingPreview({
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {sample
-              ? "以下为示例数据，选择位置后替换为真实结果。"
+              ? "以下日出日落、云量、能见度与评分均为示例，选择位置后显示真实结果。"
               : data
               ? `${formatDate(data.date)} · 实况与太阳方位实时计算`
               : error
@@ -176,7 +176,14 @@ export function ShootingPreview({
             className="mt-3 hidden sm:block"
           />
           <div className="mt-3 hidden items-center justify-between gap-2 rounded-xl bg-muted/45 px-3 py-2 text-xs sm:flex">
-            <span className="text-muted-foreground">黄金时刻</span>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              黄金时刻
+              {sample && (
+                <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                  示例
+                </span>
+              )}
+            </span>
             <strong className="tabular-nums">{goldenText}</strong>
           </div>
 

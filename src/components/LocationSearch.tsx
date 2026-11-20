@@ -21,6 +21,9 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
+  const [failureSource, setFailureSource] = useState<"search" | "locate">(
+    "search",
+  );
   const [open, setOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [latitude, setLatitude] = useState("");
@@ -32,6 +35,12 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
   const inputRef = useRef<HTMLInputElement>(null);
   const latitudeRef = useRef<HTMLInputElement>(null);
   const longitudeRef = useRef<HTMLInputElement>(null);
+
+  // 记录失败来自搜索还是定位，重试时才能重复同一个动作。
+  function fail(next: Failure, source: "search" | "locate" = "search") {
+    setFailureSource(source);
+    setFailure(next);
+  }
 
   useEffect(() => {
     const value = query.trim();
@@ -54,7 +63,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
         setResultsQuery(value);
         setOpen(true);
         if (!response.locations.length) {
-          setFailure({
+          fail({
             kind: "not-found",
             title: "没有找到匹配地点",
             message: response.message ?? "请尝试更完整的区县名称，或改用手动坐标。",
@@ -64,7 +73,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
       } catch (reason) {
         if (reason instanceof DOMException && reason.name === "AbortError") return;
         if (requestId.current === currentRequest) {
-          setFailure(describeFailure(reason, "location"));
+          fail(describeFailure(reason, "location"), "search");
         }
       } finally {
         if (requestId.current === currentRequest) setSearching(false);
@@ -76,12 +85,16 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
     };
   }, [query, retryToken]);
 
-  function choose(item: LocationResult) {
-    onSelect(item);
+  function resetSearch() {
     setQuery("");
     setResults([]);
     setResultsQuery("");
     setOpen(false);
+  }
+
+  function choose(item: LocationResult) {
+    onSelect(item);
+    resetSearch();
     setManualOpen(false);
     setManualError("");
     setFailure(null);
@@ -91,12 +104,12 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
     setFailure(null);
     if (!navigator.geolocation) {
       if (!silent) {
-        setFailure({
+        fail({
           kind: "service",
           title: "浏览器不支持定位",
           message: "请搜索区县，或手动输入坐标。",
           retryable: false,
-        });
+        }, "locate");
       }
       return;
     }
@@ -106,12 +119,12 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
         try {
           if (!isInChina(coords.latitude, coords.longitude)) {
             if (!silent) {
-              setFailure({
+              fail({
                 kind: "not-found",
                 title: "当前位置暂不支持",
                 message: "当前版本仅支持中国境内拍摄位置，请搜索区县或手动输入坐标。",
                 retryable: false,
-              });
+              }, "locate");
             }
             return;
           }
@@ -121,6 +134,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
           } catch {
             onSelect({ name: "当前位置", region: "地名未解析", latitude: coords.latitude, longitude: coords.longitude, precision: "GPS", timezone: "Asia/Shanghai" });
           }
+          resetSearch();
           setManualOpen(false);
           setLatitude("");
           setLongitude("");
@@ -132,7 +146,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
       (geoError) => {
         setLocating(false);
         if (silent) return;
-        setFailure(geolocationFailure(geoError));
+        fail(geolocationFailure(geoError), "locate");
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
@@ -205,6 +219,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
       return;
     }
     onSelect({ name: "手动位置", latitude: lat, longitude: lng, precision: "MANUAL", timezone: "Asia/Shanghai" });
+    resetSearch();
     setManualOpen(false);
     setManualError("");
     setFailure(null);
@@ -220,14 +235,28 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
 
   const showResults = open && !failure && results.length > 0 &&
     resultsQuery === query.trim();
-  const retry = () => {
-    if (query.trim().length >= 2) {
+  const hasQuery = query.trim().length >= 2;
+  // 搜索失败时只要输入还在就允许重试；平台侧 4xx 也会走到这里。
+  const canRetry = failure
+    ? failureSource === "locate"
+      ? failure.retryable
+      : hasQuery && failure.kind !== "input"
+    : false;
+  const retrySearch = () => {
+    if (hasQuery) {
       setFailure(null);
       setSearching(true);
       setRetryToken((value) => value + 1);
     } else {
       inputRef.current?.focus();
     }
+  };
+  const retry = () => {
+    if (failureSource === "locate") {
+      locate(false);
+      return;
+    }
+    retrySearch();
   };
 
   return (
@@ -246,7 +275,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
               if (event.key !== "Enter") return;
               event.preventDefault();
               if (results.length > 0 && resultsQuery === query.trim()) choose(results[0]);
-              else retry();
+              else retrySearch();
             }}
             placeholder="搜索城市或区县，例如惠州、惠城区…"
             autoComplete="off"
@@ -283,7 +312,11 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
       </p>
 
       <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-card/70 px-3 py-2 text-xs">
-        <span className="flex min-w-0 flex-1 basis-full items-center gap-1.5 sm:basis-auto">
+        <span
+          className={`flex min-w-0 flex-1 items-center gap-1.5 ${
+            location ? "basis-full sm:basis-auto" : "basis-auto"
+          }`}
+        >
           <MapPin className="size-4 shrink-0 text-primary" />
           {location ? (
             <>
@@ -305,7 +338,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
             </span>
           )}
         </span>
-        <span className="flex shrink-0 items-center gap-1">
+        <span className="ml-auto flex shrink-0 items-center gap-1">
           {location && (
             <button
               type="button"
@@ -326,7 +359,11 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
               }
             }}
             aria-expanded={manualOpen}
-            className="inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className={`inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-medium transition ${
+              location
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "border border-border bg-card text-foreground shadow-sm hover:border-primary/40 hover:text-primary"
+            }`}
           >
             <SlidersHorizontal className="size-3.5" />手动坐标
           </button>
@@ -337,9 +374,11 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
         <div className="mt-2">
           <ErrorNotice
             compact
+            emphasis
             failure={failure}
-            onRetry={failure.retryable ? retry : undefined}
-            secondary={failure.kind === "input" ? undefined : { label: "手动坐标", onClick: openManual }}
+            retryLabel={failureSource === "locate" ? "重试定位" : "重新搜索"}
+            onRetry={canRetry ? retry : undefined}
+            secondary={failure.kind === "input" ? undefined : { label: "改用手动坐标", onClick: openManual }}
           />
         </div>
       )}

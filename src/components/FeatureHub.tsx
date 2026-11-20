@@ -264,7 +264,9 @@ function FeatureMenu({
             功能导航
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground 2xl:text-sm">
-            四个环境功能共用当前拍摄位置；照片分析无需位置。
+            {location
+              ? "四个环境功能共用当前拍摄位置；照片分析无需位置。"
+              : "实况天气、霞光与光线、拍摄方案、地点推荐需要先选择拍摄位置；照片分析无需位置。"}
           </p>
         </div>
       </div>
@@ -286,36 +288,51 @@ function FeatureMenu({
                 style={{ "--pm-index": index + 1 } as React.CSSProperties}
                 onClick={() =>
                   state.needsLocation ? onNeedLocation() : onSectionChange(id)}
-                className="group flex min-h-[72px] flex-row items-center gap-3 rounded-[var(--radius)] border border-border bg-card p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 xs:min-h-[104px] xs:flex-col xs:items-stretch xs:gap-0 xs:p-3.5 sm:p-5 lg:min-h-36"
+                className="group flex min-h-[72px] flex-col items-stretch rounded-[var(--radius)] border border-border bg-card p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 xs:min-h-[104px] xs:p-3.5 sm:p-5 lg:min-h-36"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2.5 xs:flex-none xs:flex-col xs:items-stretch xs:gap-0">
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-105 sm:size-10 sm:rounded-2xl">
                     <Icon className="size-5" />
                   </span>
                   <div className="min-w-0 flex-1 xs:mt-3">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
                       <h3 className="min-w-0 text-sm font-semibold sm:text-base lg:text-lg">
                         {meta.title}
                       </h3>
-                      <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
+                      {state.needsLocation ? (
+                        <span className="hidden shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground/75 sm:inline-flex">
+                          需要位置
+                        </span>
+                      ) : (
+                        <ArrowUpRight className="ml-auto size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
+                      )}
                     </div>
                     <p className="mt-1 hidden text-xs leading-5 text-muted-foreground sm:block lg:text-sm lg:leading-6">
                       {meta.intro}
                     </p>
                   </div>
                 </div>
-                <p className="mt-2 hidden truncate text-xs leading-5 text-muted-foreground xs:block">
-                  {state.status}
-                </p>
-                <span
-                  className={`mt-auto hidden pt-2 text-xs font-medium xs:block lg:text-sm ${
-                    state.needsLocation
-                      ? "text-muted-foreground underline-offset-2 group-hover:underline"
-                      : "text-primary"
-                  }`}
-                >
-                  {state.cta}
-                </span>
+                <div className="mt-auto pt-2">
+                  {state.needsLocation && (
+                    <span className="mb-1.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground/75 sm:hidden">
+                      需要位置
+                    </span>
+                  )}
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {state.status}
+                  </p>
+                  <span className="mt-2 block">
+                    {state.needsLocation ? (
+                      <span className="inline-flex items-center rounded-full border border-primary/35 px-2.5 py-1 text-xs font-semibold text-primary transition group-hover:border-primary/60 group-hover:bg-primary/5">
+                        {state.cta}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-primary lg:text-sm">
+                        {state.cta}
+                      </span>
+                    )}
+                  </span>
+                </div>
               </button>
             );
           })}
@@ -363,10 +380,10 @@ function locationCardState(
 ): { status: string; cta: string; needsLocation: boolean } {
   if (!location) {
     const copy: Record<LocationSectionId, string> = {
-      WEATHER: "天气、光线与方案都需要先选择位置",
-      LIGHT: "霞光评分与光线窗口需要先选择位置",
-      PLANS: "拍摄方案需要先选择位置",
-      SPOTS: "周边摄影点需要先选择位置",
+      WEATHER: "选择位置后显示实况",
+      LIGHT: "选择位置后显示霞光",
+      PLANS: "选择位置后生成方案",
+      SPOTS: "选择位置后推荐摄影点",
     };
     return { status: copy[id], cta: "选择拍摄位置 →", needsLocation: true };
   }
@@ -815,7 +832,7 @@ function LocationPrompt() {
         <MapPin className="mx-auto size-8 text-primary" />
         <h3 className="mt-3 text-lg font-semibold">先确定拍摄位置</h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          请先在主页面选择拍摄位置，天气和拍摄方案会自动沿用该位置。
+          返回功能导航后，在首屏搜索区县、使用定位或手动输入坐标即可；各功能会自动沿用该位置。
         </p>
       </div>
     </div>
