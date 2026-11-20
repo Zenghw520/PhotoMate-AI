@@ -25,10 +25,13 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
   const [manualOpen, setManualOpen] = useState(false);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [manualError, setManualError] = useState("");
   const [retryToken, setRetryToken] = useState(0);
   const requestId = useRef(0);
   const autoAttempted = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const latitudeRef = useRef<HTMLInputElement>(null);
+  const longitudeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const value = query.trim();
@@ -80,6 +83,7 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
     setResultsQuery("");
     setOpen(false);
     setManualOpen(false);
+    setManualError("");
     setFailure(null);
   }
 
@@ -156,35 +160,62 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
 
   function submitManual(event: React.FormEvent) {
     event.preventDefault();
-    const lat = Number(latitude);
-    const lng = Number(longitude);
-    if (!latitude.trim() || !longitude.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      setFailure({
-        kind: "input",
-        title: "坐标格式不正确",
-        message: "请输入有效的经纬度：纬度 -90～90，经度 -180～180。",
-        retryable: false,
-      });
+    const latitudeText = latitude.trim();
+    const longitudeText = longitude.trim();
+    if (!latitudeText && !longitudeText) {
+      setManualError("请输入纬度和经度");
+      latitudeRef.current?.focus();
+      return;
+    }
+    if (!latitudeText) {
+      setManualError("请输入纬度");
+      latitudeRef.current?.focus();
+      return;
+    }
+    if (!longitudeText) {
+      setManualError("请输入经度");
+      longitudeRef.current?.focus();
+      return;
+    }
+    const lat = Number(latitudeText);
+    const lng = Number(longitudeText);
+    if (!Number.isFinite(lat)) {
+      setManualError("纬度需为有效数字，例如 39.9042。");
+      latitudeRef.current?.focus();
+      return;
+    }
+    if (!Number.isFinite(lng)) {
+      setManualError("经度需为有效数字，例如 116.4074。");
+      longitudeRef.current?.focus();
+      return;
+    }
+    if (lat < -90 || lat > 90) {
+      setManualError("纬度需在 -90～90 之间。");
+      latitudeRef.current?.focus();
+      return;
+    }
+    if (lng < -180 || lng > 180) {
+      setManualError("经度需在 -180～180 之间。");
+      longitudeRef.current?.focus();
       return;
     }
     if (!isInChina(lat, lng)) {
-      setFailure({
-        kind: "input",
-        title: "坐标不在支持范围内",
-        message: "当前版本仅支持中国境内坐标：纬度 3～54，经度 73～135。",
-        retryable: false,
-      });
+      setManualError("当前版本仅支持中国境内坐标：纬度 3～54，经度 73～135。");
+      latitudeRef.current?.focus();
       return;
     }
     onSelect({ name: "手动位置", latitude: lat, longitude: lng, precision: "MANUAL", timezone: "Asia/Shanghai" });
     setManualOpen(false);
+    setManualError("");
     setFailure(null);
   }
 
   function openManual() {
     setManualOpen(true);
     setFailure(null);
+    setManualError("");
     setOpen(false);
+    window.setTimeout(() => latitudeRef.current?.focus(), 50);
   }
 
   const showResults = open && !failure && results.length > 0 &&
@@ -279,16 +310,23 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
             <button
               type="button"
               onClick={() => inputRef.current?.focus()}
-              className="inline-flex min-h-9 items-center gap-1 rounded-full px-2.5 font-medium text-primary transition hover:bg-primary/10"
+              className="inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-medium text-primary transition hover:bg-primary/10"
             >
               <Pencil className="size-3.5" />更改
             </button>
           )}
           <button
             type="button"
-            onClick={() => manualOpen ? setManualOpen(false) : openManual()}
+            onClick={() => {
+              if (manualOpen) {
+                setManualOpen(false);
+                setManualError("");
+              } else {
+                openManual();
+              }
+            }}
             aria-expanded={manualOpen}
-            className="inline-flex min-h-9 items-center gap-1 rounded-full px-2.5 font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <SlidersHorizontal className="size-3.5" />手动坐标
           </button>
@@ -330,10 +368,62 @@ export function LocationSearch({ location, onSelect, autoLocate = false }: { loc
       )}
 
       {manualOpen && (
-        <form onSubmit={submitManual} className="mt-3 grid gap-2 rounded-2xl border border-border bg-card/70 p-3 sm:grid-cols-[1fr_1fr_auto]">
-          <label><span className="mb-1 block text-xs text-muted-foreground">纬度</span><input required inputMode="decimal" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="39.9042" className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" /></label>
-          <label><span className="mb-1 block text-xs text-muted-foreground">经度</span><input required inputMode="decimal" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="116.4074" className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" /></label>
-          <button type="submit" className="h-10 self-end rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-85">应用坐标</button>
+        <form
+          noValidate
+          onSubmit={submitManual}
+          className="mt-3 grid gap-2 rounded-2xl border border-border bg-card/70 p-3 sm:grid-cols-[1fr_1fr_auto]"
+        >
+          {manualError && (
+            <p
+              id="manual-coord-error"
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-xs leading-5 text-destructive sm:col-span-3"
+            >
+              {manualError}
+            </p>
+          )}
+          <label>
+            <span className="mb-1 block text-xs text-muted-foreground">纬度</span>
+            <input
+              ref={latitudeRef}
+              required
+              inputMode="decimal"
+              autoComplete="off"
+              value={latitude}
+              onChange={(event) => {
+                setLatitude(event.target.value);
+                if (manualError) setManualError("");
+              }}
+              aria-invalid={manualError ? true : undefined}
+              aria-describedby={manualError ? "manual-coord-error" : undefined}
+              placeholder="39.9042"
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs text-muted-foreground">经度</span>
+            <input
+              ref={longitudeRef}
+              required
+              inputMode="decimal"
+              autoComplete="off"
+              value={longitude}
+              onChange={(event) => {
+                setLongitude(event.target.value);
+                if (manualError) setManualError("");
+              }}
+              aria-invalid={manualError ? true : undefined}
+              aria-describedby={manualError ? "manual-coord-error" : undefined}
+              placeholder="116.4074"
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </label>
+          <button
+            type="submit"
+            className="min-h-11 self-end rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-85"
+          >
+            应用坐标
+          </button>
         </form>
       )}
     </div>

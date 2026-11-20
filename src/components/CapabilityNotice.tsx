@@ -34,7 +34,7 @@ export function ErrorNotice({
               <button
                 type="button"
                 onClick={onRetry}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-background px-3 text-xs font-medium shadow-sm transition hover:bg-muted"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-background px-3 text-xs font-medium shadow-sm transition hover:bg-muted"
               >
                 <RotateCw className="size-3.5" />{retryLabel}
               </button>
@@ -43,7 +43,7 @@ export function ErrorNotice({
               <button
                 type="button"
                 onClick={secondary.onClick}
-                className="inline-flex min-h-9 items-center rounded-full px-3 text-xs font-medium text-primary transition hover:bg-primary/10"
+                className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-medium text-primary transition hover:bg-primary/10"
               >
                 {secondary.label}
               </button>

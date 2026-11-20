@@ -216,7 +216,7 @@ export function ShootingPreview({
             </div>
           </div>
 
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
+          <div className="mt-auto flex flex-col items-start gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Sparkles className="size-3.5 text-primary" />
               综合摄影指数 {overall === null ? "—" : Math.round(overall)}
@@ -225,7 +225,7 @@ export function ShootingPreview({
               <button
                 type="button"
                 onClick={onNeedLocation}
-                className="inline-flex min-h-9 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
               >
                 选择拍摄位置<ArrowRight className="size-3.5" />
               </button>
@@ -234,7 +234,7 @@ export function ShootingPreview({
                 type="button"
                 onClick={onOpen}
                 disabled={!data}
-                className="inline-flex min-h-9 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
               >
                 查看完整条件<ArrowRight className="size-3.5" />
               </button>

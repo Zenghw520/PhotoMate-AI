@@ -31,6 +31,11 @@ import { analyzePhoto } from "@/src/lib/api";
 import { ErrorNotice } from "@/src/components/CapabilityNotice";
 import { describeFailure, type Failure } from "@/src/lib/errors";
 import { parseJpegExif } from "@/src/lib/exif";
+import {
+  cameraLabel,
+  focalLengthChip,
+  formatExifDateTime,
+} from "@/src/lib/format";
 import { measurePhoto } from "@/src/lib/photo";
 import { decodeRaw, isRawFile, RAW_ACCEPT } from "@/src/lib/raw";
 import { addRecord } from "@/src/lib/records";
@@ -85,6 +90,12 @@ function readFailure(reason: unknown): Failure {
   };
 }
 
+function fileSizeText(bytes: number) {
+  const megabytes = bytes / 1024 / 1024;
+  if (megabytes < 0.1) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${megabytes.toFixed(1)}MB`;
+}
+
 function shutterText(seconds: number) {
   return seconds >= 1
     ? `${Number(seconds.toFixed(1))}s`
@@ -102,26 +113,21 @@ function fileMime(file: File) {
 
 function exifChips(exif: PhotoExif) {
   const chips: { label: string; value: string }[] = [];
-  const camera = [exif.make, exif.model].filter(Boolean).join(" ");
+  const camera = cameraLabel(exif.make, exif.model);
   if (camera) chips.push({ label: "相机", value: camera });
   if (exif.lens) chips.push({ label: "镜头", value: exif.lens });
-  if (exif.focalLength !== null || exif.focalLength35 !== null) {
-    chips.push({
-      label: "焦距",
-      value: `${exif.focalLength ?? exif.focalLength35}mm${
-        exif.focalLength35 !== null && exif.focalLength !== null
-          ? `（等效 ${exif.focalLength35}mm）`
-          : ""
-      }`,
-    });
-  }
+  const focal = focalLengthChip(exif.focalLength, exif.focalLength35);
+  if (focal) chips.push(focal);
   if (exif.fNumber !== null) chips.push({ label: "光圈", value: `f/${exif.fNumber}` });
   if (exif.exposureTime !== null) {
     chips.push({ label: "快门", value: shutterText(exif.exposureTime) });
   }
   if (exif.iso !== null) chips.push({ label: "ISO", value: String(exif.iso) });
   if (exif.dateTimeOriginal) {
-    chips.push({ label: "时间", value: exif.dateTimeOriginal });
+    chips.push({
+      label: "时间",
+      value: formatExifDateTime(exif.dateTimeOriginal) ?? exif.dateTimeOriginal,
+    });
   }
   if (exif.hasGps) chips.push({ label: "位置", value: "含 GPS（仅本地）" });
   return chips;
@@ -481,7 +487,7 @@ export function PhotoAnalysis() {
           <p className="mt-2 text-xs text-muted-foreground">也可以把照片拖到这里</p>
           {file && (
             <p className="mt-2 truncate text-xs text-muted-foreground">
-              {file.name} · {(file.size / 1024 / 1024).toFixed(1)}MB
+              {file.name} · {fileSizeText(file.size)}
             </p>
           )}
           {largeRaw && (
@@ -539,7 +545,7 @@ export function PhotoAnalysis() {
             <button
               type="button"
               onClick={cancelReading}
-              className="inline-flex min-h-9 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <X className="size-3.5" />取消读取
             </button>
@@ -613,7 +619,7 @@ export function PhotoAnalysis() {
                   type="button"
                   onClick={() => setSubjectOpen((value) => !value)}
                   aria-expanded={subjectOpen}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-medium transition hover:bg-muted"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-medium transition hover:bg-muted"
                 >
                   <Pencil className="size-3.5" />修改题材
                 </button>
@@ -621,7 +627,7 @@ export function PhotoAnalysis() {
                   <button
                     type="button"
                     onClick={resetSubject}
-                    className="inline-flex min-h-9 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
                   >
                     <RotateCcw className="size-3.5" />恢复自动判断
                   </button>
@@ -639,7 +645,7 @@ export function PhotoAnalysis() {
                       type="button"
                       aria-pressed={displayScene?.subject === item.subject}
                       onClick={() => applySubject(item.subject)}
-                      className={`min-h-9 rounded-full px-3 text-xs font-medium transition ${
+                      className={`min-h-11 rounded-full px-3 text-xs font-medium transition ${
                         displayScene?.subject === item.subject
                           ? "bg-primary text-primary-foreground"
                           : "bg-background text-muted-foreground hover:text-foreground"
@@ -706,7 +712,7 @@ export function PhotoAnalysis() {
               type="button"
               onClick={saveAnalysis}
               disabled={savedRecord}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border px-3.5 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border px-3.5 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
             >
               <CheckCircle2 className="size-3.5" />
               {savedRecord ? "已保存到拍摄记录" : "保存分析记录"}

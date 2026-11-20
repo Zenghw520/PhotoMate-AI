@@ -144,10 +144,10 @@ export default function App() {
   return (
     <div className="app-shell flex min-h-dvh flex-col">
       <header className="sticky top-0 z-40 shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Aperture className="size-5" /></span>
-            <div><p className="text-sm font-bold tracking-tight">PhotoMate <span className="text-primary">AI</span></p><p className="text-xs tracking-[0.16em] text-muted-foreground">智能摄影规划助手</p></div>
+        <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-2 px-3 xs:h-16 xs:gap-4 xs:px-4 sm:px-6 lg:px-8 2xl:max-w-[1680px] 2xl:px-10">
+          <div className="flex min-w-0 items-center gap-2 xs:gap-3">
+            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm xs:size-9"><Aperture className="size-5" /></span>
+            <div className="min-w-0"><p className="whitespace-nowrap text-sm font-bold tracking-tight">PhotoMate <span className="text-primary">AI</span></p><p className="hidden text-xs tracking-[0.16em] text-muted-foreground xs:block">智能摄影规划助手</p></div>
           </div>
           <ThemeToggle />
         </div>

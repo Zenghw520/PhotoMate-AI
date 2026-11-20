@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -268,7 +268,7 @@ function FeatureMenu({
       <div className="mt-3 space-y-2.5 sm:space-y-3">
         <PhotoEntry onOpen={() => onSectionChange("PHOTO")} />
         <div
-          className="grid grid-cols-2 gap-2.5 sm:gap-3"
+          className="grid grid-cols-1 gap-2 xs:grid-cols-2 xs:gap-2.5 sm:gap-3"
           aria-busy={loading && location !== null && data === null}
         >
           {LOCATION_SECTIONS.map((id) => {
@@ -281,15 +281,15 @@ function FeatureMenu({
                 type="button"
                 onClick={() =>
                   state.needsLocation ? onNeedLocation() : onSectionChange(id)}
-                className="group flex min-h-[104px] flex-col rounded-[var(--radius)] border border-border bg-card p-3.5 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 sm:p-5 lg:min-h-36"
+                className="group flex min-h-[72px] flex-row items-center gap-3 rounded-[var(--radius)] border border-border bg-card p-3 text-left shadow-sm transition hover:border-primary/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 xs:min-h-[104px] xs:flex-col xs:items-stretch xs:gap-0 xs:p-3.5 sm:p-5 lg:min-h-36"
               >
-                <div className="flex items-start gap-2.5">
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 xs:flex-none xs:flex-col xs:items-stretch xs:gap-0">
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-10 sm:rounded-2xl">
                     <Icon className="size-5" />
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 xs:mt-3">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-semibold sm:text-base lg:text-lg">
+                      <h3 className="min-w-0 text-sm font-semibold sm:text-base lg:text-lg">
                         {meta.title}
                       </h3>
                       <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
@@ -299,10 +299,10 @@ function FeatureMenu({
                     </p>
                   </div>
                 </div>
-                <p className="mt-2 line-clamp-1 text-xs leading-5 text-muted-foreground">
+                <p className="mt-2 hidden truncate text-xs leading-5 text-muted-foreground xs:block">
                   {state.status}
                 </p>
-                <span className="mt-auto pt-2 text-xs font-medium text-primary lg:text-sm">
+                <span className="mt-auto hidden pt-2 text-xs font-medium text-primary xs:block lg:text-sm">
                   {state.cta}
                 </span>
               </button>
@@ -449,7 +449,39 @@ function SectionDetail({
   const tabs = TABS[section];
   const [tab, setTab] = useState(tabs[0].id);
   const [period, setPeriod] = useState("all");
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const activeTab = tabs.find((item) => item.id === tab) ?? tabs[0];
+  const sectionKey = section.toLowerCase();
+  const tabId = (id: string) => `${sectionKey}-${id}-tab`;
+  const panelId = `${sectionKey}-${tab}-panel`;
+  const handleTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = tabs.length - 1;
+    }
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const next = tabs[nextIndex];
+    setTab(next.id);
+    requestAnimationFrame(() => tabRefs.current[next.id]?.focus());
+  };
+  const panelProps = tabs.length > 1
+    ? {
+      role: "tabpanel" as const,
+      id: panelId,
+      "aria-labelledby": tabId(tab),
+      tabIndex: 0,
+    }
+    : {};
   const periodKinds = PERIODS.find((item) => item.id === period)?.kinds ?? null;
   const filteredTimeline = data && periodKinds
     ? data.timeline.filter((item) => periodKinds.includes(item.kind))
@@ -458,14 +490,22 @@ function SectionDetail({
     <div
       role="tablist"
       aria-label={`${meta.title}二级菜单`}
+      aria-orientation="horizontal"
       className="scrollbar-none mt-4 flex gap-2 overflow-x-auto pb-1"
     >
-      {tabs.map((item) => (
+      {tabs.map((item, index) => (
         <button
           key={item.id}
+          ref={(element) => {
+            tabRefs.current[item.id] = element;
+          }}
+          id={tabId(item.id)}
           type="button"
           role="tab"
           aria-selected={tab === item.id}
+          aria-controls={`${sectionKey}-${item.id}-panel`}
+          tabIndex={tab === item.id ? 0 : -1}
+          onKeyDown={(event) => handleTabKeyDown(event, index)}
           onClick={() => setTab(item.id)}
           className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-medium transition ${
             tab === item.id
@@ -520,7 +560,7 @@ function SectionDetail({
                   type="button"
                   aria-pressed={dayOffset === item.offset}
                   onClick={() => onDayChange(item.offset)}
-                  className={`min-h-10 rounded-full px-3.5 text-xs font-medium transition ${
+                  className={`min-h-11 rounded-full px-3.5 text-xs font-medium transition ${
                     dayOffset === item.offset
                       ? "bg-foreground text-background"
                       : "bg-muted text-muted-foreground hover:text-foreground"
@@ -559,15 +599,17 @@ function SectionDetail({
       {section === "PHOTO" && (
         <>
           {tabBar}
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {activeTab.intro}
-          </p>
-          <div className="mt-4">
-            {tab === "upload"
-              ? <PhotoAnalysis />
-              : tab === "records"
-              ? <PhotoRecords />
-              : <PhotoMethod />}
+          <div {...panelProps} className="mt-2 focus-visible:outline-none">
+            <p className="text-xs leading-5 text-muted-foreground">
+              {activeTab.intro}
+            </p>
+            <div className="mt-4">
+              {tab === "upload"
+                ? <PhotoAnalysis />
+                : tab === "records"
+                ? <PhotoRecords />
+                : <PhotoMethod />}
+            </div>
           </div>
         </>
       )}
@@ -575,11 +617,12 @@ function SectionDetail({
       {section !== "PHOTO" && section !== "SPOTS" && data && (
         <>
           {tabs.length > 1 && tabBar}
-          <p className="mt-4 text-xs leading-5 text-muted-foreground">
-            {activeTab.intro}
-          </p>
+          <div {...panelProps} className="mt-4 focus-visible:outline-none">
+            <p className="text-xs leading-5 text-muted-foreground">
+              {activeTab.intro}
+            </p>
 
-          <div className="mt-4">
+            <div className="mt-4">
             {section === "WEATHER" && tab === "current" && (
               <WeatherOverview
                 weather={data.weather}
@@ -665,7 +708,7 @@ function SectionDetail({
                       type="button"
                       aria-pressed={period === item.id}
                       onClick={() => setPeriod(item.id)}
-                      className={`min-h-10 shrink-0 rounded-full px-3.5 text-xs font-medium transition ${
+                      className={`min-h-11 shrink-0 rounded-full px-3.5 text-xs font-medium transition ${
                         period === item.id
                           ? "bg-foreground text-background"
                           : "bg-muted text-muted-foreground hover:text-foreground"
@@ -691,6 +734,7 @@ function SectionDetail({
                 onSelectSlot={onSelectSlot}
               />
             )}
+            </div>
           </div>
         </>
       )}
@@ -811,7 +855,7 @@ function WeatherSources({ weather }: { weather: WeatherData }) {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="min-h-9 shrink-0 rounded-full bg-background px-3 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted"
+            className="min-h-11 shrink-0 rounded-full bg-background px-3 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted"
           >
             重新获取
           </button>

@@ -35,6 +35,42 @@ function dailyLimit() {
     : 40;
 }
 
+function cameraLabel(make: string | null, model: string | null): string | null {
+  const brand = make?.trim() ?? "";
+  const name = model?.trim() ?? "";
+  if (!name) return brand || null;
+  if (!brand) return name;
+  const brandTokens = brand.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const modelHead = name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)[0];
+  if (
+    name.toLowerCase().startsWith(brand.toLowerCase()) ||
+    (modelHead !== undefined && brandTokens.includes(modelHead))
+  ) {
+    return name;
+  }
+  return `${brand} ${name}`;
+}
+
+function formatExifDate(value: string): string {
+  return value.replace(
+    /^(\d{4}):(\d{2}):(\d{2})([ T].*)?$/,
+    "$1-$2-$3$4",
+  );
+}
+
+function focalSummary(exif: PhotoExif): string | null {
+  if (exif.focalLength !== null && exif.focalLength35 !== null) {
+    return `焦距 ${exif.focalLength}mm（等效 ${exif.focalLength35}mm）`;
+  }
+  if (exif.focalLength35 !== null) {
+    return `等效焦距 ${exif.focalLength35}mm`;
+  }
+  if (exif.focalLength !== null) {
+    return `镜头焦距 ${exif.focalLength}mm`;
+  }
+  return null;
+}
+
 function shutterText(seconds: number) {
   return seconds >= 1
     ? `${Number(seconds.toFixed(1))}s`
@@ -344,18 +380,11 @@ export async function analyzePhoto(
   }
 
   if (exif) {
-    const camera = [exif.make, exif.model].filter(Boolean).join(" ");
+    const camera = cameraLabel(exif.make, exif.model);
     if (camera) exifSummary.push(camera);
     if (exif.lens) exifSummary.push(`镜头 ${exif.lens}`);
-    if (exif.focalLength !== null || exif.focalLength35 !== null) {
-      exifSummary.push(
-        `焦距 ${exif.focalLength ?? exif.focalLength35}mm${
-          exif.focalLength35 !== null && exif.focalLength !== null
-            ? `（等效 ${exif.focalLength35}mm）`
-            : ""
-        }`,
-      );
-    }
+    const focal = focalSummary(exif);
+    if (focal) exifSummary.push(focal);
     if (exif.fNumber !== null) exifSummary.push(`光圈 f/${exif.fNumber}`);
     if (exif.exposureTime !== null) {
       exifSummary.push(`快门 ${shutterText(exif.exposureTime)}`);
@@ -367,7 +396,7 @@ export async function analyzePhoto(
       );
     }
     if (exif.dateTimeOriginal) {
-      exifSummary.push(`拍摄时间 ${exif.dateTimeOriginal}`);
+      exifSummary.push(`拍摄时间 ${formatExifDate(exif.dateTimeOriginal)}`);
     }
     if (exif.hasGps) exifSummary.push("含 GPS 信息（未上传）");
 

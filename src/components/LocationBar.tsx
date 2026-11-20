@@ -36,7 +36,7 @@ export function LocationBar({
       <button
         type="button"
         onClick={onChange}
-        className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full px-3 font-medium text-primary transition hover:bg-primary/10"
+        className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 font-medium text-primary transition hover:bg-primary/10"
       >
         <Pencil className="size-3.5" />更改
       </button>

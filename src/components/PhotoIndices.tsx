@@ -194,7 +194,7 @@ function IndexCard({ entry }: { entry: PhotographyIndexEntry }) {
         {entry.note}
       </p>
       <details className="group/detail mt-2">
-        <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-xs font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
           评分依据
           <ChevronDown className="size-3.5 transition group-open/detail:rotate-180" />
         </summary>

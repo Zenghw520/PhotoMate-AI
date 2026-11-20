@@ -99,6 +99,52 @@ export function compactLocationName(location: {
   return parts.slice(-3).join("") || location.name;
 }
 
+export function cameraLabel(
+  make: string | null,
+  model: string | null,
+): string | null {
+  const brand = make?.trim() ?? "";
+  const name = model?.trim() ?? "";
+  if (!name) return brand || null;
+  if (!brand) return name;
+  const brandTokens = brand.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const modelHead = name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)[0];
+  if (
+    name.toLowerCase().startsWith(brand.toLowerCase()) ||
+    (modelHead !== undefined && brandTokens.includes(modelHead))
+  ) {
+    return name;
+  }
+  return `${brand} ${name}`;
+}
+
+export function formatExifDateTime(value: string | null): string | null {
+  if (!value) return null;
+  return value.replace(
+    /^(\d{4}):(\d{2}):(\d{2})([ T].*)?$/,
+    "$1-$2-$3$4",
+  );
+}
+
+export function focalLengthChip(
+  focalLength: number | null,
+  focalLength35: number | null,
+): { label: string; value: string } | null {
+  if (focalLength !== null && focalLength35 !== null) {
+    return {
+      label: "焦距",
+      value: `${focalLength}mm（等效 ${focalLength35}mm）`,
+    };
+  }
+  if (focalLength35 !== null) {
+    return { label: "等效焦距", value: `${focalLength35}mm` };
+  }
+  if (focalLength !== null) {
+    return { label: "镜头焦距", value: `${focalLength}mm` };
+  }
+  return null;
+}
+
 const WEATHER_FIELD_LABELS: Record<string, string> = {
   cloud: "云量",
   cloudHigh: "高云量",

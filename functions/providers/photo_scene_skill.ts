@@ -25,6 +25,7 @@ export const PHOTO_SCENE_SKILL =
 9. 输入缺少 EXIF 时不要编造焦距、光圈、ISO 或时间。
 10. 仅有上部亮部占比高这一条证据时，LANDSCAPE 最高给 MEDIUM；还需植被、焦距 ≤35mm 或光圈 ≥f/5.6 至少一条佐证才可 HIGH。
 11. screenLike ≥60、或 flatness ≥70 且 dominantColor ≥45 时，优先 GENERAL；不要把界面高亮区域或大面积纯色当作天空。
+12. 焦距优先使用 focalLength35；该字段为空时，focalLength 只能表述为“镜头焦距”，不得写成“等效焦距”。
 
 只输出 JSON，不要 Markdown：
 {"subject":"PORTRAIT|LANDSCAPE|NIGHT|URBAN|MACRO|GENERAL","confidence":"HIGH|MEDIUM|LOW","basis":["...","..."]}`;

@@ -186,7 +186,14 @@ export function sceneFromImageData(
       signals,
     };
   }
-  const focal = exif?.focalLength35 ?? exif?.focalLength ?? null;
+  const focal35 = exif?.focalLength35 ?? null;
+  const lensFocal = exif?.focalLength ?? null;
+  const focal = focal35 ?? lensFocal;
+  const focalText = focal35 !== null
+    ? `等效焦距约 ${Math.round(focal35)}mm`
+    : lensFocal !== null
+    ? `镜头焦距约 ${Math.round(lensFocal)}mm`
+    : null;
   const aperture = exif?.fNumber ?? null;
   const iso = exif?.iso ?? null;
   const exposureTime = exif?.exposureTime ?? null;
@@ -276,7 +283,7 @@ export function sceneFromImageData(
       subject,
       label: PHOTO_SUBJECT_LABELS[subject],
       confidence,
-      basis: sceneBasis(subject, signals, focal, aperture, iso),
+      basis: sceneBasis(subject, signals, focal, focalText, aperture, iso),
       source: "HEURISTIC",
     },
     signals,
@@ -287,6 +294,7 @@ function sceneBasis(
   subject: PhotoSubject,
   signals: PhotoSignals,
   focal: number | null,
+  focalText: string | null,
   aperture: number | null,
   iso: number | null,
 ) {
@@ -296,7 +304,7 @@ function sceneBasis(
     : null;
   if (subject === "PORTRAIT") {
     basis.push(`肤色像素约 ${formatNumber(signals.skin)}%`);
-    if (focal !== null) basis.push(`等效焦距约 ${Math.round(focal)}mm`);
+    if (focalText) basis.push(focalText);
     if (aperture !== null) basis.push(`光圈 f/${formatNumber(aperture)}`);
     if (basis.length < 3 && sharpnessRatio !== null && sharpnessRatio > 1.3) {
       basis.push(`中央清晰度约为边缘的 ${sharpnessRatio.toFixed(1)} 倍`);
@@ -312,8 +320,8 @@ function sceneBasis(
     ) {
       basis.push("仅有上部亮部占比，缺少植被或镜头参数佐证");
     }
-    if (focal !== null && basis.length < 3) {
-      basis.push(`等效焦距约 ${Math.round(focal)}mm`);
+    if (focalText && basis.length < 3) {
+      basis.push(focalText);
     }
     if (basis.length < 3 && aperture !== null) {
       basis.push(`光圈 f/${formatNumber(aperture)}`);
@@ -330,12 +338,12 @@ function sceneBasis(
   } else if (subject === "URBAN") {
     basis.push(`边缘密度约 ${formatNumber(signals.edgeDensity)}%`);
     basis.push(`天空占比约 ${formatNumber(signals.sky)}%`);
-    if (focal !== null) basis.push(`等效焦距约 ${Math.round(focal)}mm`);
+    if (focalText) basis.push(focalText);
   } else if (subject === "MACRO") {
     if (sharpnessRatio !== null && sharpnessRatio > 1.5) {
       basis.push(`中央清晰度约为边缘的 ${sharpnessRatio.toFixed(1)} 倍`);
     }
-    if (focal !== null) basis.push(`等效焦距约 ${Math.round(focal)}mm`);
+    if (focalText) basis.push(focalText);
     if (aperture !== null) basis.push(`光圈 f/${formatNumber(aperture)}`);
     if (basis.length < 3) {
       basis.push(

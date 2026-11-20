@@ -273,7 +273,7 @@ export function CustomPlanPanel({
                 <button
                   type="button"
                   onClick={() => onSelectSlot(plan.slotId)}
-                  className={`inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-medium transition ${
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-medium transition ${
                     selectedSlotId === plan.slotId
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:text-foreground"
@@ -286,7 +286,7 @@ export function CustomPlanPanel({
                   type="button"
                   onClick={() => savePlan(plan)}
                   disabled={savedPlans.has(plan.slotId)}
-                  className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full border border-border px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-border px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-60"
                 >
                   <CheckCircle2 className="size-3.5" />
                   {savedPlans.has(plan.slotId) ? "已保存" : "保存记录"}

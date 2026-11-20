@@ -92,7 +92,7 @@ export function SpotRecommendations({
                 type="button"
                 aria-pressed={dayOffset === item.offset}
                 onClick={() => onDayChange(item.offset)}
-                className={`min-h-10 rounded-full px-3.5 text-xs font-medium transition ${
+                className={`min-h-11 rounded-full px-3.5 text-xs font-medium transition ${
                   dayOffset === item.offset
                     ? "bg-foreground text-background"
                     : "bg-muted text-muted-foreground hover:text-foreground"
@@ -113,7 +113,7 @@ export function SpotRecommendations({
               type="button"
               aria-pressed={theme === item.id}
               onClick={() => setTheme(item.id)}
-              className={`min-h-9 rounded-full px-3 text-xs font-medium transition ${
+              className={`min-h-11 rounded-full px-3 text-xs font-medium transition ${
                 theme === item.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:text-foreground"

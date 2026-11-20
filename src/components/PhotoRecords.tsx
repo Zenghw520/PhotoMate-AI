@@ -38,7 +38,7 @@ export function PhotoRecords() {
             <button
               type="button"
               onClick={() => clearRecords()}
-              className="min-h-10 rounded-full bg-muted px-4 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+              className="min-h-11 rounded-full bg-muted px-4 text-xs font-medium text-muted-foreground transition hover:text-foreground"
             >
               清空记录
             </button>
@@ -95,7 +95,7 @@ export function PhotoRecords() {
                 type="button"
                 onClick={() => deleteRecord(record.id)}
                 aria-label="删除记录"
-                className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="size-4" />
               </button>
