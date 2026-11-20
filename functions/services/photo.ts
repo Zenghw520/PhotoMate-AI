@@ -3,6 +3,7 @@ import type {
   PhotoAnalysisRequest,
   PhotoAnalysisResponse,
   PhotoExif,
+  PhotoImprovement,
   PhotoScene,
   PhotoSignals,
   PhotoStats,
@@ -334,6 +335,60 @@ function guardScene(
   return scene;
 }
 
+function shortIssue(issue: string): string {
+  const cut = issue.split(/[（(，,：:]/)[0].trim();
+  return cut.length > 18 ? `${cut.slice(0, 18)}…` : cut || "可改进项";
+}
+
+/** 优先把“观察依据 + 下次调整”配成三条，避免只给泛泛建议。 */
+function buildImprovements(
+  issues: string[],
+  suggestions: string[],
+): PhotoImprovement[] {
+  const items: PhotoImprovement[] = [];
+  const overlaps = (candidate: string, existing: string) => {
+    for (let start = 0; start + 4 <= candidate.length; start++) {
+      const fragment = candidate.slice(start, start + 4);
+      if (/^[\s，。；、（）()]+$/.test(fragment)) continue;
+      if (existing.includes(fragment)) return true;
+    }
+    return false;
+  };
+  for (let index = 0; index < issues.length && items.length < 3; index++) {
+    if (
+      items.some((item) =>
+        overlaps(issues[index], item.evidence) ||
+        overlaps(item.evidence, issues[index])
+      )
+    ) continue;
+    items.push({
+      title: shortIssue(issues[index]),
+      evidence: issues[index],
+      adjustment: suggestions[index] ??
+        "下次拍摄时先复现这一情况，再按现场条件只调整一项参数。",
+    });
+  }
+  const fillers = [
+    { title: "先固定一项变量", evidence: "当前未发现明显技术异常", adjustment: "下次只调整曝光或构图中的一项，便于对比效果。" },
+    { title: "保留 EXIF", evidence: "有参数记录才能复核快门、光圈与 ISO", adjustment: "导出照片时保留 EXIF，方便下次按同组参数复拍。" },
+    { title: "补拍一张保险", evidence: "单张照片难以判断最佳曝光", adjustment: "同一构图连拍 ±0.3 EV 两张，回看时再选。" },
+  ];
+  for (const filler of fillers) {
+    if (items.length >= 3) break;
+    items.push(filler);
+  }
+  for (const suggestion of suggestions) {
+    if (items.length >= 3) break;
+    if (items.some((item) => item.adjustment === suggestion)) continue;
+    items.push({
+      title: "可尝试的调整",
+      evidence: "来自画质统计与题材规则的通用建议",
+      adjustment: suggestion,
+    });
+  }
+  return items.slice(0, 3);
+}
+
 export async function analyzePhoto(
   input: PhotoAnalysisRequest,
   db?: DatabaseClient,
@@ -528,6 +583,7 @@ export async function analyzePhoto(
   return {
     generatedAt: now.toISOString(),
     summary,
+    improvements: buildImprovements(issues, suggestions),
     strengths: strengths.slice(0, 6),
     issues: issues.slice(0, 8),
     suggestions: suggestions.slice(0, 8),

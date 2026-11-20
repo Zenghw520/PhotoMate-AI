@@ -69,7 +69,15 @@ function sceneTitle(scene: PhotoScene | null, manual: PhotoScene | null) {
   return scene.confidence === "HIGH" ? scene.label : `可能为${scene.label}`;
 }
 
-function readFailure(reason: unknown): Failure {
+function formatLabel(mime: string) {
+  if (mime === "image/jpeg") return "JPEG";
+  if (mime === "image/png") return "PNG";
+  if (mime === "image/webp") return "WebP";
+  if (mime === "image/x-raw") return "RAW";
+  return "照片";
+}
+
+function readFailure(reason: unknown, mime: string): Failure {
   const message = reason instanceof Error ? reason.message : "";
   if (
     reason instanceof RangeError ||
@@ -82,10 +90,13 @@ function readFailure(reason: unknown): Failure {
       retryable: false,
     };
   }
+  const format = formatLabel(mime);
   return {
     kind: "photo",
-    title: "照片无法解析",
-    message: message || "请尝试 JPEG、PNG、WebP 或带内嵌预览的 RAW。",
+    title: `${format} 解码失败`,
+    message: message && !/could not|unable|decode/i.test(message)
+      ? message
+      : `这张 ${format} 可能在传输中损坏，或使用了当前浏览器不支持的编码。可以重新读取，或换一张照片。`,
     retryable: false,
   };
 }
@@ -228,6 +239,8 @@ export function PhotoAnalysis() {
   const [savedRecord, setSavedRecord] = useState(false);
   const jobRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+  const fileRef = useRef<File | null>(null);
+  const [readFailed, setReadFailed] = useState(false);
 
   function saveAnalysis() {
     if (!analysis || !file) return;
@@ -284,6 +297,8 @@ export function PhotoAnalysis() {
       if (isCurrent()) setProgress({ label, percent });
     };
 
+    fileRef.current = selected;
+    setReadFailed(false);
     setFailure(null);
     setReading(true);
     setProgress({ label: "准备读取照片…", percent: 2 });
@@ -353,7 +368,8 @@ export function PhotoAnalysis() {
       if (!isCurrent() || (reason instanceof DOMException && reason.name === "AbortError")) {
         return;
       }
-      setFailure(readFailure(reason));
+      setFailure(readFailure(reason, mime));
+      setReadFailed(true);
     } finally {
       if (job === jobRef.current) {
         abortRef.current = null;
@@ -401,11 +417,17 @@ export function PhotoAnalysis() {
     setAnalysis(null);
     setSavedRecord(false);
     try {
+      // GPS 只在本地显示；上报时显式剔除。
+      const cloudExif = exif
+        ? Object.fromEntries(
+          Object.entries(exif).filter(([key]) => key !== "hasGps"),
+        ) as PhotoExif
+        : null;
       const result = await analyzePhoto({
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.mime,
-        exif,
+        exif: cloudExif,
         stats,
         scene: targetScene,
         signals,
@@ -448,6 +470,15 @@ export function PhotoAnalysis() {
     : 1;
   const largeRaw = file?.mime === "image/x-raw" &&
     file.size > RAW_MEMORY_WARN_BYTES;
+  // 兼容旧版响应：没有 improvements 时用 issues / suggestions 现场配对。
+  const improvements = analysis?.improvements?.length
+    ? analysis.improvements
+    : (analysis?.issues ?? []).slice(0, 3).map((issue, index) => ({
+      title: issue.split(/[（(，,：:]/)[0].trim() || "可改进项",
+      evidence: issue,
+      adjustment: analysis?.suggestions[index] ??
+        "下次拍摄时只调整一项参数，便于对比效果。",
+    }));
 
   return (
     <div className="space-y-4">
@@ -511,10 +542,12 @@ export function PhotoAnalysis() {
       {failure && (
         <ErrorNotice
           failure={failure}
-          onRetry={failure.retryable && stats
+          onRetry={readFailed && fileRef.current
+            ? () => void prepare(fileRef.current as File)
+            : failure.retryable && stats
             ? () => void startAnalysis()
             : undefined}
-          retryLabel="仅重试分析"
+          retryLabel={readFailed ? "重新读取" : "仅重试分析"}
           secondary={{
             label: "重新选择照片",
             onClick: () => inputRef.current?.click(),
@@ -698,6 +731,43 @@ export function PhotoAnalysis() {
         </div>
       )}
 
+      {stats && scene && (
+        <details className="pm-details rounded-2xl border border-border bg-card px-4 py-3">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              发送到云端的内容（不含原图与 GPS）
+            </span>
+            <span className="text-primary">查看字段</span>
+          </summary>
+          <ul className="pm-details-body mt-2 space-y-1.5 text-xs leading-5 text-muted-foreground">
+            <li>
+              · 文件信息：{file?.name} · {file ? fileSizeText(file.size) : "—"} ·
+              {" "}{file ? formatLabel(file.mime) : "—"}
+            </li>
+            <li>
+              · 相机参数：
+              {chips.filter((chip) => chip.label !== "位置").length
+                ? chips.filter((chip) => chip.label !== "位置").map((chip) =>
+                  `${chip.label} ${chip.value}`
+                ).join(" · ")
+                : "无 EXIF，只发送空值"}
+            </li>
+            <li>
+              · 画质统计：分辨率、亮度、对比、饱和度、相对清晰度、暗部与高光截断
+            </li>
+            <li>
+              · 题材与特征：{displayScene?.label ?? "通用"} ·
+              肤色/天空/植被/暖色/边缘密度等数值信号
+            </li>
+          </ul>
+          <p className="mt-2 border-t border-border/60 pt-2 text-xs leading-5 text-muted-foreground">
+            不发送：原始图像、EXIF 中的 GPS 坐标、相机或手机序列号、人物身份。GPS
+            仅用于本地提示，上传前已剔除。
+          </p>
+        </details>
+      )}
+
       {stats && (
         <button
           type="button"
@@ -735,6 +805,39 @@ export function PhotoAnalysis() {
               </span>
             </div>
             <p className="mt-3 text-sm leading-6">{analysis.summary}</p>
+          </section>
+
+          <section className="rounded-[var(--radius)] border border-primary/25 bg-primary/[0.04] p-4 shadow-sm sm:p-5">
+            <h4 className="flex items-center gap-2 text-sm font-semibold">
+              <Sparkles className="size-4 text-primary" />优先改进（
+              {improvements.length}）
+            </h4>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              每条都给出画面或参数上的观察依据，以及下次可直接尝试的调整。
+            </p>
+            <ol className="mt-3 space-y-2.5">
+              {improvements.map((item, index) => (
+                <li
+                  key={`${item.title}-${index}`}
+                  className="rounded-xl bg-card/85 p-3"
+                >
+                  <p className="flex items-start gap-2 text-sm font-medium">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-xs text-primary">
+                      {index + 1}
+                    </span>
+                    {item.title}
+                  </p>
+                  <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+                    <span className="font-medium text-foreground/80">依据</span>
+                    {" · "}{item.evidence}
+                  </p>
+                  <p className="mt-1 text-xs leading-5">
+                    <span className="font-medium text-primary">下次调整</span>
+                    {" · "}{item.adjustment}
+                  </p>
+                </li>
+              ))}
+            </ol>
           </section>
 
           <div className="flex justify-end">

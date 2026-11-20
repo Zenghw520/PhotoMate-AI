@@ -454,7 +454,8 @@ export interface PhotoExif {
   flash: boolean | null;
   whiteBalance: string | null;
   orientation: number | null;
-  hasGps: boolean;
+  /** 只在本地判断是否存在 GPS；上报云端时省略。 */
+  hasGps?: boolean;
 }
 
 export interface PhotoStats {
@@ -528,9 +529,19 @@ export interface PhotoAnalysisRequest {
   manualScene?: boolean;
 }
 
+export interface PhotoImprovement {
+  title: string;
+  /** 画面或参数上的观察依据。 */
+  evidence: string;
+  /** 下次拍摄可直接尝试的调整。 */
+  adjustment: string;
+}
+
 export interface PhotoAnalysisResponse {
   generatedAt: string;
   summary: string;
+  /** 优先展示的三条具体改进；其余保留在 issues / suggestions。 */
+  improvements: PhotoImprovement[];
   strengths: string[];
   issues: string[];
   suggestions: string[];
