@@ -3,6 +3,7 @@ import {
   Cloud,
   Eye,
   Flame,
+  Info,
   LoaderCircle,
   MapPin,
   Sparkles,
@@ -16,6 +17,7 @@ import type { Failure } from "@/src/lib/errors";
 import {
   compactLocationName,
   formatDate,
+  formatObservedAt,
   formatTime,
   scoreLabel,
   shanghaiDate,
@@ -191,6 +193,7 @@ export function ShootingPreview({
             </span>
             <span className="shrink-0 font-medium text-primary">
               晚霞 {duskScore === null ? "—" : Math.round(duskScore)} · {scoreLabel(duskScore)}
+              {sample ? " · 示例" : ""}
             </span>
           </div>
 
@@ -199,8 +202,15 @@ export function ShootingPreview({
               <span className="inline-flex items-center gap-1.5 text-xs font-medium">
                 <Flame className="size-3.5 text-primary" />晚霞趋势
               </span>
-              <span className="text-xs font-medium text-primary">
-                {scoreLabel(duskScore)}
+              <span className="flex items-center gap-2">
+                {sample && (
+                  <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                    示例
+                  </span>
+                )}
+                <span className="text-xs font-medium text-primary">
+                  {scoreLabel(duskScore)}
+                </span>
               </span>
             </div>
             <div className="mt-1 flex items-end justify-between gap-2">
@@ -217,17 +227,22 @@ export function ShootingPreview({
           </div>
 
           <div className="mt-auto flex flex-col items-start gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
               <Sparkles className="size-3.5 text-primary" />
               综合摄影指数 {overall === null ? "—" : Math.round(overall)}
+              {sample && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  示例
+                </span>
+              )}
             </span>
             {sample ? (
               <button
                 type="button"
                 onClick={onNeedLocation}
-                className="inline-flex min-h-11 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
-                选择拍摄位置<ArrowRight className="size-3.5" />
+                选择位置<ArrowRight className="size-3.5" />
               </button>
             ) : (
               <button
@@ -240,6 +255,30 @@ export function ShootingPreview({
               </button>
             )}
           </div>
+
+          <details className="mt-1 border-t border-border/60">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Info className="size-3.5" />评分说明
+            </summary>
+            <div className="pb-1 text-xs leading-5 text-muted-foreground">
+              <p>
+                摄影指数用于比较云量、降水、能见度与太阳方位；晚霞评分还会参考分层层云与气溶胶。指数用于比较条件，不是精确预报。
+              </p>
+              {sample ? (
+                <p className="mt-1">
+                  当前为示例数据，不代表真实预报；选择位置后会显示所选地点的实时结果。
+                </p>
+              ) : (
+                <p className="mt-1">
+                  数据时区：北京时间（Asia/Shanghai）· 页面生成于{" "}
+                  {data ? formatObservedAt(data.generatedAt) : "—"} · 预报获取于{" "}
+                  {data?.weather.forecastUpdatedAt
+                    ? formatObservedAt(data.weather.forecastUpdatedAt)
+                    : "随响应返回"}
+                </p>
+              )}
+            </div>
+          </details>
         </>
       )}
 

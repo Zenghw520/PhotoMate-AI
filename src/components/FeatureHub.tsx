@@ -302,7 +302,13 @@ function FeatureMenu({
                 <p className="mt-2 hidden truncate text-xs leading-5 text-muted-foreground xs:block">
                   {state.status}
                 </p>
-                <span className="mt-auto hidden pt-2 text-xs font-medium text-primary xs:block lg:text-sm">
+                <span
+                  className={`mt-auto hidden pt-2 text-xs font-medium xs:block lg:text-sm ${
+                    state.needsLocation
+                      ? "text-muted-foreground underline-offset-2 group-hover:underline"
+                      : "text-primary"
+                  }`}
+                >
                   {state.cta}
                 </span>
               </button>
