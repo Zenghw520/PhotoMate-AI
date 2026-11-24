@@ -94,7 +94,7 @@ export function buildPlanIcs(record: PlanRecord) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//PhotoMate AI//Shooting Plan//CN",
+    "PRODID:-//逐光//Shooting Plan//CN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VTIMEZONE",
@@ -107,7 +107,7 @@ export function buildPlanIcs(record: PlanRecord) {
     "END:STANDARD",
     "END:VTIMEZONE",
     "BEGIN:VEVENT",
-    `UID:${record.id}@photomate.ai`,
+    `UID:${record.id}@zhuguang.app`,
     `DTSTAMP:${utcStamp()}`,
     `DTSTART;TZID=Asia/Shanghai:${start}`,
     `DTEND;TZID=Asia/Shanghai:${end}`,
@@ -145,7 +145,7 @@ export function downloadPlanIcs(record: PlanRecord) {
     .replace(/[\\/:*?"<>|\s]+/g, "-")
     .slice(0, 32);
   anchor.href = url;
-  anchor.download = `PhotoMate-${record.date}-${safe || "plan"}.ics`;
+  anchor.download = `逐光-${record.date}-${safe || "plan"}.ics`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();

@@ -52,7 +52,7 @@ function mapUrl(name: string, longitude: number, latitude: number) {
     latitude.toFixed(6)
   }&name=${
     encodeURIComponent(name)
-  }&src=photomate&coordinate=gaode&callnative=0`;
+  }&src=zhuguang&coordinate=gaode&callnative=0`;
 }
 
 function sceneOfKind(kind: SlotKind | null | undefined): SpotScene | null {

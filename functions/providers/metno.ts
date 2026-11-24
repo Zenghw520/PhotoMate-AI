@@ -3,7 +3,7 @@ import { fetchTrustedJson, ProviderHttpError } from "./http.ts";
 
 const BASE_URL = "https://api.met.no";
 const HOSTS = ["api.met.no"] as const;
-const USER_AGENT = "PhotoMateAI/1.0 https://github.com/Zenghw520/PhotoMate-AI";
+const USER_AGENT = "Zhuguang/1.0 https://github.com/Zenghw520/PhotoMate-AI";
 
 const SYMBOLS: Record<string, string> = {
   clearsky: "晴",

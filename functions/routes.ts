@@ -208,7 +208,7 @@ export function createHandler(db?: DatabaseClient) {
                 place.gcj.longitude.toFixed(6)
               },${place.gcj.latitude.toFixed(6)}&name=${
                 encodeURIComponent(place.name)
-              }&src=photomate&coordinate=gaode&callnative=0`,
+              }&src=zhuguang&coordinate=gaode&callnative=0`,
             };
           }),
           ...(result.message ? { message: result.message } : {}),

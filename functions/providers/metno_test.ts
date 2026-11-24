@@ -47,7 +47,7 @@ Deno.test("metno: maps real layered cloud without inventing visibility", async (
       assertEquals(url.searchParams.get("lat"), "39.9000");
       assertEquals(
         new Headers(call.init?.headers).get("user-agent"),
-        "PhotoMateAI/1.0 https://github.com/Zenghw520/PhotoMate-AI",
+        "Zhuguang/1.0 https://github.com/Zenghw520/PhotoMate-AI",
       );
       return jsonResponse(SERIES);
     },
