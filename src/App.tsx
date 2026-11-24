@@ -268,14 +268,14 @@ export default function App() {
         {section === null && (
           <section className="relative pb-4 pt-7 sm:pb-5 sm:pt-10 2xl:pb-6 2xl:pt-14">
             <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-stretch xl:gap-10">
-              <div className="min-w-0 max-w-2xl lg:self-center 2xl:max-w-3xl">
+              <div className="flex min-w-0 max-w-2xl flex-col items-start lg:self-stretch lg:justify-between 2xl:max-w-3xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-xs font-medium text-primary"><CloudSun className="size-3.5" />真实环境驱动 · 本地天文算法</div>
-                <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.6rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
-                <div className="mt-5 rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur 2xl:p-5">
+                <h1 className="w-full max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl lg:text-[2.6rem] 2xl:text-[3.25rem]">把下一次快门，<br className="hidden sm:block" />留给最好的光。</h1>
+                <p className="mt-3 w-full max-w-xl text-sm leading-6 text-muted-foreground 2xl:text-base 2xl:leading-7">分析天气、云层与太阳位置，告诉你何时拍、朝哪拍、怎么拍。搜索区县或使用定位即可开始。</p>
+                <div className="mt-5 w-full rounded-[var(--radius)] border border-border/80 bg-card/60 p-4 shadow-sm backdrop-blur 2xl:p-5">
                   <LocationSearch location={location} onSelect={chooseLocation} autoLocate />
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
+                <div className="mt-4 flex w-full flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => location ? navigateToSection("WEATHER") : focusLocation()}
